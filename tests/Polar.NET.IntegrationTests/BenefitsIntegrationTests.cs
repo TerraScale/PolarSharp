@@ -105,7 +105,7 @@ public class BenefitsIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Assert
         benefits.Should().NotBeNull();
-        benefits.Count.Should().BeGreaterOrEqualTo(0);
+        benefits.Count.Should().BeGreaterThanOrEqualTo(0);
         
         _output.WriteLine($"Total benefits enumerated: {benefits.Count}");
     }
@@ -406,7 +406,7 @@ public class BenefitsIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Assert
         grants.Should().NotBeNull();
-        grants.Count.Should().BeGreaterOrEqualTo(0);
+        grants.Count.Should().BeGreaterThanOrEqualTo(0);
         
         _output.WriteLine($"Total grants enumerated for benefit {testBenefit.Id}: {grants.Count}");
     }
@@ -423,8 +423,8 @@ public class BenefitsIntegrationTests : IClassFixture<IntegrationTestFixture>
         // Assert
         exportResponse.Should().NotBeNull();
         exportResponse.ExportUrl.Should().NotBeNullOrEmpty();
-        exportResponse.Size.Should().BeGreaterOrEqualTo(0);
-        exportResponse.RecordCount.Should().BeGreaterOrEqualTo(0);
+        exportResponse.Size.Should().BeGreaterThanOrEqualTo(0);
+        exportResponse.RecordCount.Should().BeGreaterThanOrEqualTo(0);
         
         _output.WriteLine($"Export created: {exportResponse.ExportUrl}");
         _output.WriteLine($"File size: {exportResponse.Size} bytes, Records: {exportResponse.RecordCount}");
@@ -444,8 +444,8 @@ public class BenefitsIntegrationTests : IClassFixture<IntegrationTestFixture>
         // Assert
         exportResponse.Should().NotBeNull();
         exportResponse.ExportUrl.Should().NotBeNullOrEmpty();
-        exportResponse.Size.Should().BeGreaterOrEqualTo(0);
-        exportResponse.RecordCount.Should().BeGreaterOrEqualTo(0);
+        exportResponse.Size.Should().BeGreaterThanOrEqualTo(0);
+        exportResponse.RecordCount.Should().BeGreaterThanOrEqualTo(0);
         
         _output.WriteLine($"Grant export created: {exportResponse.ExportUrl}");
         _output.WriteLine($"File size: {exportResponse.Size} bytes, Records: {exportResponse.RecordCount}");

@@ -34,7 +34,7 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
         // Assert
         result.Should().NotBeNull();
         result.Items.Should().NotBeNull();
-        result.Pagination.Page.Should().BeGreaterOrEqualTo(1);
+        result.Pagination.Page.Should().BeGreaterThanOrEqualTo(1);
     }
 
     [Fact]

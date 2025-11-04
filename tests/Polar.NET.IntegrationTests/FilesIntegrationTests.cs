@@ -69,7 +69,7 @@ public class FilesIntegrationTests : IClassFixture<IntegrationTestFixture>
         }
 
         // Assert
-        fileCount.Should().BeGreaterOrEqualTo(0);
+        fileCount.Should().BeGreaterThanOrEqualTo(0);
     }
 
     [Fact]

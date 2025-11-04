@@ -54,7 +54,7 @@ public class PaymentsIntegrationTests : IClassFixture<IntegrationTestFixture>
         // Assert
         payment.Should().NotBeNull();
         payment.Id.Should().Be(paymentId);
-        payment.Amount.Should().BeGreaterOrEqualTo(0);
+        payment.Amount.Should().BeGreaterThanOrEqualTo(0);
         payment.Currency.Should().NotBeNullOrEmpty();
         payment.Status.Should().BeOneOf(PaymentStatus.Pending, PaymentStatus.Succeeded, PaymentStatus.Failed, PaymentStatus.Canceled, PaymentStatus.RequiresAction, PaymentStatus.RequiresConfirmation, PaymentStatus.RequiresPaymentMethod);
         payment.Type.Should().BeOneOf(PaymentType.OneTime, PaymentType.Subscription, PaymentType.Installment);
@@ -157,7 +157,7 @@ public class PaymentsIntegrationTests : IClassFixture<IntegrationTestFixture>
         foreach (var payment in response.Items)
         {
             payment.Id.Should().NotBeNullOrEmpty();
-            payment.Amount.Should().BeGreaterOrEqualTo(0);
+            payment.Amount.Should().BeGreaterThanOrEqualTo(0);
             payment.Currency.Should().NotBeNullOrEmpty();
             payment.Status.Should().BeOneOf(PaymentStatus.Pending, PaymentStatus.Succeeded, PaymentStatus.Failed, PaymentStatus.Canceled, PaymentStatus.RequiresAction, PaymentStatus.RequiresConfirmation, PaymentStatus.RequiresPaymentMethod);
             payment.Type.Should().BeOneOf(PaymentType.OneTime, PaymentType.Subscription, PaymentType.Installment);
@@ -239,7 +239,7 @@ public class PaymentsIntegrationTests : IClassFixture<IntegrationTestFixture>
         // Assert
         payment.Should().NotBeNull();
         payment.Id.Should().Be(paymentId);
-        payment.Amount.Should().BeGreaterOrEqualTo(0);
+        payment.Amount.Should().BeGreaterThanOrEqualTo(0);
         payment.Currency.Should().NotBeNullOrEmpty();
         payment.Status.Should().BeOneOf(PaymentStatus.Pending, PaymentStatus.Succeeded, PaymentStatus.Failed, PaymentStatus.Canceled, PaymentStatus.RequiresAction, PaymentStatus.RequiresConfirmation, PaymentStatus.RequiresPaymentMethod);
         payment.Type.Should().BeOneOf(PaymentType.OneTime, PaymentType.Subscription, PaymentType.Installment);

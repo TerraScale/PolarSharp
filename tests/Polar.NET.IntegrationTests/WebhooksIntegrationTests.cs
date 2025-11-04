@@ -31,7 +31,7 @@ public class WebhooksIntegrationTests : IClassFixture<IntegrationTestFixture>
         response.Should().NotBeNull();
         response.Items.Should().NotBeNull();
         response.Pagination.Should().NotBeNull();
-        response.Pagination.Page.Should().BeGreaterOrEqualTo(0);
+        response.Pagination.Page.Should().BeGreaterThanOrEqualTo(0);
     }
 
     [Fact]
@@ -52,7 +52,7 @@ public class WebhooksIntegrationTests : IClassFixture<IntegrationTestFixture>
         }
 
         // Assert
-        endpointCount.Should().BeGreaterOrEqualTo(0);
+        endpointCount.Should().BeGreaterThanOrEqualTo(0);
     }
 
     [Fact]
@@ -209,7 +209,7 @@ public class WebhooksIntegrationTests : IClassFixture<IntegrationTestFixture>
         response.Should().NotBeNull();
         response.Items.Should().NotBeNull();
         response.Pagination.Should().NotBeNull();
-        response.Pagination.Page.Should().BeGreaterOrEqualTo(0);
+        response.Pagination.Page.Should().BeGreaterThanOrEqualTo(0);
     }
 
     [Fact]

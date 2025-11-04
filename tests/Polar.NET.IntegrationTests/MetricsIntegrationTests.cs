@@ -68,9 +68,9 @@ public class MetricsIntegrationTests : IClassFixture<IntegrationTestFixture>
             result.Should().AllSatisfy(limit =>
             {
                 limit.Name.Should().NotBeNullOrEmpty();
-                limit.MaxValue.Should().BeGreaterOrEqualTo(0);
-                limit.CurrentValue.Should().BeGreaterOrEqualTo(0);
-                limit.PercentageUsed.Should().BeGreaterOrEqualTo(0);
+                limit.MaxValue.Should().BeGreaterThanOrEqualTo(0);
+                limit.CurrentValue.Should().BeGreaterThanOrEqualTo(0);
+                limit.PercentageUsed.Should().BeGreaterThanOrEqualTo(0);
                 
                 // Percentage should be calculated correctly
                 if (limit.MaxValue > 0)
@@ -94,9 +94,9 @@ public class MetricsIntegrationTests : IClassFixture<IntegrationTestFixture>
         // Assert
         result.Should().NotBeNull();
         result.Items.Should().NotBeNull();
-        result.Pagination.Page.Should().BeGreaterOrEqualTo(1);
-        result.Pagination.TotalCount.Should().BeGreaterOrEqualTo(0);
-        result.Pagination.MaxPage.Should().BeGreaterOrEqualTo(0);
+        result.Pagination.Page.Should().BeGreaterThanOrEqualTo(1);
+        result.Pagination.TotalCount.Should().BeGreaterThanOrEqualTo(0);
+        result.Pagination.MaxPage.Should().BeGreaterThanOrEqualTo(0);
     }
 
     [Fact]
@@ -267,7 +267,7 @@ public class MetricsIntegrationTests : IClassFixture<IntegrationTestFixture>
             metrics.Should().AllSatisfy(metric =>
             {
                 metric.Name.Should().NotBeNullOrEmpty();
-                metric.Value.Should().BeGreaterOrEqualTo(0);
+                metric.Value.Should().BeGreaterThanOrEqualTo(0);
                 metric.Period.Should().NotBeNullOrEmpty();
             });
         }
@@ -343,7 +343,7 @@ public class MetricsIntegrationTests : IClassFixture<IntegrationTestFixture>
             var firstMetric = metrics.First();
             firstMetric.Should().NotBeNull();
             firstMetric.Name.Should().NotBeNullOrEmpty();
-            firstMetric.Value.Should().BeGreaterOrEqualTo(0);
+            firstMetric.Value.Should().BeGreaterThanOrEqualTo(0);
             firstMetric.Period.Should().NotBeNullOrEmpty();
             firstMetric.Timestamp.Should().BeBefore(DateTime.UtcNow.AddMinutes(5));
         }
@@ -366,9 +366,9 @@ public class MetricsIntegrationTests : IClassFixture<IntegrationTestFixture>
             var firstLimit = limits.First();
             firstLimit.Should().NotBeNull();
             firstLimit.Name.Should().NotBeNullOrEmpty();
-            firstLimit.MaxValue.Should().BeGreaterOrEqualTo(0);
-            firstLimit.CurrentValue.Should().BeGreaterOrEqualTo(0);
-            firstLimit.PercentageUsed.Should().BeGreaterOrEqualTo(0);
+            firstLimit.MaxValue.Should().BeGreaterThanOrEqualTo(0);
+            firstLimit.CurrentValue.Should().BeGreaterThanOrEqualTo(0);
+            firstLimit.PercentageUsed.Should().BeGreaterThanOrEqualTo(0);
             
             // If there's a reset date, it should be in the future
             if (firstLimit.ResetsAt.HasValue)

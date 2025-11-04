@@ -55,7 +55,7 @@ public class CustomerMetersIntegrationTests : IClassFixture<IntegrationTestFixtu
         customerMeter.Id.Should().Be(customerMeterId);
         customerMeter.MeterId.Should().NotBeNullOrEmpty();
         customerMeter.CustomerId.Should().NotBeNullOrEmpty();
-        customerMeter.CurrentQuantity.Should().BeGreaterOrEqualTo(0);
+        customerMeter.CurrentQuantity.Should().BeGreaterThanOrEqualTo(0);
     }
 
     [Fact]
@@ -155,7 +155,7 @@ public class CustomerMetersIntegrationTests : IClassFixture<IntegrationTestFixtu
             customerMeter.Id.Should().NotBeNullOrEmpty();
             customerMeter.MeterId.Should().NotBeNullOrEmpty();
             customerMeter.CustomerId.Should().NotBeNullOrEmpty();
-            customerMeter.CurrentQuantity.Should().BeGreaterOrEqualTo(0);
+            customerMeter.CurrentQuantity.Should().BeGreaterThanOrEqualTo(0);
             customerMeter.PeriodStart.Should().BeBefore(DateTime.UtcNow);
             customerMeter.PeriodEnd.Should().BeAfter(customerMeter.PeriodStart);
             customerMeter.CreatedAt.Should().BeBefore(DateTime.UtcNow);
@@ -257,7 +257,7 @@ public class CustomerMetersIntegrationTests : IClassFixture<IntegrationTestFixtu
         customerMeter.Id.Should().Be(customerMeterId);
         customerMeter.MeterId.Should().NotBeNullOrEmpty();
         customerMeter.CustomerId.Should().NotBeNullOrEmpty();
-        customerMeter.CurrentQuantity.Should().BeGreaterOrEqualTo(0);
+        customerMeter.CurrentQuantity.Should().BeGreaterThanOrEqualTo(0);
         customerMeter.PeriodStart.Should().BeBefore(DateTime.UtcNow);
         customerMeter.PeriodEnd.Should().BeAfter(customerMeter.PeriodStart);
         customerMeter.CreatedAt.Should().BeBefore(DateTime.UtcNow);

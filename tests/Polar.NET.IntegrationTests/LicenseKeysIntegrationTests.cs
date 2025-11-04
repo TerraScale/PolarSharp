@@ -101,7 +101,7 @@ public class LicenseKeysIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Assert
         licenseKeys.Should().NotBeNull();
-        licenseKeys.Count.Should().BeGreaterOrEqualTo(0);
+        licenseKeys.Count.Should().BeGreaterThanOrEqualTo(0);
         
         _output.WriteLine($"Total license keys enumerated: {licenseKeys.Count}");
     }

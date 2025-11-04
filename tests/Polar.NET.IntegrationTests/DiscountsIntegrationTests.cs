@@ -46,7 +46,7 @@ public class DiscountsIntegrationTests : IClassFixture<IntegrationTestFixture>
         response.Should().NotBeNull();
         response.Items.Should().NotBeNull();
         response.Pagination.Should().NotBeNull();
-        response.Pagination.Page.Should().BeGreaterOrEqualTo(0);
+        response.Pagination.Page.Should().BeGreaterThanOrEqualTo(0);
     }
 
     [Fact]
@@ -66,7 +66,7 @@ public class DiscountsIntegrationTests : IClassFixture<IntegrationTestFixture>
         }
 
         // Assert
-        discountCount.Should().BeGreaterOrEqualTo(0);
+        discountCount.Should().BeGreaterThanOrEqualTo(0);
     }
 
     [Fact]

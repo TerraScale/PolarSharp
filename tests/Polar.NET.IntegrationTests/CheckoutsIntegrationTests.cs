@@ -37,8 +37,8 @@ public class CheckoutsIntegrationTests : IClassFixture<IntegrationTestFixture>
         result.Should().NotBeNull();
         result.Items.Should().NotBeNull();
         result.Pagination.Should().NotBeNull();
-        result.Pagination.TotalCount.Should().BeGreaterOrEqualTo(0);
-        result.Pagination.MaxPage.Should().BeGreaterOrEqualTo(0);
+        result.Pagination.TotalCount.Should().BeGreaterThanOrEqualTo(0);
+        result.Pagination.MaxPage.Should().BeGreaterThanOrEqualTo(0);
     }
 
     [Fact]

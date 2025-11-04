@@ -37,8 +37,8 @@ public class OrdersIntegrationTests : IClassFixture<IntegrationTestFixture>
         result.Should().NotBeNull();
         result.Items.Should().NotBeNull();
         result.Pagination.Should().NotBeNull();
-        result.Pagination.TotalCount.Should().BeGreaterOrEqualTo(0);
-        result.Pagination.MaxPage.Should().BeGreaterOrEqualTo(0);
+        result.Pagination.TotalCount.Should().BeGreaterThanOrEqualTo(0);
+        result.Pagination.MaxPage.Should().BeGreaterThanOrEqualTo(0);
     }
 
     [Fact]
@@ -124,7 +124,7 @@ public class OrdersIntegrationTests : IClassFixture<IntegrationTestFixture>
                 order.Should().NotBeNull();
                 order.Id.Should().Be(orderId);
                 order.Status.Should().BeOneOf(OrderStatus.Pending, OrderStatus.Paid, OrderStatus.Refunded, OrderStatus.PartiallyRefunded, OrderStatus.Canceled, OrderStatus.Failed);
-                order.Amount.Should().BeGreaterOrEqualTo(0);
+                order.Amount.Should().BeGreaterThanOrEqualTo(0);
                 order.Currency.Should().NotBeNullOrEmpty();
             }
             else
