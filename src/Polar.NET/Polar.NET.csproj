@@ -7,6 +7,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>Polar.NET</PackageId>
+    <PackageVersion>$([System.DateTime]::Now.ToString("yyyy.MM.dd.HHmm"))</PackageVersion>
     <Authors>TerraScale</Authors>
     <Description>A highly efficient and easy-to-use REST API client for the Polar.sh payments platform with comprehensive rate limiting, retry policies, and production-ready features.</Description>
     <PackageTags>polar;payments;api;client;rest;dotnet;net;rate-limiting;retry;polly</PackageTags>
