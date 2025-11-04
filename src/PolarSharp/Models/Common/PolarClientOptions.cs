@@ -56,4 +56,21 @@ public record PolarClientOptions
     /// Custom JSON serializer options.
     /// </summary>
     public System.Text.Json.JsonSerializerOptions? JsonSerializerOptions { get; init; }
+
+    /// <summary>
+    /// Maximum retry delay in milliseconds. Default is 30000ms (30 seconds).
+    /// </summary>
+    [Range(1000, 300000)]
+    public int MaxRetryDelayMs { get; init; } = 30000;
+
+    /// <summary>
+    /// Jitter factor for retry delays (0.0 to 1.0). Default is 0.1 (10% jitter).
+    /// </summary>
+    [Range(0.0, 1.0)]
+    public double JitterFactor { get; init; } = 0.1;
+
+    /// <summary>
+    /// Whether to respect server-provided Retry-After header. Default is true.
+    /// </summary>
+    public bool RespectRetryAfterHeader { get; init; } = true;
 }

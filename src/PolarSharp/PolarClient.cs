@@ -145,7 +145,7 @@ public class PolarClient : IDisposable
     /// <summary>
     /// Gets the current rate limit status.
     /// </summary>
-    public (int Available, int Limit) RateLimitStatus
+    public (int Available, int Limit, TimeSpan? ResetTime) RateLimitStatus
     {
         get
         {
@@ -154,7 +154,19 @@ public class PolarClient : IDisposable
                 var now = DateTime.UtcNow;
                 var oneMinuteAgo = now.AddMinutes(-1);
                 var recentRequests = _requestTimestamps.Count(t => t > oneMinuteAgo);
-                return (_options.RequestsPerMinute - recentRequests, _options.RequestsPerMinute);
+                var available = Math.Max(0, _options.RequestsPerMinute - recentRequests);
+                
+                // Calculate when the rate limit window resets
+                TimeSpan? resetTime = null;
+                if (recentRequests > 0)
+                {
+                    var oldestRequest = _requestTimestamps.Where(t => t > DateTime.MinValue).Min();
+                    resetTime = oldestRequest.AddMinutes(1) - now;
+                    if (resetTime.Value <= TimeSpan.Zero)
+                        resetTime = null;
+                }
+                
+                return (available, _options.RequestsPerMinute, resetTime);
             }
         }
     }
@@ -321,56 +333,40 @@ public class PolarClient : IDisposable
     {
         return Policy<HttpResponseMessage>
             .Handle<HttpRequestException>()
-            .OrResult(response => 
-                response.StatusCode == System.Net.HttpStatusCode.TooManyRequests ||
-                response.StatusCode == System.Net.HttpStatusCode.InternalServerError ||
-                response.StatusCode == System.Net.HttpStatusCode.BadGateway ||
-                response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable ||
-                response.StatusCode == System.Net.HttpStatusCode.GatewayTimeout)
+            .OrResult(response => RateLimitHelper.ShouldRetry(response.StatusCode))
             .WaitAndRetryAsync(
                 _options.MaxRetryAttempts,
                 retryAttempt => CalculateRetryDelay(retryAttempt, null),
                 onRetry: (outcome, timespan, retryAttempt, context) =>
                 {
-                    // Could add logging here
-                    if (outcome.Result?.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                    var statusCode = outcome.Result?.StatusCode;
+                    if (statusCode.HasValue)
                     {
-                        // Handle rate limit specifically
-                        var retryAfter = outcome.Result.Headers.RetryAfter;
-                        if (retryAfter?.Delta.HasValue == true)
-                        {
-                            // Use the server-provided retry delay
-                        }
+                        var reason = RateLimitHelper.GetRetryReason(statusCode.Value);
+                        // Could add logging here: $"Retry {retryAttempt}/{_options.MaxRetryAttempts} after {timespan.TotalMilliseconds:F0}ms due to: {reason}"
                     }
                 });
     }
 
     private TimeSpan CalculateRetryDelay(int retryAttempt, HttpResponseMessage? response)
     {
-        // If we have a 429 response with Retry-After header, use that
-        if (response?.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+        // If we have a 429 response with Retry-After header and it's enabled, use that
+        if (_options.RespectRetryAfterHeader && response?.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
         {
-            var retryAfter = response.Headers.RetryAfter;
-            if (retryAfter?.Delta.HasValue == true)
+            var retryDelay = RateLimitHelper.ExtractRetryDelay(response.Headers.RetryAfter, _options.MaxRetryDelayMs);
+            if (retryDelay.HasValue)
             {
-                // Use server-provided delay with a small buffer
-                return retryAfter.Delta.Value + TimeSpan.FromMilliseconds(100);
-            }
-            else if (retryAfter?.Date.HasValue == true)
-            {
-                // If Retry-After is a date, calculate the delay
-                var delay = retryAfter.Date.Value - DateTime.UtcNow;
-                if (delay > TimeSpan.Zero)
-                {
-                    return delay + TimeSpan.FromMilliseconds(100);
-                }
+                // Add a small buffer to ensure we wait long enough
+                return retryDelay.Value + TimeSpan.FromMilliseconds(100);
             }
         }
 
-        // Default exponential backoff with jitter
-        var baseDelay = TimeSpan.FromMilliseconds(_options.InitialRetryDelayMs * Math.Pow(2, retryAttempt - 1));
-        var jitter = TimeSpan.FromMilliseconds(Random.Shared.Next(0, (int)(baseDelay.TotalMilliseconds * 0.1)));
-        return baseDelay + jitter;
+        // Use exponential backoff with jitter
+        return RateLimitHelper.CalculateExponentialBackoffWithJitter(
+            retryAttempt, 
+            _options.InitialRetryDelayMs, 
+            _options.MaxRetryDelayMs, 
+            _options.JitterFactor);
     }
 
     private AsyncRateLimitPolicy<HttpResponseMessage> CreateRateLimitPolicy()
@@ -378,6 +374,25 @@ public class PolarClient : IDisposable
         return Policy.RateLimitAsync<HttpResponseMessage>(
             _options.RequestsPerMinute,
             TimeSpan.FromMinutes(1));
+    }
+
+    /// <summary>
+    /// Extracts rate limit information from response headers and updates tracking.
+    /// </summary>
+    /// <param name="response">The HTTP response.</param>
+    private void UpdateRateLimitFromHeaders(HttpResponseMessage response)
+    {
+        // Check for rate limit headers (common patterns)
+        var rateLimitHeaders = new[] { "X-RateLimit-Limit", "RateLimit-Limit", "X-RateLimit-Remaining", "RateLimit-Remaining" };
+        
+        // This method can be extended to parse specific rate limit headers from Polar API
+        // For now, we'll continue using our client-side tracking
+        
+        // Could parse headers like:
+        // if (response.Headers.TryGetValues("X-RateLimit-Remaining", out var remainingValues))
+        // {
+        //     // Update remaining requests count
+        // }
     }
 
     /// <summary>
@@ -640,6 +655,39 @@ public class PolarClientBuilder
     public PolarClientBuilder WithRequestsPerMinute(int requestsPerMinute)
     {
         _options = _options with { RequestsPerMinute = requestsPerMinute };
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the maximum retry delay in milliseconds.
+    /// </summary>
+    /// <param name="maxDelayMs">Maximum retry delay in milliseconds.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    public PolarClientBuilder WithMaxRetryDelay(int maxDelayMs)
+    {
+        _options = _options with { MaxRetryDelayMs = maxDelayMs };
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the jitter factor for retry delays.
+    /// </summary>
+    /// <param name="jitterFactor">Jitter factor between 0.0 and 1.0.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    public PolarClientBuilder WithJitterFactor(double jitterFactor)
+    {
+        _options = _options with { JitterFactor = Math.Clamp(jitterFactor, 0.0, 1.0) };
+        return this;
+    }
+
+    /// <summary>
+    /// Sets whether to respect the server-provided Retry-After header.
+    /// </summary>
+    /// <param name="respectRetryAfter">Whether to respect Retry-After header.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    public PolarClientBuilder WithRespectRetryAfterHeader(bool respectRetryAfter = true)
+    {
+        _options = _options with { RespectRetryAfterHeader = respectRetryAfter };
         return this;
     }
 
