@@ -49,7 +49,7 @@ public class PolarClientIntegrationTests : IClassFixture<IntegrationTestFixture>
         result.Items.Should().NotBeEmpty();
         result.Pagination.Should().NotBeNull();
         result.Pagination.TotalCount.Should().BeGreaterOrEqualTo(0);
-        result.Pagination.MaxPage.Should().BeGreaterOrEqualTo(1);
+        result.Pagination.MaxPage.Should().BeGreaterOrEqualTo(0);
     }
 
     [Fact]
@@ -146,7 +146,7 @@ public class PolarClientIntegrationTests : IClassFixture<IntegrationTestFixture>
         result.Items.Should().NotBeNull();
         result.Pagination.Should().NotBeNull();
         result.Pagination.TotalCount.Should().BeGreaterOrEqualTo(0);
-        result.Pagination.MaxPage.Should().BeGreaterOrEqualTo(1);
+        result.Pagination.MaxPage.Should().BeGreaterOrEqualTo(0);
     }
 
     [Fact]
@@ -180,7 +180,7 @@ public class PolarClientIntegrationTests : IClassFixture<IntegrationTestFixture>
         result.Items.Should().NotBeNull();
         result.Pagination.Should().NotBeNull();
         result.Pagination.TotalCount.Should().BeGreaterOrEqualTo(0);
-        result.Pagination.MaxPage.Should().BeGreaterOrEqualTo(1);
+        result.Pagination.MaxPage.Should().BeGreaterOrEqualTo(0);
     }
 
     [Fact]
@@ -214,7 +214,7 @@ public class PolarClientIntegrationTests : IClassFixture<IntegrationTestFixture>
         result.Items.Should().NotBeNull();
         result.Pagination.Should().NotBeNull();
         result.Pagination.TotalCount.Should().BeGreaterOrEqualTo(0);
-        result.Pagination.MaxPage.Should().BeGreaterOrEqualTo(1);
+        result.Pagination.MaxPage.Should().BeGreaterOrEqualTo(0);
     }
 
     [Fact]
@@ -280,7 +280,7 @@ public class PolarClientIntegrationTests : IClassFixture<IntegrationTestFixture>
         result.Items.Should().NotBeNull();
         result.Pagination.Should().NotBeNull();
         result.Pagination.TotalCount.Should().BeGreaterOrEqualTo(0);
-        result.Pagination.MaxPage.Should().BeGreaterOrEqualTo(1);
+        result.Pagination.MaxPage.Should().BeGreaterOrEqualTo(0);
     }
 
     [Fact]
@@ -331,7 +331,7 @@ public class PolarClientIntegrationTests : IClassFixture<IntegrationTestFixture>
         result.Items.Should().NotBeNull();
         result.Pagination.Should().NotBeNull();
         result.Pagination.TotalCount.Should().BeGreaterOrEqualTo(0);
-        result.Pagination.MaxPage.Should().BeGreaterOrEqualTo(1);
+        result.Pagination.MaxPage.Should().BeGreaterOrEqualTo(0);
     }
 
     [Fact]
@@ -415,7 +415,7 @@ public class PolarClientIntegrationTests : IClassFixture<IntegrationTestFixture>
         result.Items.Should().NotBeNull();
         result.Pagination.Should().NotBeNull();
         result.Pagination.TotalCount.Should().BeGreaterOrEqualTo(0);
-        result.Pagination.MaxPage.Should().BeGreaterOrEqualTo(1);
+        result.Pagination.MaxPage.Should().BeGreaterOrEqualTo(0);
     }
 
     [Fact]

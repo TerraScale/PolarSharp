@@ -21,17 +21,6 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
     {
         // Arrange
         var client = _fixture.CreateClient();
-        var createRequest = new ProductCreateRequest
-        {
-            Name = $"Test Product {Guid.NewGuid()}",
-            Description = "Integration test product with prices",
-            Type = ProductType.OneTime
-        };
-
-        // Act
-        var createdProduct = await client.Products.CreateAsync(createRequest);
-        
-        // Create multiple prices
         var priceRequest1 = new ProductPriceCreateRequest
         {
             Amount = 1000, // $10.00 in cents
@@ -46,8 +35,16 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
             Type = ProductPriceType.OneTime
         };
 
-        var price1 = await client.Products.CreatePriceAsync(createdProduct.Id, priceRequest1);
-        var price2 = await client.Products.CreatePriceAsync(createdProduct.Id, priceRequest2);
+        var createRequest = new ProductCreateRequest
+        {
+            Name = $"Test Product {Guid.NewGuid()}",
+            Description = "Integration test product with prices",
+            Type = ProductType.OneTime,
+            Prices = new List<ProductPriceCreateRequest> { priceRequest1, priceRequest2 }
+        };
+
+        // Act
+        var createdProduct = await client.Products.CreateAsync(createRequest);
 
         // Retrieve product with prices
         var retrievedProduct = await client.Products.GetAsync(createdProduct.Id);
@@ -57,16 +54,6 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
         createdProduct.Id.Should().NotBeNullOrEmpty();
         createdProduct.Name.Should().Be(createRequest.Name);
         createdProduct.Description.Should().Be(createRequest.Description);
-
-        price1.Should().NotBeNull();
-        price1.Id.Should().NotBeNullOrEmpty();
-        price1.Amount.Should().Be((int)priceRequest1.Amount);
-        price1.Currency.Should().Be(priceRequest1.Currency);
-
-        price2.Should().NotBeNull();
-        price2.Id.Should().NotBeNullOrEmpty();
-        price2.Amount.Should().Be((int)priceRequest2.Amount);
-        price2.Currency.Should().Be(priceRequest2.Currency);
 
         retrievedProduct.Should().NotBeNull();
         retrievedProduct.Prices.Should().HaveCount(2);
@@ -80,36 +67,35 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
     {
         // Arrange
         var client = _fixture.CreateClient();
-        var createRequest = new ProductCreateRequest
+
+        var productRequest = new ProductCreateRequest
         {
-            Name = $"Test Subscription {Guid.NewGuid()}",
-            Description = "Integration test subscription product",
+            Name = $"Test Subscription Product {Guid.NewGuid()}",
+            Description = "A test subscription product",
             Type = ProductType.Subscription,
-            IsSubscription = true
+            RecurringInterval = RecurringInterval.Month,
+            Prices = new List<ProductPriceCreateRequest>
+            {
+                new ProductPriceCreateRequest
+                {
+                    Amount = 1999, // $19.99 in cents
+                    Currency = "USD",
+                    Type = ProductPriceType.Recurring,
+                    RecurringInterval = "month"
+                }
+            }
         };
 
         // Act
-        var createdProduct = await client.Products.CreateAsync(createRequest);
-        
-        // Create recurring price
-        var priceRequest = new ProductPriceCreateRequest
-        {
-            Amount = 1999, // $19.99 in cents
-            Currency = "USD",
-            Type = ProductPriceType.Recurring,
-            RecurringInterval = "month"
-        };
-
-        var price = await client.Products.CreatePriceAsync(createdProduct.Id, priceRequest);
+        var createdProduct = await client.Products.CreateAsync(productRequest);
 
         // Assert
         createdProduct.Should().NotBeNull();
         createdProduct.Type.Should().Be(ProductType.Subscription);
         createdProduct.IsSubscription.Should().BeTrue();
-
-        price.Should().NotBeNull();
-        price.Type.Should().Be(ProductPriceType.Recurring);
-        price.RecurringInterval.Should().Be(RecurringInterval.Month);
+        createdProduct.Prices.Should().NotBeEmpty();
+        createdProduct.Prices.First().Type.Should().Be(ProductPriceType.Recurring);
+        createdProduct.Prices.First().RecurringInterval.Should().Be(RecurringInterval.Month);
 
         // Cleanup
         await client.Products.ArchiveAsync(createdProduct.Id);
@@ -160,7 +146,16 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
         var productRequest = new ProductCreateRequest
         {
             Name = $"Test Product {Guid.NewGuid()}",
-            Type = ProductType.OneTime
+            Type = ProductType.OneTime,
+            Prices = new List<ProductPriceCreateRequest>
+            {
+                new ProductPriceCreateRequest
+                {
+                    Amount = 999, // $9.99 in cents
+                    Currency = "USD",
+                    Type = ProductPriceType.OneTime
+                }
+            }
         };
 
         var product = await client.Products.CreateAsync(productRequest);

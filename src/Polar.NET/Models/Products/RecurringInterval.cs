@@ -5,7 +5,7 @@ namespace Polar.NET.Models.Products;
 /// <summary>
 /// The recurring interval for subscription prices.
 /// </summary>
-[JsonConverter(typeof(JsonStringEnumConverter))]
+
 public enum RecurringInterval
 {
     /// <summary>

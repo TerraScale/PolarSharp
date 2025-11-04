@@ -5,7 +5,7 @@ namespace Polar.NET.Models.Products;
 /// <summary>
 /// The type of product price.
 /// </summary>
-[JsonConverter(typeof(JsonStringEnumConverter))]
+
 public enum ProductPriceType
 {
     /// <summary>

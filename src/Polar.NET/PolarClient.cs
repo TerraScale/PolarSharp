@@ -283,7 +283,7 @@ public class PolarClient : IDisposable
 
     private static Uri GetDefaultBaseUrl()
     {
-        return new Uri("https://api.polar.sh/v1");
+        return new Uri("https://api.polar.sh");
     }
 
     private HttpClient CreateHttpClient()
@@ -306,9 +306,12 @@ public class PolarClient : IDisposable
     {
         var options = customOptions ?? new JsonSerializerOptions();
         
-        options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        options.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower;
         options.PropertyNameCaseInsensitive = true;
         options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+        
+        // Add enum converter to handle JsonPropertyName attributes
+        options.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower));
         
         return options;
     }

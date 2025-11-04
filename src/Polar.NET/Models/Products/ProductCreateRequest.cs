@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
+using System.Collections.Generic;
 
 namespace Polar.NET.Models.Products;
 
@@ -43,4 +44,17 @@ public record ProductCreateRequest
     /// </summary>
     [JsonPropertyName("is_subscription")]
     public bool? IsSubscription { get; init; }
+
+    /// <summary>
+    /// The prices for the product. Required for both one-time and subscription products.
+    /// </summary>
+    [JsonPropertyName("prices")]
+    public List<ProductPriceCreateRequest> Prices { get; init; } = new();
+
+    /// <summary>
+    /// The recurring interval for subscription products. Required only for subscription products.
+    /// </summary>
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    [JsonPropertyName("recurring_interval")]
+    public RecurringInterval? RecurringInterval { get; init; }
 }
