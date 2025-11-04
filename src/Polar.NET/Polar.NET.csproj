@@ -7,16 +7,14 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>Polar.NET</PackageId>
-    <PackageVersion>1.0.0</PackageVersion>
-    <Authors>Mario Garcia</Authors>
+    <Authors>TerraScale</Authors>
     <Description>A highly efficient and easy-to-use REST API client for the Polar.sh payments platform with comprehensive rate limiting, retry policies, and production-ready features.</Description>
     <PackageTags>polar;payments;api;client;rest;dotnet;net;rate-limiting;retry;polly</PackageTags>
-    <RepositoryUrl>https://github.com/mariogk/Polar.NET</RepositoryUrl>
+    <RepositoryUrl>https://github.com/TerraScale/Polar.NET</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/TerraScale/Polar.NET</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <PackageProjectUrl>https://github.com/mariogk/Polar.NET</PackageProjectUrl>
-    <Copyright>Copyright © 2025 Mario Garcia</Copyright>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
 
@@ -24,9 +22,6 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
-    <PackageReleaseNotes>Initial production release with comprehensive rate limiting, retry policies, fluent builder pattern, and full Polar.sh API coverage.</PackageReleaseNotes>
-    <Company>Mario Garcia</Company>
   </PropertyGroup>
 
   <ItemGroup>

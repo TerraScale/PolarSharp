@@ -5,7 +5,7 @@ on:
     branches: [ main ]
 
 env:
-  DOTNET_VERSION: '10.0.x'
+  DOTNET_VERSION: '9.0.x'
 
 jobs:
   test:
@@ -48,8 +48,7 @@ jobs:
     name: Run Integration Tests
     runs-on: ubuntu-latest
     needs: test
-    if: github.event_name != 'pull_request'
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -87,11 +86,15 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
     
+    - name: Generate date-based version
+      id: version
+      run: echo "BUILD_VERSION=$(date +'%Y.%m.%d.%H%M')" >> $GITHUB_OUTPUT
+    
     - name: Restore dependencies
       run: dotnet restore
     
     - name: Pack NuGet package
-      run: dotnet pack src/Polar.NET/Polar.NET.csproj --no-restore --configuration Release --output ./packages
+      run: dotnet pack src/Polar.NET/Polar.NET.csproj --no-restore --configuration Release --output ./packages -p:BuildVersion=${{ steps.version.outputs.BUILD_VERSION }}
     
     - name: Upload package artifacts
       uses: actions/upload-artifact@v4
@@ -104,7 +107,6 @@ jobs:
     name: Publish to NuGet
     runs-on: ubuntu-latest
     needs: [test, pack]
-    if: github.event_name == 'release' && github.event.action == 'published'
     
     steps:
     - name: Download package artifacts
