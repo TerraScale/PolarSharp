@@ -153,3 +153,27 @@ public enum DiscountDuration
     Repeating
 }
 
+/// <summary>
+/// Response for discount export.
+/// </summary>
+public record DiscountExportResponse
+{
+    /// <summary>
+    /// The export URL.
+    /// </summary>
+    [JsonPropertyName("export_url")]
+    public string ExportUrl { get; init; } = string.Empty;
+
+    /// <summary>
+    /// The export file size in bytes.
+    /// </summary>
+    [JsonPropertyName("size")]
+    public long Size { get; init; }
+
+    /// <summary>
+    /// The number of records in export.
+    /// </summary>
+    [JsonPropertyName("record_count")]
+    public int RecordCount { get; init; }
+}
+

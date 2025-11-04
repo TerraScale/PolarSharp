@@ -207,11 +207,13 @@ public record MeterUpdateRequest
     /// <summary>
     /// The name of the meter.
     /// </summary>
+    [StringLength(255, ErrorMessage = "Meter name cannot exceed 255 characters.")]
     public string? Name { get; init; }
 
     /// <summary>
     /// The description of the meter.
     /// </summary>
+    [StringLength(1000, ErrorMessage = "Meter description cannot exceed 1000 characters.")]
     public string? Description { get; init; }
 
     /// <summary>
@@ -222,6 +224,7 @@ public record MeterUpdateRequest
     /// <summary>
     /// The unit of measurement for the meter.
     /// </summary>
+    [StringLength(50, ErrorMessage = "Meter unit cannot exceed 50 characters.")]
     public string? Unit { get; init; }
 
     /// <summary>
@@ -232,5 +235,84 @@ public record MeterUpdateRequest
     /// <summary>
     /// The metadata to associate with the meter.
     /// </summary>
+    public Dictionary<string, object>? Metadata { get; init; }
+}
+
+/// <summary>
+/// Request to create a new meter quantity.
+/// </summary>
+public record MeterQuantityCreateRequest
+{
+    /// <summary>
+    /// The meter ID.
+    /// </summary>
+    [Required(ErrorMessage = "Meter ID is required.")]
+    [JsonPropertyName("meter_id")]
+    public string MeterId { get; init; } = string.Empty;
+
+    /// <summary>
+    /// The customer ID.
+    /// </summary>
+    [Required(ErrorMessage = "Customer ID is required.")]
+    [JsonPropertyName("customer_id")]
+    public string CustomerId { get; init; } = string.Empty;
+
+    /// <summary>
+    /// The quantity value.
+    /// </summary>
+    [Required(ErrorMessage = "Quantity is required.")]
+    [Range(0, double.MaxValue, ErrorMessage = "Quantity must be non-negative.")]
+    [JsonPropertyName("quantity")]
+    public decimal Quantity { get; init; }
+
+    /// <summary>
+    /// The period start date.
+    /// </summary>
+    [Required(ErrorMessage = "Period start date is required.")]
+    [JsonPropertyName("period_start")]
+    public DateTime PeriodStart { get; init; }
+
+    /// <summary>
+    /// The period end date.
+    /// </summary>
+    [Required(ErrorMessage = "Period end date is required.")]
+    [JsonPropertyName("period_end")]
+    public DateTime PeriodEnd { get; init; }
+
+    /// <summary>
+    /// The metadata to associate with the meter quantity.
+    /// </summary>
+    [JsonPropertyName("metadata")]
+    public Dictionary<string, object>? Metadata { get; init; }
+}
+
+/// <summary>
+/// Request to update an existing meter quantity.
+/// </summary>
+public record MeterQuantityUpdateRequest
+{
+    /// <summary>
+    /// The quantity value.
+    /// </summary>
+    [Range(0, double.MaxValue, ErrorMessage = "Quantity must be non-negative.")]
+    [JsonPropertyName("quantity")]
+    public decimal? Quantity { get; init; }
+
+    /// <summary>
+    /// The period start date.
+    /// </summary>
+    [JsonPropertyName("period_start")]
+    public DateTime? PeriodStart { get; init; }
+
+    /// <summary>
+    /// The period end date.
+    /// </summary>
+    [JsonPropertyName("period_end")]
+    public DateTime? PeriodEnd { get; init; }
+
+    /// <summary>
+    /// The metadata to associate with the meter quantity.
+    /// </summary>
+    [JsonPropertyName("metadata")]
     public Dictionary<string, object>? Metadata { get; init; }
 }

@@ -153,7 +153,7 @@ public class CheckoutsApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PostAsJsonAsync("checkouts", request, _jsonOptions, cancellationToken),
+            () => _httpClient.PostAsJsonAsync("v1/checkouts/", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);

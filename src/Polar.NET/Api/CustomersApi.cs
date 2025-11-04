@@ -63,7 +63,7 @@ public class CustomersApi
             queryParams["external_id"] = externalId;
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"v1/customers?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/customers/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -125,8 +125,11 @@ public class CustomersApi
         CustomerCreateRequest request,
         CancellationToken cancellationToken = default)
     {
+        // Validate request before sending
+        request.ValidateAndThrow(nameof(request));
+        
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PostAsJsonAsync("customers", request, _jsonOptions, cancellationToken),
+            () => _httpClient.PostAsJsonAsync("v1/customers/", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -183,12 +186,12 @@ public class CustomersApi
     }
 
     /// <summary>
-    /// Deletes a customer.
+    /// Deletes a customer by ID.
     /// </summary>
     /// <param name="customerId">The customer ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The deleted customer.</returns>
-    public async Task<Customer> DeleteAsync(
+    /// <returns>A task that represents the delete operation.</returns>
+    public async Task DeleteAsync(
         string customerId,
         CancellationToken cancellationToken = default)
     {
@@ -197,10 +200,6 @@ public class CustomersApi
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Customer>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
     }
 
     /// <summary>
@@ -298,7 +297,7 @@ public class CustomersApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PostAsJsonAsync("customers/export", request, _jsonOptions, cancellationToken),
+            () => _httpClient.PostAsJsonAsync("v1/customers/export/", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -385,7 +384,7 @@ public class CustomersApi
         }
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"v1/customers?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/customers/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);

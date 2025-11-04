@@ -172,21 +172,25 @@ public enum CheckoutStatus
     /// <summary>
     /// The checkout session is open.
     /// </summary>
+    [JsonPropertyName("open")]
     Open,
 
     /// <summary>
     /// The checkout session is completed.
     /// </summary>
+    [JsonPropertyName("completed")]
     Completed,
 
     /// <summary>
     /// The checkout session is expired.
     /// </summary>
+    [JsonPropertyName("expired")]
     Expired,
 
     /// <summary>
     /// The checkout session is canceled.
     /// </summary>
+    [JsonPropertyName("canceled")]
     Canceled
 }
 
@@ -229,13 +233,13 @@ public record CheckoutCreateRequest
     public string? DiscountId { get; init; }
 
     /// <summary>
-    /// The success URL for the checkout session.
+    /// The success URL for checkout session.
     /// </summary>
     [JsonPropertyName("success_url")]
     public string? SuccessUrl { get; init; }
 
     /// <summary>
-    /// The cancel URL for the checkout session.
+    /// The cancel URL for checkout session.
     /// </summary>
     [JsonPropertyName("cancel_url")]
     public string? CancelUrl { get; init; }
@@ -247,13 +251,13 @@ public record CheckoutCreateRequest
     public Dictionary<string, object>? Metadata { get; init; }
 
     /// <summary>
-    /// The external ID for the checkout session.
+    /// The external ID for checkout session.
     /// </summary>
     [JsonPropertyName("external_id")]
     public string? ExternalId { get; init; }
 
     /// <summary>
-    /// Whether the checkout session is for a subscription.
+    /// Whether checkout session is for a subscription.
     /// </summary>
     [JsonPropertyName("is_subscription")]
     public bool? IsSubscription { get; init; }
@@ -263,5 +267,29 @@ public record CheckoutCreateRequest
     /// </summary>
     [JsonPropertyName("trial_period_days")]
     public int? TrialPeriodDays { get; init; }
+}
+
+/// <summary>
+/// Response for checkout export.
+/// </summary>
+public record CheckoutExportResponse
+{
+    /// <summary>
+    /// The export URL.
+    /// </summary>
+    [JsonPropertyName("export_url")]
+    public string ExportUrl { get; init; } = string.Empty;
+
+    /// <summary>
+    /// The export file size in bytes.
+    /// </summary>
+    [JsonPropertyName("size")]
+    public long Size { get; init; }
+
+    /// <summary>
+    /// The number of records in export.
+    /// </summary>
+    [JsonPropertyName("record_count")]
+    public int RecordCount { get; init; }
 }
 

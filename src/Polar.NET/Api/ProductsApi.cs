@@ -119,7 +119,7 @@ public class ProductsApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"v1/products/{productId}/", cancellationToken),
+            () => _httpClient.GetAsync($"v1/products/{productId}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -139,6 +139,9 @@ public class ProductsApi
         ProductCreateRequest request,
         CancellationToken cancellationToken = default)
     {
+        // Validate request before sending
+        request.ValidateAndThrow(nameof(request));
+        
         var response = await ExecuteWithPoliciesAsync(
             () => _httpClient.PostAsJsonAsync("v1/products/", request, _jsonOptions, cancellationToken),
             cancellationToken);
@@ -163,7 +166,7 @@ public class ProductsApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PatchAsJsonAsync($"v1/products/{productId}/", request, _jsonOptions, cancellationToken),
+            () => _httpClient.PatchAsJsonAsync($"v1/products/{productId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -183,8 +186,9 @@ public class ProductsApi
         string productId,
         CancellationToken cancellationToken = default)
     {
+        var archiveRequest = new { is_archived = true };
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.DeleteAsync($"v1/products/{productId}/", cancellationToken),
+            () => _httpClient.PatchAsJsonAsync($"v1/products/{productId}", archiveRequest, _jsonOptions, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);

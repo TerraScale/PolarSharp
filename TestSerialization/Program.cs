@@ -1,5 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Reflection;
+using Polar.NET.Extensions;
 using Polar.NET.Models.Products;
 
 var request = new ProductCreateRequest
@@ -12,7 +14,7 @@ var request = new ProductCreateRequest
         {
             Amount = 999,
             Currency = "USD",
-            Type = ProductPriceType.OneTime
+            Type = ProductPriceType.Fixed
         }
     }
 };
@@ -21,7 +23,7 @@ var json = JsonSerializer.Serialize(request, new JsonSerializerOptions
 { 
     WriteIndented = true,
     PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
-    Converters = { new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower) }
+    Converters = { new JsonStringEnumConverterWithAttributeNames() }
 });
 
 Console.WriteLine(json);

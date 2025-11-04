@@ -35,7 +35,6 @@ public record ProductCreateRequest
     /// The type of product.
     /// </summary>
     [Required]
-    [JsonConverter(typeof(JsonStringEnumConverter))]
     [JsonPropertyName("type")]
     public ProductType Type { get; init; }
 
@@ -54,7 +53,6 @@ public record ProductCreateRequest
     /// <summary>
     /// The recurring interval for subscription products. Required only for subscription products.
     /// </summary>
-    [JsonConverter(typeof(JsonStringEnumConverter))]
     [JsonPropertyName("recurring_interval")]
     public RecurringInterval? RecurringInterval { get; init; }
 }

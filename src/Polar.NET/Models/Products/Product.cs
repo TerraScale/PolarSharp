@@ -45,10 +45,28 @@ public record Product
     public bool IsArchived { get; init; }
 
     /// <summary>
+    /// Whether product is recurring (subscription).
+    /// </summary>
+    [JsonPropertyName("is_recurring")]
+    public bool IsRecurring { get; init; }
+
+    /// <summary>
     /// Whether product is a subscription.
     /// </summary>
     [JsonPropertyName("is_subscription")]
-    public bool IsSubscription { get; init; }
+    public bool? IsSubscription { get; init; }
+
+    /// <summary>
+    /// The recurring interval for subscription products.
+    /// </summary>
+    [JsonPropertyName("recurring_interval")]
+    public RecurringInterval? RecurringInterval { get; init; }
+
+    /// <summary>
+    /// The recurring interval count for subscription products.
+    /// </summary>
+    [JsonPropertyName("recurring_interval_count")]
+    public int? RecurringIntervalCount { get; init; }
 
     /// <summary>
     /// The organization ID that owns product.
@@ -78,11 +96,9 @@ public record Product
     public IReadOnlyList<ProductPrice> Prices { get; init; } = new List<ProductPrice>();
 
     /// <summary>
-    /// The type of product.
+    /// The type of product (derived from IsRecurring).
     /// </summary>
-    [JsonConverter(typeof(JsonStringEnumConverter))]
-    [JsonPropertyName("type")]
-    public ProductType? Type { get; init; }
+    public ProductType Type => IsRecurring ? ProductType.Subscription : ProductType.OneTime;
 }
 /// <summary>
 /// Response for product export.

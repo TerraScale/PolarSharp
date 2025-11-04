@@ -1328,3 +1328,115 @@ public class CustomerSeatsQueryBuilder : QueryBuilder<CustomerSeatsQueryBuilder>
         return AddParameter("created_before", date?.ToString("yyyy-MM-ddTHH:mm:ssZ"));
     }
 }
+
+/// <summary>
+/// Query builder for customer sessions API.
+/// </summary>
+public class CustomerSessionsQueryBuilder : QueryBuilder<CustomerSessionsQueryBuilder>
+{
+    /// <summary>
+    /// Initializes a new instance of CustomerSessionsQueryBuilder.
+    /// </summary>
+    public CustomerSessionsQueryBuilder() : base() { }
+
+    /// <summary>
+    /// Filters customer sessions by customer ID.
+    /// </summary>
+    /// <param name="customerId">The customer ID to filter by.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    public CustomerSessionsQueryBuilder WithCustomerId(string? customerId)
+    {
+        return AddParameter("customer_id", customerId);
+    }
+
+    /// <summary>
+    /// Filters customer sessions by status.
+    /// </summary>
+    /// <param name="status">The session status to filter by.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    public CustomerSessionsQueryBuilder WithStatus(string? status)
+    {
+        return AddParameter("status", status?.ToLowerInvariant());
+    }
+
+    /// <summary>
+    /// Filters customer sessions by created after date.
+    /// </summary>
+    /// <param name="date">The date to filter by.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    public CustomerSessionsQueryBuilder CreatedAfter(DateTime? date)
+    {
+        return AddParameter("created_after", date?.ToString("yyyy-MM-ddTHH:mm:ssZ"));
+    }
+
+    /// <summary>
+    /// Filters customer sessions by created before date.
+    /// </summary>
+    /// <param name="date">The date to filter by.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    public CustomerSessionsQueryBuilder CreatedBefore(DateTime? date)
+    {
+        return AddParameter("created_before", date?.ToString("yyyy-MM-ddTHH:mm:ssZ"));
+    }
+
+    /// <summary>
+    /// Filters customer sessions that are expired.
+    /// </summary>
+    /// <param name="expired">Whether to filter by expired status.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    public CustomerSessionsQueryBuilder WithExpired(bool? expired)
+    {
+        return AddParameter("expired", expired?.ToString().ToLowerInvariant());
+    }
+}
+
+/// <summary>
+/// Query builder for organizations API.
+/// </summary>
+public class OrganizationsQueryBuilder : QueryBuilder<OrganizationsQueryBuilder>
+{
+    /// <summary>
+    /// Initializes a new instance of OrganizationsQueryBuilder.
+    /// </summary>
+    public OrganizationsQueryBuilder() : base() { }
+
+    /// <summary>
+    /// Filters organizations by name.
+    /// </summary>
+    /// <param name="name">The organization name to filter by.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    public OrganizationsQueryBuilder WithName(string? name)
+    {
+        return AddParameter("name", name);
+    }
+
+    /// <summary>
+    /// Filters organizations that are active.
+    /// </summary>
+    /// <param name="active">Whether to filter by active status.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    public OrganizationsQueryBuilder WithActive(bool? active)
+    {
+        return AddParameter("is_active", active?.ToString().ToLowerInvariant());
+    }
+
+    /// <summary>
+    /// Filters organizations by created after date.
+    /// </summary>
+    /// <param name="date">The date to filter by.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    public OrganizationsQueryBuilder CreatedAfter(DateTime? date)
+    {
+        return AddParameter("created_after", date?.ToString("yyyy-MM-ddTHH:mm:ssZ"));
+    }
+
+    /// <summary>
+    /// Filters organizations by created before date.
+    /// </summary>
+    /// <param name="date">The date to filter by.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    public OrganizationsQueryBuilder CreatedBefore(DateTime? date)
+    {
+        return AddParameter("created_before", date?.ToString("yyyy-MM-ddTHH:mm:ssZ"));
+    }
+}

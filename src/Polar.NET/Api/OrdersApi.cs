@@ -67,7 +67,7 @@ public class OrdersApi
             queryParams["status"] = status.Value.ToString().ToLowerInvariant();
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"v1/orders?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/orders/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -236,7 +236,7 @@ public class OrdersApi
             queryParams["status"] = status.Value.ToString().ToLowerInvariant();
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"v1/orders/export?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/orders/export/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -312,7 +312,7 @@ public class OrdersApi
         }
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"v1/orders?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/orders/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);

@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Http;
 using Polar.NET.Api;
+using Polar.NET.Extensions;
 using Polar.NET.Models.Common;
 using Polar.NET.Models.Products;
 using Polly;
@@ -310,8 +311,8 @@ public class PolarClient : IDisposable
         options.PropertyNameCaseInsensitive = true;
         options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
         
-        // Add enum converter to handle JsonPropertyName attributes
-        options.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower));
+        // Add custom enum converter to handle JsonPropertyName attributes
+        options.Converters.Add(new JsonStringEnumConverterWithAttributeNames());
         
         return options;
     }
@@ -546,6 +547,8 @@ public class PolarClientBuilder
         _options = _options with { MaxRetryAttempts = maxRetries };
         return this;
     }
+
+
 
     /// <summary>
     /// Builds the configured PolarClient instance.

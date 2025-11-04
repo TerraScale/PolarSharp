@@ -13,22 +13,22 @@ public record ProductPriceCreateRequest
     /// </summary>
     [Required(ErrorMessage = "Amount is required.")]
     [Range(0.01, double.MaxValue, ErrorMessage = "Amount must be greater than 0.")]
-    [JsonPropertyName("amount")]
+    [JsonPropertyName("price_amount")]
     public decimal Amount { get; init; }
 
     /// <summary>
     /// The currency code (e.g., "USD", "EUR").
     /// </summary>
     [Required(ErrorMessage = "Currency is required.")]
-    [RegularExpression("^[A-Z]{3}$", ErrorMessage = "Currency must be a valid 3-letter ISO 4217 code.")]
-    [JsonPropertyName("currency")]
+    [RegularExpression("^[a-z]{3}$", ErrorMessage = "Currency must be a valid 3-letter ISO 4217 code in lowercase.")]
+    [JsonPropertyName("price_currency")]
     public string Currency { get; init; } = string.Empty;
 
     /// <summary>
-    /// The type of price.
+    /// The type of price amount.
     /// </summary>
     [Required]
-    [JsonPropertyName("type")]
+    [JsonPropertyName("amount_type")]
     public ProductPriceType Type { get; init; }
 
     /// <summary>

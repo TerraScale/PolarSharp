@@ -68,7 +68,7 @@ public class SubscriptionsApi
             queryParams["status"] = status.Value.ToString().ToLowerInvariant();
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"v1/subscriptions?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/subscriptions/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -264,7 +264,7 @@ public class SubscriptionsApi
         }
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"v1/subscriptions?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/subscriptions/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);

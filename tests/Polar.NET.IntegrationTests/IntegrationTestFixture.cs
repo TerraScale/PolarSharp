@@ -39,6 +39,7 @@ public class IntegrationTestFixture
             .WithEnvironment(Polar.NET.Models.Common.PolarEnvironment.Sandbox)
             .WithTimeout(30)
             .WithMaxRetries(3)
+            .WithRequestsPerMinute(600) // More lenient rate limiting for tests
             .Build();
     }
 
@@ -54,6 +55,7 @@ public class IntegrationTestFixture
             .WithEnvironment(Polar.NET.Models.Common.PolarEnvironment.Sandbox)
             .WithTimeout(30)
             .WithMaxRetries(3)
+            .WithRequestsPerMinute(600) // More lenient rate limiting for tests
             .Build();
     }
 }

@@ -3,20 +3,37 @@ using System.Text.Json.Serialization;
 namespace Polar.NET.Models.Products;
 
 /// <summary>
-/// The type of product price.
+/// The type of product price amount.
 /// </summary>
-
 public enum ProductPriceType
 {
     /// <summary>
-    /// One-time payment.
+    /// Fixed price amount.
     /// </summary>
-    [JsonPropertyName("one_time")]
-    OneTime,
+    [JsonPropertyName("fixed")]
+    Fixed,
     
     /// <summary>
-    /// Recurring payment.
+    /// Custom price amount.
     /// </summary>
-    [JsonPropertyName("recurring")]
-    Recurring
+    [JsonPropertyName("custom")]
+    Custom,
+    
+    /// <summary>
+    /// Free price amount.
+    /// </summary>
+    [JsonPropertyName("free")]
+    Free,
+    
+    /// <summary>
+    /// Seat-based price amount.
+    /// </summary>
+    [JsonPropertyName("seat_based")]
+    SeatBased,
+    
+    /// <summary>
+    /// Metered unit price amount.
+    /// </summary>
+    [JsonPropertyName("metered_unit")]
+    MeteredUnit
 }

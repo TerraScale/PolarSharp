@@ -94,42 +94,56 @@ public enum BenefitType
     /// <summary>
     /// Downloadable file benefit.
     /// </summary>
+    [JsonPropertyName("downloadables")]
     Downloadable,
 
     /// <summary>
     /// License key benefit.
     /// </summary>
+    [JsonPropertyName("license_keys")]
     LicenseKeys,
 
     /// <summary>
     /// Custom benefit.
     /// </summary>
+    [JsonPropertyName("custom")]
     Custom,
 
     /// <summary>
     /// GitHub repository benefit.
     /// </summary>
+    [JsonPropertyName("github_repository")]
     GithubRepository,
 
     /// <summary>
     /// Discord role benefit.
     /// </summary>
+    [JsonPropertyName("discord")]
     DiscordRole,
 
     /// <summary>
     /// Advertisement benefit.
     /// </summary>
+    [JsonPropertyName("advertisement")]
     Advertisement,
 
     /// <summary>
     /// Time-based benefit.
     /// </summary>
+    [JsonPropertyName("time")]
     Time,
 
     /// <summary>
     /// Usage-based benefit.
     /// </summary>
-    Usage
+    [JsonPropertyName("usage")]
+    Usage,
+
+    /// <summary>
+    /// Meter credit benefit.
+    /// </summary>
+    [JsonPropertyName("meter_credit")]
+    MeterCredit
 }
 
 /// <summary>

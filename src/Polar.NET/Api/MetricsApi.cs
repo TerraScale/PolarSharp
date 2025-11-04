@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Polly;
 using Polly.Retry;
@@ -121,6 +123,49 @@ public class MetricsApi
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<Metric>>(content, _jsonOptions)
             ?? throw new InvalidOperationException("Failed to deserialize response.");
+    }
+
+    /// <summary>
+    /// Lists all metrics across all pages using IAsyncEnumerable.
+    /// </summary>
+    /// <param name="builder">The query builder containing filter parameters.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>An async enumerable of all metrics.</returns>
+    public async IAsyncEnumerable<Metric> ListAllAsync(
+        MetricsQueryBuilder? builder = null,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var page = 1;
+        const int limit = 100; // Use maximum page size for efficiency
+
+        while (true)
+        {
+            var response = await ListAsync(builder ?? new MetricsQueryBuilder(), page, limit, cancellationToken);
+            
+            foreach (var metric in response.Items)
+            {
+                yield return metric;
+            }
+
+            if (page >= response.Pagination.MaxPage)
+                break;
+
+            page++;
+        }
+    }
+
+    /// <summary>
+    /// Lists all metrics across all pages using IAsyncEnumerable (without filtering).
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>An async enumerable of all metrics.</returns>
+    public async IAsyncEnumerable<Metric> ListAllAsync(
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        await foreach (var metric in ListAllAsync(new MetricsQueryBuilder(), cancellationToken))
+        {
+            yield return metric;
+        }
     }
 
     private static string GetQueryString(Dictionary<string, string> parameters)

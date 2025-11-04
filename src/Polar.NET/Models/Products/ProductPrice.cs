@@ -21,24 +21,30 @@ public record ProductPrice
     /// </summary>
     [Required]
     [Range(0, int.MaxValue)]
-    [JsonPropertyName("amount")]
+    [JsonPropertyName("price_amount")]
     public int Amount { get; init; }
 
     /// <summary>
-    /// The currency code (e.g., "USD", "EUR").
+    /// The currency code (e.g., "usd", "eur").
     /// </summary>
     [Required]
     [StringLength(3, MinimumLength = 3)]
-    [JsonPropertyName("currency")]
+    [JsonPropertyName("price_currency")]
     public string Currency { get; init; } = string.Empty;
 
     /// <summary>
-    /// The type of price.
+    /// The amount type of price.
     /// </summary>
     [Required]
-    [JsonConverter(typeof(JsonStringEnumConverter))]
+    [JsonPropertyName("amount_type")]
+    public ProductPriceType AmountType { get; init; }
+
+    /// <summary>
+    /// The type of price (recurring, one_time).
+    /// </summary>
+    [Required]
     [JsonPropertyName("type")]
-    public ProductPriceType Type { get; init; }
+    public PriceType Type { get; init; }
 
     /// <summary>
     /// The recurring interval for subscription prices.
