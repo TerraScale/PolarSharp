@@ -30,7 +30,7 @@ jobs:
           ${{ runner.os }}-nuget-
 
     - name: Run unit tests
-      run: dotnet test tests/Polar.NET.Tests/Polar.NET.Tests.csproj --configuration Release --verbosity normal --collect:"XPlat Code Coverage"
+      run: dotnet test tests/PolarSharp.Tests/PolarSharp.Tests.csproj --configuration Release --verbosity normal --collect:"XPlat Code Coverage"
 
     - name: Upload coverage reports
       uses: codecov/codecov-action@v4
@@ -39,12 +39,12 @@ jobs:
         fail_ci_if_error: false
         
     #- name: Run integration tests
-    #  run: dotnet test tests/Polar.NET.IntegrationTests/Polar.NET.IntegrationTests.csproj --configuration Release --verbosity normal
+    #  run: dotnet test tests/PolarSharp.IntegrationTests/PolarSharp.IntegrationTests.csproj --configuration Release --verbosity normal
     #  env:
     #    Polar__AccessToken: ${{ secrets.POLAR_ACCESS_TOKEN }}
     
     - name: Pack NuGet package
-      run: dotnet pack src/Polar.NET/Polar.NET.csproj --configuration Release --output ./packages
+      run: dotnet pack src/PolarSharp/PolarSharp.csproj --configuration Release --output ./packages
 
     - name: Publish to NuGet
       run: dotnet nuget push ./packages/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
