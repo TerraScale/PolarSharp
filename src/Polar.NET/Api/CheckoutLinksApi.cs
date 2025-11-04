@@ -66,7 +66,7 @@ public class CheckoutLinksApi
             queryParams["archived"] = archived.Value.ToString().ToLowerInvariant();
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"checkout_links?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/checkout_links?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -109,7 +109,7 @@ public class CheckoutLinksApi
         }
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"checkout_links?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/checkout_links?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -130,7 +130,7 @@ public class CheckoutLinksApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"checkout_links/{checkoutLinkId}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/checkout_links/{checkoutLinkId}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -174,7 +174,7 @@ public class CheckoutLinksApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PatchAsJsonAsync($"checkout_links/{checkoutLinkId}", request, _jsonOptions, cancellationToken),
+            () => _httpClient.PatchAsJsonAsync($"v1/checkout_links/{checkoutLinkId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -195,7 +195,7 @@ public class CheckoutLinksApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.DeleteAsync($"checkout_links/{checkoutLinkId}", cancellationToken),
+            () => _httpClient.DeleteAsync($"v1/checkout_links/{checkoutLinkId}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);

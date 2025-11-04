@@ -68,7 +68,7 @@ public class CheckoutsApi
             queryParams["status"] = status.Value.ToString().ToLowerInvariant();
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"checkouts/?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/checkouts/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -111,7 +111,7 @@ public class CheckoutsApi
         }
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"checkouts/?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/checkouts/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -132,7 +132,7 @@ public class CheckoutsApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"checkouts/{checkoutId}/", cancellationToken),
+            () => _httpClient.GetAsync($"v1/checkouts/{checkoutId}/", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -176,7 +176,7 @@ public class CheckoutsApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PatchAsJsonAsync($"checkouts/{checkoutId}", request, _jsonOptions, cancellationToken),
+            () => _httpClient.PatchAsJsonAsync($"v1/checkouts/{checkoutId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -197,7 +197,7 @@ public class CheckoutsApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"checkouts/client/{checkoutId}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/checkouts/client/{checkoutId}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -220,7 +220,7 @@ public class CheckoutsApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PatchAsJsonAsync($"checkouts/client/{checkoutId}", request, _jsonOptions, cancellationToken),
+            () => _httpClient.PatchAsJsonAsync($"v1/checkouts/client/{checkoutId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -241,7 +241,7 @@ public class CheckoutsApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PostAsync($"checkouts/client/{checkoutId}/confirm", null, cancellationToken),
+            () => _httpClient.PostAsync($"v1/checkouts/client/{checkoutId}/confirm", null, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -262,7 +262,7 @@ public class CheckoutsApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.DeleteAsync($"checkouts/{checkoutId}", cancellationToken),
+            () => _httpClient.DeleteAsync($"v1/checkouts/{checkoutId}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);

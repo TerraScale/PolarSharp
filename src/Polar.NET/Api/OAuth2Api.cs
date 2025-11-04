@@ -42,7 +42,7 @@ public class OAuth2Api
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PostAsJsonAsync("oauth2/clients", request, _jsonOptions, cancellationToken),
+            () => _httpClient.PostAsJsonAsync("v1/oauth2/clients", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -63,7 +63,7 @@ public class OAuth2Api
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"oauth2/clients/{clientId}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/oauth2/clients/{clientId}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -86,7 +86,7 @@ public class OAuth2Api
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PatchAsJsonAsync($"oauth2/clients/{clientId}", request, _jsonOptions, cancellationToken),
+            () => _httpClient.PatchAsJsonAsync($"v1/oauth2/clients/{clientId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -107,7 +107,7 @@ public class OAuth2Api
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.DeleteAsync($"oauth2/clients/{clientId}", cancellationToken),
+            () => _httpClient.DeleteAsync($"v1/oauth2/clients/{clientId}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -124,7 +124,7 @@ public class OAuth2Api
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PostAsJsonAsync("oauth2/token", request, _jsonOptions, cancellationToken),
+            () => _httpClient.PostAsJsonAsync("v1/oauth2/token", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -145,7 +145,7 @@ public class OAuth2Api
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PostAsJsonAsync("oauth2/revoke", request, _jsonOptions, cancellationToken),
+            () => _httpClient.PostAsJsonAsync("v1/oauth2/revoke", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -162,7 +162,7 @@ public class OAuth2Api
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PostAsJsonAsync("oauth2/introspect", request, _jsonOptions, cancellationToken),
+            () => _httpClient.PostAsJsonAsync("v1/oauth2/introspect", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -180,7 +180,7 @@ public class OAuth2Api
     public async Task<OAuth2UserInfo> GetUserInfoAsync(CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync("oauth2/userinfo", cancellationToken),
+            () => _httpClient.GetAsync("v1/oauth2/userinfo", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);

@@ -52,7 +52,7 @@ public class OrganizationsApi
         };
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"organizations?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/organizations?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -73,7 +73,7 @@ public class OrganizationsApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"organizations/{organizationId}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/organizations/{organizationId}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -117,7 +117,7 @@ public class OrganizationsApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PatchAsJsonAsync($"organizations/{organizationId}", request, _jsonOptions, cancellationToken),
+            () => _httpClient.PatchAsJsonAsync($"v1/organizations/{organizationId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -138,7 +138,7 @@ public class OrganizationsApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.DeleteAsync($"organizations/{organizationId}", cancellationToken),
+            () => _httpClient.DeleteAsync($"v1/organizations/{organizationId}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);

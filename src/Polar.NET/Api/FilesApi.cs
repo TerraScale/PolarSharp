@@ -53,7 +53,7 @@ public class FilesApi
         };
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"files?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/files?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -74,7 +74,7 @@ public class FilesApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"files/{fileId}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/files/{fileId}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -118,7 +118,7 @@ public class FilesApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PatchAsJsonAsync($"files/{fileId}", request, _jsonOptions, cancellationToken),
+            () => _httpClient.PatchAsJsonAsync($"v1/files/{fileId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -139,7 +139,7 @@ public class FilesApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.DeleteAsync($"files/{fileId}", cancellationToken),
+            () => _httpClient.DeleteAsync($"v1/files/{fileId}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -160,7 +160,7 @@ public class FilesApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PostAsync($"files/uploaded", null, cancellationToken),
+            () => _httpClient.PostAsync($"v1/files/uploaded", null, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -242,7 +242,7 @@ public class FilesApi
         }
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"files?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/files?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);

@@ -299,12 +299,14 @@ public record BenefitCreateRequest
     /// The name of the benefit.
     /// </summary>
     [Required]
+    [StringLength(100, MinimumLength = 1, ErrorMessage = "Benefit name must be between 1 and 100 characters.")]
     [JsonPropertyName("name")]
     public string Name { get; init; } = string.Empty;
 
     /// <summary>
     /// The description of the benefit.
     /// </summary>
+    [StringLength(1000, ErrorMessage = "Benefit description cannot exceed 1000 characters.")]
     [JsonPropertyName("description")]
     public string? Description { get; init; }
 

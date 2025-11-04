@@ -63,7 +63,7 @@ public class CustomersApi
             queryParams["external_id"] = externalId;
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"customers?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/customers?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -84,7 +84,7 @@ public class CustomersApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"customers/{customerId}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/customers/{customerId}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -105,7 +105,7 @@ public class CustomersApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"customers/external/{externalId}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/customers/external/{externalId}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -149,7 +149,7 @@ public class CustomersApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PatchAsJsonAsync($"customers/{customerId}", request, _jsonOptions, cancellationToken),
+            () => _httpClient.PatchAsJsonAsync($"v1/customers/{customerId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -172,7 +172,7 @@ public class CustomersApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PatchAsJsonAsync($"customers/external/{externalId}", request, _jsonOptions, cancellationToken),
+            () => _httpClient.PatchAsJsonAsync($"v1/customers/external/{externalId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -193,7 +193,7 @@ public class CustomersApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.DeleteAsync($"customers/{customerId}", cancellationToken),
+            () => _httpClient.DeleteAsync($"v1/customers/{customerId}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -214,7 +214,7 @@ public class CustomersApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.DeleteAsync($"customers/external/{externalId}", cancellationToken),
+            () => _httpClient.DeleteAsync($"v1/customers/external/{externalId}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -235,7 +235,7 @@ public class CustomersApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"customers/{customerId}/state", cancellationToken),
+            () => _httpClient.GetAsync($"v1/customers/{customerId}/state", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -256,7 +256,7 @@ public class CustomersApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"customers/external/{externalId}/state", cancellationToken),
+            () => _httpClient.GetAsync($"v1/customers/external/{externalId}/state", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -277,7 +277,7 @@ public class CustomersApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"customers/{customerId}/balance", cancellationToken),
+            () => _httpClient.GetAsync($"v1/customers/{customerId}/balance", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -385,7 +385,7 @@ public class CustomersApi
         }
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"customers?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/customers?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);

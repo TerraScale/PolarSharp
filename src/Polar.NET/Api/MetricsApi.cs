@@ -39,7 +39,7 @@ public class MetricsApi
     public async Task<List<Metric>> GetAsync(CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync("metrics", cancellationToken),
+            () => _httpClient.GetAsync("v1/metrics", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -57,7 +57,7 @@ public class MetricsApi
     public async Task<List<MetricLimit>> GetLimitsAsync(CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync("metrics/limits", cancellationToken),
+            () => _httpClient.GetAsync("v1/metrics/limits", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -113,7 +113,7 @@ public class MetricsApi
         }
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"metrics?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/metrics?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);

@@ -67,7 +67,7 @@ public class OrdersApi
             queryParams["status"] = status.Value.ToString().ToLowerInvariant();
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"orders?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/orders?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -88,7 +88,7 @@ public class OrdersApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"orders/{orderId}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/orders/{orderId}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -132,7 +132,7 @@ public class OrdersApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PatchAsJsonAsync($"orders/{orderId}", request, _jsonOptions, cancellationToken),
+            () => _httpClient.PatchAsJsonAsync($"v1/orders/{orderId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -153,7 +153,7 @@ public class OrdersApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.DeleteAsync($"orders/{orderId}", cancellationToken),
+            () => _httpClient.DeleteAsync($"v1/orders/{orderId}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -174,7 +174,7 @@ public class OrdersApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PostAsync($"orders/{orderId}/generate_invoice", null, cancellationToken),
+            () => _httpClient.PostAsync($"v1/orders/{orderId}/generate_invoice", null, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -195,7 +195,7 @@ public class OrdersApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"orders/{orderId}/invoice", cancellationToken),
+            () => _httpClient.GetAsync($"v1/orders/{orderId}/invoice", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -236,7 +236,7 @@ public class OrdersApi
             queryParams["status"] = status.Value.ToString().ToLowerInvariant();
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"orders/export?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/orders/export?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -312,7 +312,7 @@ public class OrdersApi
         }
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"orders?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/orders?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);

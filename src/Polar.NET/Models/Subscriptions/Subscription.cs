@@ -195,6 +195,7 @@ public record SubscriptionCreateRequest
     /// <summary>
     /// The discount ID to apply to the subscription.
     /// </summary>
+    [JsonPropertyName("discount_id")]
     public string? DiscountId { get; init; }
 
     /// <summary>
@@ -207,16 +208,20 @@ public record SubscriptionCreateRequest
     /// The external ID for the subscription.
     /// </summary>
     [JsonPropertyName("external_id")]
+    [StringLength(100, ErrorMessage = "External ID cannot exceed 100 characters.")]
     public string? ExternalId { get; init; }
 
     /// <summary>
     /// The trial period days.
     /// </summary>
+    [JsonPropertyName("trial_period_days")]
+    [Range(0, 365, ErrorMessage = "Trial period days must be between 0 and 365 days.")]
     public int? TrialPeriodDays { get; init; }
 
     /// <summary>
     /// Whether to start the subscription immediately.
     /// </summary>
+    [JsonPropertyName("start_immediately")]
     public bool? StartImmediately { get; init; }
 }
 

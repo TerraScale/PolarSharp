@@ -52,7 +52,7 @@ public class MetersApi
         };
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"meters?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/meters?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -94,7 +94,7 @@ public class MetersApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"meters/{meterId}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/meters/{meterId}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -117,7 +117,7 @@ public class MetersApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PatchAsJsonAsync($"meters/{meterId}", request, _jsonOptions, cancellationToken),
+            () => _httpClient.PatchAsJsonAsync($"v1/meters/{meterId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -138,7 +138,7 @@ public class MetersApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.DeleteAsync($"meters/{meterId}", cancellationToken),
+            () => _httpClient.DeleteAsync($"v1/meters/{meterId}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -169,7 +169,7 @@ public class MetersApi
         };
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"meters/{meterId}/quantities?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/meters/{meterId}/quantities?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -251,7 +251,7 @@ public class MetersApi
         }
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"meters?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/meters?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);

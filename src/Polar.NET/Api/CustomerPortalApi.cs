@@ -86,7 +86,7 @@ public class CustomerPortalApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync("customer-portal/customers", cancellationToken),
+            () => _httpClient.GetAsync("v1/customer-portal/customers", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -107,7 +107,7 @@ public class CustomerPortalApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PatchAsJsonAsync("customer-portal/customers", request, _jsonOptions, cancellationToken),
+            () => _httpClient.PatchAsJsonAsync("v1/customer-portal/customers", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -126,7 +126,7 @@ public class CustomerPortalApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync("customer-portal/customers/payment-methods", cancellationToken),
+            () => _httpClient.GetAsync("v1/customer-portal/customers/payment-methods", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -147,7 +147,7 @@ public class CustomerPortalApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PostAsJsonAsync("customer-portal/customers/payment-methods", request, _jsonOptions, cancellationToken),
+            () => _httpClient.PostAsJsonAsync("v1/customer-portal/customers/payment-methods", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -168,7 +168,7 @@ public class CustomerPortalApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PostAsync($"customer-portal/customers/payment-methods/{paymentMethodId}/confirm", null, cancellationToken),
+            () => _httpClient.PostAsync($"v1/customer-portal/customers/payment-methods/{paymentMethodId}/confirm", null, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -189,7 +189,7 @@ public class CustomerPortalApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.DeleteAsync($"customer-portal/customers/payment-methods/{paymentMethodId}", cancellationToken),
+            () => _httpClient.DeleteAsync($"v1/customer-portal/customers/payment-methods/{paymentMethodId}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -223,7 +223,7 @@ public class CustomerPortalApi
             queryParams["status"] = status.Value.ToString().ToLowerInvariant();
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"customer-portal/orders?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/customer-portal/orders?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -273,7 +273,7 @@ public class CustomerPortalApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"customer-portal/orders/{orderId}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/customer-portal/orders/{orderId}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -307,7 +307,7 @@ public class CustomerPortalApi
             queryParams["status"] = status.Value.ToString().ToLowerInvariant();
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"customer-portal/subscriptions?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/customer-portal/subscriptions?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -357,7 +357,7 @@ public class CustomerPortalApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"customer-portal/subscriptions/{subscriptionId}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/customer-portal/subscriptions/{subscriptionId}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -378,7 +378,7 @@ public class CustomerPortalApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PostAsync($"customer-portal/subscriptions/{subscriptionId}/cancel", null, cancellationToken),
+            () => _httpClient.PostAsync($"v1/customer-portal/subscriptions/{subscriptionId}/cancel", null, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -412,7 +412,7 @@ public class CustomerPortalApi
             queryParams["status"] = status.Value.ToString().ToLowerInvariant();
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"customer-portal/benefit-grants?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/customer-portal/benefit-grants?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -462,7 +462,7 @@ public class CustomerPortalApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"customer-portal/benefit-grants/{benefitGrantId}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/customer-portal/benefit-grants/{benefitGrantId}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -496,7 +496,7 @@ public class CustomerPortalApi
             queryParams["status"] = status.Value.ToString().ToLowerInvariant();
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"customer-portal/license-keys?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/customer-portal/license-keys?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -546,7 +546,7 @@ public class CustomerPortalApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"customer-portal/license-keys/{licenseKeyId}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/customer-portal/license-keys/{licenseKeyId}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -567,7 +567,7 @@ public class CustomerPortalApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PostAsJsonAsync("customer-portal/license-keys/validate", request, _jsonOptions, cancellationToken),
+            () => _httpClient.PostAsJsonAsync("v1/customer-portal/license-keys/validate", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -590,7 +590,7 @@ public class CustomerPortalApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PostAsJsonAsync($"customer-portal/license-keys/{licenseKeyId}/activate", request, _jsonOptions, cancellationToken),
+            () => _httpClient.PostAsJsonAsync($"v1/customer-portal/license-keys/{licenseKeyId}/activate", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -613,7 +613,7 @@ public class CustomerPortalApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PostAsJsonAsync($"customer-portal/license-keys/{licenseKeyId}/deactivate", request, _jsonOptions, cancellationToken),
+            () => _httpClient.PostAsJsonAsync($"v1/customer-portal/license-keys/{licenseKeyId}/deactivate", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -632,7 +632,7 @@ public class CustomerPortalApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync("customer-portal/downloadables", cancellationToken),
+            () => _httpClient.GetAsync("v1/customer-portal/downloadables", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -651,7 +651,7 @@ public class CustomerPortalApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync("customer-portal/organizations", cancellationToken),
+            () => _httpClient.GetAsync("v1/customer-portal/organizations", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);

@@ -68,7 +68,7 @@ public class LicenseKeysApi
             queryParams["status"] = status.Value.ToString().ToLowerInvariant();
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"license-keys?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/license-keys?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -89,7 +89,7 @@ public class LicenseKeysApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"license-keys/{licenseKeyId}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/license-keys/{licenseKeyId}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -112,7 +112,7 @@ public class LicenseKeysApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PatchAsJsonAsync($"license-keys/{licenseKeyId}", request, _jsonOptions, cancellationToken),
+            () => _httpClient.PatchAsJsonAsync($"v1/license-keys/{licenseKeyId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -133,7 +133,7 @@ public class LicenseKeysApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"license-keys/{licenseKeyId}/activation", cancellationToken),
+            () => _httpClient.GetAsync($"v1/license-keys/{licenseKeyId}/activation", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -177,7 +177,7 @@ public class LicenseKeysApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PostAsJsonAsync($"license-keys/{licenseKeyId}/activate", request, _jsonOptions, cancellationToken),
+            () => _httpClient.PostAsJsonAsync($"v1/license-keys/{licenseKeyId}/activate", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -200,7 +200,7 @@ public class LicenseKeysApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PostAsJsonAsync($"license-keys/{licenseKeyId}/deactivate", request, _jsonOptions, cancellationToken),
+            () => _httpClient.PostAsJsonAsync($"v1/license-keys/{licenseKeyId}/deactivate", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);

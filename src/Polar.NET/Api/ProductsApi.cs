@@ -19,6 +19,7 @@ namespace Polar.NET.Api;
 /// </summary>
 public class ProductsApi
 {
+    private const string ApiVersion = "v1";
     private readonly HttpClient _httpClient;
     private readonly JsonSerializerOptions _jsonOptions;
     private readonly AsyncRetryPolicy<HttpResponseMessage> _retryPolicy;
@@ -119,7 +120,7 @@ public class ProductsApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"products/{productId}", cancellationToken),
+            () => _httpClient.GetAsync($"products?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);

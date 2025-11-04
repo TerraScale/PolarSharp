@@ -52,7 +52,7 @@ public class CustomFieldsApi
         };
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"custom_fields?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/custom_fields?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -94,7 +94,7 @@ public class CustomFieldsApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"custom_fields/{customFieldId}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/custom_fields/{customFieldId}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -117,7 +117,7 @@ public class CustomFieldsApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PatchAsJsonAsync($"custom_fields/{customFieldId}", request, _jsonOptions, cancellationToken),
+            () => _httpClient.PatchAsJsonAsync($"v1/custom_fields/{customFieldId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -138,7 +138,7 @@ public class CustomFieldsApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.DeleteAsync($"custom_fields/{customFieldId}", cancellationToken),
+            () => _httpClient.DeleteAsync($"v1/custom_fields/{customFieldId}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -216,7 +216,7 @@ public class CustomFieldsApi
         }
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"custom_fields?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/custom_fields?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);

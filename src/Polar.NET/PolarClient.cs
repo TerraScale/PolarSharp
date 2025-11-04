@@ -491,8 +491,8 @@ public class PolarClientBuilder
         _options = _options with { Environment = environment };
         _baseUrl = environment switch
         {
-            PolarEnvironment.Production => new Uri("https://api.polar.sh/v1"),
-            PolarEnvironment.Sandbox => new Uri("https://sandbox-api.polar.sh/v1"),
+            PolarEnvironment.Production => new Uri("https://api.polar.sh"),
+            PolarEnvironment.Sandbox => new Uri("https://sandbox-api.polar.sh"),
             _ => throw new ArgumentException($"Unknown environment: {environment}")
         };
         return this;

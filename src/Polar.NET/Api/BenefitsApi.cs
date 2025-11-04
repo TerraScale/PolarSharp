@@ -63,7 +63,7 @@ public class BenefitsApi
             queryParams["active"] = active.Value.ToString().ToLowerInvariant();
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"benefits/?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/benefits/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -106,7 +106,7 @@ public class BenefitsApi
         }
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"benefits/?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/benefits/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -127,7 +127,7 @@ public class BenefitsApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"benefits/{benefitId}/", cancellationToken),
+            () => _httpClient.GetAsync($"v1/benefits/{benefitId}/", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -171,7 +171,7 @@ public class BenefitsApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PatchAsJsonAsync($"benefits/{benefitId}/", request, _jsonOptions, cancellationToken),
+            () => _httpClient.PatchAsJsonAsync($"v1/benefits/{benefitId}/", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -192,7 +192,7 @@ public class BenefitsApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.DeleteAsync($"benefits/{benefitId}/", cancellationToken),
+            () => _httpClient.DeleteAsync($"v1/benefits/{benefitId}/", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -233,7 +233,7 @@ public class BenefitsApi
             queryParams["status"] = status.Value.ToString().ToLowerInvariant();
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"benefits/{benefitId}/grants/?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/benefits/{benefitId}/grants/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -346,7 +346,7 @@ public class BenefitsApi
             queryParams["active"] = active.Value.ToString().ToLowerInvariant();
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"benefits/export/?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/benefits/export/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -384,7 +384,7 @@ public class BenefitsApi
             queryParams["status"] = status.Value.ToString().ToLowerInvariant();
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"benefits/{benefitId}/grants/export/?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/benefits/{benefitId}/grants/export/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -407,7 +407,7 @@ public class BenefitsApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PostAsJsonAsync($"benefits/{benefitId}/grant/", request, _jsonOptions, cancellationToken),
+            () => _httpClient.PostAsJsonAsync($"v1/benefits/{benefitId}/grant/", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -430,7 +430,7 @@ public class BenefitsApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.DeleteAsync($"benefits/{benefitId}/grants/{grantId}/", cancellationToken),
+            () => _httpClient.DeleteAsync($"v1/benefits/{benefitId}/grants/{grantId}/", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);

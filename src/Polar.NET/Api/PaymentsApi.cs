@@ -52,7 +52,7 @@ public class PaymentsApi
         };
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"payments?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/payments?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -73,7 +73,7 @@ public class PaymentsApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"payments/{paymentId}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/payments/{paymentId}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -155,7 +155,7 @@ public class PaymentsApi
         }
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"payments?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/payments?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);

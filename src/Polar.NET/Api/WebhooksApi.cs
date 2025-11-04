@@ -52,7 +52,7 @@ public class WebhooksApi
         };
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"webhooks/endpoints?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/webhooks/endpoints?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -73,7 +73,7 @@ public class WebhooksApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"webhooks/endpoints/{endpointId}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/webhooks/endpoints/{endpointId}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -117,7 +117,7 @@ public class WebhooksApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PatchAsJsonAsync($"webhooks/endpoints/{endpointId}", request, _jsonOptions, cancellationToken),
+            () => _httpClient.PatchAsJsonAsync($"v1/webhooks/endpoints/{endpointId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -138,7 +138,7 @@ public class WebhooksApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.DeleteAsync($"webhooks/endpoints/{endpointId}", cancellationToken),
+            () => _httpClient.DeleteAsync($"v1/webhooks/endpoints/{endpointId}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -159,7 +159,7 @@ public class WebhooksApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PostAsync($"webhooks/endpoints/{endpointId}/reset_secret", null, cancellationToken),
+            () => _httpClient.PostAsync($"v1/webhooks/endpoints/{endpointId}/reset_secret", null, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -188,7 +188,7 @@ public class WebhooksApi
         };
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"webhooks/deliveries?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/webhooks/deliveries?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -209,7 +209,7 @@ public class WebhooksApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PostAsync($"webhooks/deliveries/redeliver", null, cancellationToken),
+            () => _httpClient.PostAsync($"v1/webhooks/deliveries/redeliver", null, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -291,7 +291,7 @@ public class WebhooksApi
         }
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"webhooks?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/webhooks?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);

@@ -52,7 +52,7 @@ public class SeatsApi
         };
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"seats?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/seats?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -203,7 +203,7 @@ public class SeatsApi
         }
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"seats?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/seats?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);

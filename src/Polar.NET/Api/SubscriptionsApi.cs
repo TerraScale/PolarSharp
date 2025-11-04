@@ -68,7 +68,7 @@ public class SubscriptionsApi
             queryParams["status"] = status.Value.ToString().ToLowerInvariant();
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"subscriptions?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/subscriptions?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -89,7 +89,7 @@ public class SubscriptionsApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"subscriptions/{subscriptionId}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/subscriptions/{subscriptionId}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -133,7 +133,7 @@ public class SubscriptionsApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PatchAsJsonAsync($"subscriptions/{subscriptionId}", request, _jsonOptions, cancellationToken),
+            () => _httpClient.PatchAsJsonAsync($"v1/subscriptions/{subscriptionId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -154,7 +154,7 @@ public class SubscriptionsApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.DeleteAsync($"subscriptions/{subscriptionId}", cancellationToken),
+            () => _httpClient.DeleteAsync($"v1/subscriptions/{subscriptionId}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -264,7 +264,7 @@ public class SubscriptionsApi
         }
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"subscriptions?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/subscriptions?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);

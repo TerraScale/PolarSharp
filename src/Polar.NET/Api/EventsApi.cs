@@ -52,7 +52,7 @@ public class EventsApi
         };
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"events?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/events?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -91,7 +91,7 @@ public class EventsApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"events/{eventId}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/events/{eventId}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -190,7 +190,7 @@ public class EventsApi
         }
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"events?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/events?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);

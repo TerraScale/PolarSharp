@@ -52,7 +52,7 @@ public class CustomerSeatsApi
         };
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"customer_seats?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/customer_seats?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -73,7 +73,7 @@ public class CustomerSeatsApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"customer_seats/{customerSeatId}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/customer_seats/{customerSeatId}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
@@ -241,7 +241,7 @@ public class CustomerSeatsApi
         }
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"customer_seats?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/customer_seats?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
