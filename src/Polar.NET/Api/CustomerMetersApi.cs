@@ -1,0 +1,174 @@
+using System.Net.Http.Json;
+using System.Runtime.CompilerServices;
+using System.Text.Json;
+using Polly;
+using Polly.Retry;
+using Polly.RateLimit;
+using Polar.NET.Extensions;
+using Polar.NET.Exceptions;
+using Polar.NET.Models.Common;
+using Polar.NET.Models.Meters;
+
+namespace Polar.NET.Api;
+
+/// <summary>
+/// API client for managing customer meters in the Polar system.
+/// </summary>
+public class CustomerMetersApi
+{
+    private readonly HttpClient _httpClient;
+    private readonly JsonSerializerOptions _jsonOptions;
+    private readonly AsyncRetryPolicy<HttpResponseMessage> _retryPolicy;
+    private readonly AsyncRateLimitPolicy<HttpResponseMessage> _rateLimitPolicy;
+
+    internal CustomerMetersApi(
+        HttpClient httpClient,
+        JsonSerializerOptions jsonOptions,
+        AsyncRetryPolicy<HttpResponseMessage> retryPolicy,
+        AsyncRateLimitPolicy<HttpResponseMessage> rateLimitPolicy)
+    {
+        _httpClient = httpClient;
+        _jsonOptions = jsonOptions;
+        _retryPolicy = retryPolicy;
+        _rateLimitPolicy = rateLimitPolicy;
+    }
+
+    /// <summary>
+    /// Lists all customer meters with optional pagination.
+    /// </summary>
+    /// <param name="page">Page number (default: 1).</param>
+    /// <param name="limit">Number of items per page (default: 10, max: 100).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A paginated response containing customer meters.</returns>
+    public async Task<PaginatedResponse<CustomerMeter>> ListAsync(
+        int page = 1,
+        int limit = 10,
+        CancellationToken cancellationToken = default)
+    {
+        var queryParams = new Dictionary<string, string>
+        {
+            ["page"] = page.ToString(),
+            ["limit"] = Math.Min(limit, 100).ToString()
+        };
+
+        var response = await ExecuteWithPoliciesAsync(
+            () => _httpClient.GetAsync($"customer_meters?{GetQueryString(queryParams)}", cancellationToken),
+            cancellationToken);
+
+        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+
+        var content = await response.Content.ReadAsStringAsync(cancellationToken);
+        return JsonSerializer.Deserialize<PaginatedResponse<CustomerMeter>>(content, _jsonOptions)
+            ?? throw new InvalidOperationException("Failed to deserialize response.");
+    }
+
+    /// <summary>
+    /// Gets a customer meter by ID.
+    /// </summary>
+    /// <param name="customerMeterId">The customer meter ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The customer meter.</returns>
+    public async Task<CustomerMeter> GetAsync(
+        string customerMeterId,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await ExecuteWithPoliciesAsync(
+            () => _httpClient.GetAsync($"customer_meters/{customerMeterId}", cancellationToken),
+            cancellationToken);
+
+        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+
+        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        return await JsonSerializer.DeserializeAsync<CustomerMeter>(stream, _jsonOptions, cancellationToken)
+            ?? throw new InvalidOperationException("Failed to deserialize response.");
+    }
+
+    /// <summary>
+    /// Lists all customer meters across all pages using IAsyncEnumerable.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>An async enumerable of all customer meters.</returns>
+    public async IAsyncEnumerable<CustomerMeter> ListAllAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var page = 1;
+        const int limit = 100; // Use maximum page size for efficiency
+
+        while (true)
+        {
+            var response = await ListAsync(page, limit, cancellationToken);
+            
+            foreach (var customerMeter in response.Items)
+            {
+                yield return customerMeter;
+            }
+
+            if (page >= response.Pagination.MaxPage)
+                break;
+
+            page++;
+        }
+    }
+
+    private async Task<HttpResponseMessage> ExecuteWithPoliciesAsync(
+        Func<Task<HttpResponseMessage>> operation,
+        CancellationToken cancellationToken)
+    {
+        return await _rateLimitPolicy.ExecuteAsync(async () =>
+        {
+            return await _retryPolicy.ExecuteAsync(async () =>
+            {
+                return await operation();
+            });
+        });
+    }
+
+    /// <summary>
+    /// Creates a query builder for customer meters with fluent filtering.
+    /// </summary>
+    /// <returns>A new CustomerMetersQueryBuilder instance.</returns>
+    public CustomerMetersQueryBuilder Query() => new();
+
+    /// <summary>
+    /// Lists customer meters using a query builder for advanced filtering.
+    /// </summary>
+    /// <param name="builder">The query builder containing filter parameters.</param>
+    /// <param name="page">Page number (default: 1).</param>
+    /// <param name="limit">Number of items per page (default: 10, max: 100).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A paginated response containing filtered customer meters.</returns>
+    public async Task<PaginatedResponse<CustomerMeter>> ListAsync(
+        CustomerMetersQueryBuilder builder,
+        int page = 1,
+        int limit = 10,
+        CancellationToken cancellationToken = default)
+    {
+        var queryParams = new Dictionary<string, string>
+        {
+            ["page"] = page.ToString(),
+            ["limit"] = Math.Min(limit, 100).ToString()
+        };
+
+        // Add query builder parameters
+        foreach (var param in builder.GetParameters())
+        {
+            queryParams[param.Key] = param.Value;
+        }
+
+        var response = await ExecuteWithPoliciesAsync(
+            () => _httpClient.GetAsync($"customer_meters?{GetQueryString(queryParams)}", cancellationToken),
+            cancellationToken);
+
+        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+
+        var content = await response.Content.ReadAsStringAsync(cancellationToken);
+        return JsonSerializer.Deserialize<PaginatedResponse<CustomerMeter>>(content, _jsonOptions)
+            ?? throw new InvalidOperationException("Failed to deserialize response.");
+    }
+
+    private static string GetQueryString(Dictionary<string, string> parameters)
+    {
+        return string.Join("&", parameters
+            .Where(p => !string.IsNullOrEmpty(p.Value))
+            .Select(p => $"{Uri.EscapeDataString(p.Key)}={Uri.EscapeDataString(p.Value)}"));
+    }
+}

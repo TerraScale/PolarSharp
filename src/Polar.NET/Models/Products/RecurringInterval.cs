@@ -1,0 +1,22 @@
+using System.Text.Json.Serialization;
+
+namespace Polar.NET.Models.Products;
+
+/// <summary>
+/// The recurring interval for subscription prices.
+/// </summary>
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum RecurringInterval
+{
+    /// <summary>
+    /// Monthly recurring interval.
+    /// </summary>
+    [JsonPropertyName("month")]
+    Month,
+    
+    /// <summary>
+    /// Yearly recurring interval.
+    /// </summary>
+    [JsonPropertyName("year")]
+    Year
+}
