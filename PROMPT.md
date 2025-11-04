@@ -4,6 +4,12 @@ Ensure the code is production-ready, tested in spirit, add integration test to b
 
 All code must have end-to-end integration tests covering all functionality against Polar's sandbox environment, make sure that the auth is working with the working token in the appsettings.json file.
 
+Make sure that all end-to-end tests are being cleaned up after themselves (e.g., created resources are deleted).
+
+Add integration tests for meters,sales, checkouts, refunds, subscriptions, customers, and products endpoints.
+
+Before starting delete everything on the SANDBOX environment to have a clean state.
+
 ---
 
 Save all the state and what is done on in STATUS.md file after each step, update the STATUS.md file often to reflect the current progress.

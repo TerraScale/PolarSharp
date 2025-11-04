@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Polar.NET;
 using Polar.NET.Models.Products;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Polar.NET.IntegrationTests;
 
@@ -15,10 +17,12 @@ namespace Polar.NET.IntegrationTests;
 public class PolarClientIntegrationTests : IClassFixture<IntegrationTestFixture>
 {
     private readonly IntegrationTestFixture _fixture;
+    private readonly ITestOutputHelper _testOutputHelper;
 
-    public PolarClientIntegrationTests(IntegrationTestFixture fixture)
+    public PolarClientIntegrationTests(IntegrationTestFixture fixture, ITestOutputHelper testOutputHelper)
     {
         _fixture = fixture;
+        _testOutputHelper = testOutputHelper;
     }
 
     [Fact]
@@ -44,6 +48,10 @@ public class PolarClientIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Act
         var result = await client.Products.ListAsync(page: 1, limit: 5);
+        
+        //Log result
+        var json = JsonSerializer.Serialize(result);
+        _testOutputHelper.WriteLine(json);
 
         // Assert
         result.Should().NotBeNull();
