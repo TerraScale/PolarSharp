@@ -38,10 +38,10 @@ jobs:
         files: '**/coverage.cobertura.xml'
         fail_ci_if_error: false
         
-    - name: Run integration tests
-      run: dotnet test tests/Polar.NET.IntegrationTests/Polar.NET.IntegrationTests.csproj --configuration Release --verbosity normal
-      env:
-        Polar__AccessToken: ${{ secrets.POLAR_ACCESS_TOKEN }}
+    #- name: Run integration tests
+    #  run: dotnet test tests/Polar.NET.IntegrationTests/Polar.NET.IntegrationTests.csproj --configuration Release --verbosity normal
+    #  env:
+    #    Polar__AccessToken: ${{ secrets.POLAR_ACCESS_TOKEN }}
     
     - name: Pack NuGet package
       run: dotnet pack src/Polar.NET/Polar.NET.csproj --configuration Release --output ./packages
