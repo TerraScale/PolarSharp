@@ -14,7 +14,7 @@ namespace PolarSharp;
 /// <summary>
 /// A highly efficient and easy-to-use REST API client for the Polar.sh payments platform.
 /// </summary>
-public class PolarClient : IDisposable
+public class PolarClient : IPolarClient, IDisposable
 {
     private readonly HttpClient _httpClient;
     private readonly PolarClientOptions _options;

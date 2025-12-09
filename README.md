@@ -42,7 +42,49 @@ foreach (var product in products.Items)
 }
 ```
 
-### Using IHttpClientFactory (Recommended)
+### Dependency Injection (Recommended)
+
+```csharp
+// In your DI setup (Program.cs or Startup.cs)
+services.AddPolarClient("your-access-token");
+
+// Or with configuration
+services.AddPolarClient(options =>
+{
+    options.AccessToken = "your-access-token";
+    options.Environment = PolarEnvironment.Sandbox;
+    options.TimeoutSeconds = 60;
+    options.MaxRetryAttempts = 5;
+    options.RequestsPerMinute = 250;
+});
+
+// Or for specific environments
+services.AddPolarClientSandbox("your-sandbox-token");
+services.AddPolarClientProduction("your-production-token");
+
+// In your service
+public class ProductService
+{
+    private readonly IPolarClient _client;
+    
+    public ProductService(IPolarClient client)
+    {
+        _client = client;
+    }
+    
+    public async Task<List<Product>> GetAllProductsAsync()
+    {
+        var products = new List<Product>();
+        await foreach (var product in _client.Products.ListAllAsync())
+        {
+            products.Add(product);
+        }
+        return products;
+    }
+}
+```
+
+### Using IHttpClientFactory (Manual)
 
 ```csharp
 // In your DI setup
