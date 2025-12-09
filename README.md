@@ -1,4 +1,4 @@
-# Polar.NET
+# PolarSharp
 
 A highly efficient and easy-to-use REST API client for the [Polar.sh](https://polar.sh) payments platform. This .NET library provides comprehensive access to Polar's Core API for server-side operations like managing products, orders, subscriptions, checkouts, benefits, customer sessions, and license keys.
 
@@ -18,7 +18,7 @@ A highly efficient and easy-to-use REST API client for the [Polar.sh](https://po
 ## Installation
 
 ```bash
-dotnet add package Polar.NET
+dotnet add package PolarSharp
 ```
 
 ## Quick Start
@@ -26,7 +26,7 @@ dotnet add package Polar.NET
 ### Basic Usage
 
 ```csharp
-using Polar.NET;
+using PolarSharp;
 
 // Initialize the client
 var client = PolarClient.Create()
@@ -446,7 +446,7 @@ var client = new PolarClient(options);
 
 ## Error Handling
 
-Polar.NET provides comprehensive error handling with custom exceptions:
+PolarSharp provides comprehensive error handling with custom exceptions:
 
 ```csharp
 try
@@ -477,7 +477,7 @@ catch (HttpRequestException ex)
 
 ## Rate Limiting
 
-Polar.NET includes built-in rate limiting to respect API limits:
+PolarSharp includes built-in rate limiting to respect API limits:
 
 - Default: 300 requests per minute
 - Configurable via `PolarClientOptions.RequestsPerMinute`
@@ -502,7 +502,7 @@ await foreach (var product in client.Products.ListAllAsync())
 
 ## Authentication
 
-Polar.NET uses Bearer token authentication. You can create access tokens in your Polar dashboard:
+PolarSharp uses Bearer token authentication. You can create access tokens in your Polar dashboard:
 
 1. Go to [Polar.sh](https://polar.sh)
 2. Navigate to Settings → API Keys
@@ -529,7 +529,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Support
 
 - 📖 [Documentation](https://docs.polar.sh)
-- 🐛 [Issues](https://github.com/mariogk/Polar.NET/issues)
+- 🐛 [Issues](https://github.com/mariogk/PolarSharp/issues)
 - 💬 [Discord](https://discord.gg/Pnhfz3UThd)
 - 📧 [Email](mailto:support@polar.sh)
 
