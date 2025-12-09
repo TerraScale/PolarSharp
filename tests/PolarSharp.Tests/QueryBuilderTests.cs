@@ -298,6 +298,20 @@ public class SubscriptionsQueryBuilderTests
         // Assert
         builder.Build().Should().BeEmpty();
     }
+    
+    [Fact]
+    public void WithExternalId_ShouldAddParameter()
+    {
+        // Arrange
+        var builder = new SubscriptionsQueryBuilder();
+
+        // Act
+        builder.WithExternalId("ext_789");
+
+        // Assert
+        var result = builder.Build();
+        result.Should().Be("external_id=ext_789");
+    }
 
     [Fact]
     public void ChainedMethods_ShouldBuildCorrectQuery()
@@ -310,6 +324,7 @@ public class SubscriptionsQueryBuilderTests
             .WithStatus("ACTIVE")
             .WithCustomerId("cust_123")
             .WithProductId("prod_456")
+            .WithExternalId("ext_789")
             .WithCanceled(false)
             .Build();
 
@@ -317,6 +332,7 @@ public class SubscriptionsQueryBuilderTests
         result.Should().Contain("status=active");
         result.Should().Contain("customer_id=cust_123");
         result.Should().Contain("product_id=prod_456");
+        result.Should().Contain("external_id=ext_789");
         result.Should().Contain("canceled=false");
     }
 }

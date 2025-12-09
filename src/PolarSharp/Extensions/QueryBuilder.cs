@@ -250,6 +250,16 @@ public class SubscriptionsQueryBuilder : QueryBuilder<SubscriptionsQueryBuilder>
     {
         return AddParameter("canceled", canceled?.ToString().ToLowerInvariant());
     }
+
+    /// <summary>
+    /// Filters subscriptions by external ID.
+    /// </summary>
+    /// <param name="externalId">The external ID to filter by.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    public SubscriptionsQueryBuilder WithExternalId(string? externalId)
+    {
+        return AddParameter("external_id", externalId);
+    }
 }
 
 /// <summary>
