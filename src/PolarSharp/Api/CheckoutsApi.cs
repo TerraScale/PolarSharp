@@ -71,7 +71,7 @@ public class CheckoutsApi
             () => _httpClient.GetAsync($"v1/checkouts/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<Checkout>>(content, _jsonOptions)
@@ -114,7 +114,7 @@ public class CheckoutsApi
             () => _httpClient.GetAsync($"v1/checkouts/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<Checkout>>(content, _jsonOptions)
@@ -135,7 +135,7 @@ public class CheckoutsApi
             () => _httpClient.GetAsync($"v1/checkouts/{checkoutId}/", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Checkout>(content, _jsonOptions)
@@ -156,7 +156,7 @@ public class CheckoutsApi
             () => _httpClient.PostAsJsonAsync("v1/checkouts/", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Checkout>(content, _jsonOptions)
@@ -179,7 +179,7 @@ public class CheckoutsApi
             () => _httpClient.PatchAsJsonAsync($"v1/checkouts/{checkoutId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Checkout>(content, _jsonOptions)
@@ -200,7 +200,7 @@ public class CheckoutsApi
             () => _httpClient.GetAsync($"v1/checkouts/client/{checkoutId}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Checkout>(content, _jsonOptions)
@@ -223,7 +223,7 @@ public class CheckoutsApi
             () => _httpClient.PatchAsJsonAsync($"v1/checkouts/client/{checkoutId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Checkout>(content, _jsonOptions)
@@ -244,7 +244,7 @@ public class CheckoutsApi
             () => _httpClient.PostAsync($"v1/checkouts/client/{checkoutId}/confirm", null, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Checkout>(content, _jsonOptions)
@@ -265,7 +265,7 @@ public class CheckoutsApi
             () => _httpClient.DeleteAsync($"v1/checkouts/{checkoutId}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Checkout>(content, _jsonOptions)
@@ -309,13 +309,8 @@ public class CheckoutsApi
         Func<Task<HttpResponseMessage>> operation,
         CancellationToken cancellationToken)
     {
-        return await _rateLimitPolicy.ExecuteAsync(async () =>
-        {
-            return await _retryPolicy.ExecuteAsync(async () =>
-            {
-                return await operation();
-            });
-        });
+        // Rate limiting and retry is now handled by RateLimitedHttpHandler
+        return await operation();
     }
 
     private static string GetQueryString(Dictionary<string, string> parameters)

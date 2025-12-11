@@ -55,7 +55,7 @@ public class WebhooksApi
             () => _httpClient.GetAsync($"v1/webhooks/endpoints?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<WebhookEndpoint>>(content, _jsonOptions)
@@ -76,7 +76,7 @@ public class WebhooksApi
             () => _httpClient.GetAsync($"v1/webhooks/endpoints/{endpointId}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<WebhookEndpoint>(content, _jsonOptions)
@@ -97,7 +97,7 @@ public class WebhooksApi
             () => _httpClient.PostAsJsonAsync("v1/webhooks/endpoints", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<WebhookEndpoint>(content, _jsonOptions)
@@ -120,7 +120,7 @@ public class WebhooksApi
             () => _httpClient.PatchAsJsonAsync($"v1/webhooks/endpoints/{endpointId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<WebhookEndpoint>(content, _jsonOptions)
@@ -141,7 +141,7 @@ public class WebhooksApi
             () => _httpClient.DeleteAsync($"v1/webhooks/endpoints/{endpointId}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<WebhookEndpoint>(content, _jsonOptions)
@@ -162,7 +162,7 @@ public class WebhooksApi
             () => _httpClient.PostAsync($"v1/webhooks/endpoints/{endpointId}/reset_secret", null, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<WebhookEndpoint>(content, _jsonOptions)
@@ -191,7 +191,7 @@ public class WebhooksApi
             () => _httpClient.GetAsync($"v1/webhooks/deliveries?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<WebhookDelivery>>(content, _jsonOptions)
@@ -212,7 +212,7 @@ public class WebhooksApi
             () => _httpClient.PostAsync($"v1/webhooks/deliveries/redeliver", null, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<WebhookDelivery>(content, _jsonOptions)
@@ -249,13 +249,8 @@ public class WebhooksApi
         Func<Task<HttpResponseMessage>> operation,
         CancellationToken cancellationToken)
     {
-        return await _rateLimitPolicy.ExecuteAsync(async () =>
-        {
-            return await _retryPolicy.ExecuteAsync(async () =>
-            {
-                return await operation();
-            });
-        });
+        // Rate limiting and retry is now handled by RateLimitedHttpHandler
+        return await operation();
     }
 
     /// <summary>
@@ -294,7 +289,7 @@ public class WebhooksApi
             () => _httpClient.GetAsync($"v1/webhooks/endpoints?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<WebhookEndpoint>>(content, _jsonOptions)

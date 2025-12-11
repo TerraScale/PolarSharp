@@ -89,7 +89,7 @@ public class CustomerPortalApi
             () => _httpClient.GetAsync("v1/customer-portal/customers", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Models.Customers.Customer>(content, _jsonOptions)
@@ -110,7 +110,7 @@ public class CustomerPortalApi
             () => _httpClient.PatchAsJsonAsync("v1/customer-portal/customers", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Models.Customers.Customer>(content, _jsonOptions)
@@ -129,7 +129,7 @@ public class CustomerPortalApi
             () => _httpClient.GetAsync("v1/customer-portal/customers/payment-methods", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<List<Models.Payments.PaymentMethod>>(content, _jsonOptions)
@@ -150,7 +150,7 @@ public class CustomerPortalApi
             () => _httpClient.PostAsJsonAsync("v1/customer-portal/customers/payment-methods", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Models.Payments.PaymentMethod>(content, _jsonOptions)
@@ -171,7 +171,7 @@ public class CustomerPortalApi
             () => _httpClient.PostAsync($"v1/customer-portal/customers/payment-methods/{paymentMethodId}/confirm", null, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Models.Payments.PaymentMethod>(content, _jsonOptions)
@@ -192,7 +192,7 @@ public class CustomerPortalApi
             () => _httpClient.DeleteAsync($"v1/customer-portal/customers/payment-methods/{paymentMethodId}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Models.Payments.PaymentMethod>(content, _jsonOptions)
@@ -226,7 +226,7 @@ public class CustomerPortalApi
             () => _httpClient.GetAsync($"v1/customer-portal/orders?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<Models.Orders.Order>>(content, _jsonOptions)
@@ -276,7 +276,7 @@ public class CustomerPortalApi
             () => _httpClient.GetAsync($"v1/customer-portal/orders/{orderId}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Models.Orders.Order>(content, _jsonOptions)
@@ -310,7 +310,7 @@ public class CustomerPortalApi
             () => _httpClient.GetAsync($"v1/customer-portal/subscriptions?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<Models.Subscriptions.Subscription>>(content, _jsonOptions)
@@ -360,7 +360,7 @@ public class CustomerPortalApi
             () => _httpClient.GetAsync($"v1/customer-portal/subscriptions/{subscriptionId}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Models.Subscriptions.Subscription>(content, _jsonOptions)
@@ -381,7 +381,7 @@ public class CustomerPortalApi
             () => _httpClient.PostAsync($"v1/customer-portal/subscriptions/{subscriptionId}/cancel", null, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Models.Subscriptions.Subscription>(content, _jsonOptions)
@@ -415,7 +415,7 @@ public class CustomerPortalApi
             () => _httpClient.GetAsync($"v1/customer-portal/benefit-grants?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<Models.Benefits.BenefitGrant>>(content, _jsonOptions)
@@ -465,7 +465,7 @@ public class CustomerPortalApi
             () => _httpClient.GetAsync($"v1/customer-portal/benefit-grants/{benefitGrantId}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Models.Benefits.BenefitGrant>(content, _jsonOptions)
@@ -499,7 +499,7 @@ public class CustomerPortalApi
             () => _httpClient.GetAsync($"v1/customer-portal/license-keys?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<Models.LicenseKeys.LicenseKey>>(content, _jsonOptions)
@@ -549,7 +549,7 @@ public class CustomerPortalApi
             () => _httpClient.GetAsync($"v1/customer-portal/license-keys/{licenseKeyId}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Models.LicenseKeys.LicenseKey>(content, _jsonOptions)
@@ -570,7 +570,7 @@ public class CustomerPortalApi
             () => _httpClient.PostAsJsonAsync("v1/customer-portal/license-keys/validate", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Models.LicenseKeys.LicenseKeyValidateResponse>(content, _jsonOptions)
@@ -593,7 +593,7 @@ public class CustomerPortalApi
             () => _httpClient.PostAsJsonAsync($"v1/customer-portal/license-keys/{licenseKeyId}/activate", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Models.LicenseKeys.LicenseKeyActivateResponse>(content, _jsonOptions)
@@ -616,7 +616,7 @@ public class CustomerPortalApi
             () => _httpClient.PostAsJsonAsync($"v1/customer-portal/license-keys/{licenseKeyId}/deactivate", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Models.LicenseKeys.LicenseKeyDeactivateResponse>(content, _jsonOptions)
@@ -635,7 +635,7 @@ public class CustomerPortalApi
             () => _httpClient.GetAsync("v1/customer-portal/downloadables", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<List<Models.Files.File>>(content, _jsonOptions)
@@ -654,7 +654,7 @@ public class CustomerPortalApi
             () => _httpClient.GetAsync("v1/customer-portal/organizations", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Models.Organizations.Organization>(content, _jsonOptions)
@@ -665,13 +665,8 @@ public class CustomerPortalApi
         Func<Task<HttpResponseMessage>> operation,
         CancellationToken cancellationToken)
     {
-        return await _rateLimitPolicy.ExecuteAsync(async () =>
-        {
-            return await _retryPolicy.ExecuteAsync(async () =>
-            {
-                return await operation();
-            });
-        });
+        // Rate limiting and retry is now handled by RateLimitedHttpHandler
+        return await operation();
     }
 
     private static string GetQueryString(Dictionary<string, string> parameters)

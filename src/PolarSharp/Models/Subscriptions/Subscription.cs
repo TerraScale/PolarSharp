@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
+using PolarSharp.Models.Products; // Add this using directive
 
 namespace PolarSharp.Models.Subscriptions;
 
@@ -44,6 +45,36 @@ public record Subscription
     public string ProductPriceId { get; init; } = string.Empty;
 
     /// <summary>
+    /// The amount of the subscription.
+    /// </summary>
+    [JsonPropertyName("amount")]
+    public decimal? Amount { get; init; }
+
+    /// <summary>
+    /// The currency of the subscription.
+    /// </summary>
+    [JsonPropertyName("currency")]
+    public string? Currency { get; init; }
+
+    /// <summary>
+    /// The recurring interval of the subscription.
+    /// </summary>
+    [JsonPropertyName("recurring_interval")]
+    public RecurringInterval? RecurringInterval { get; init; }
+
+    /// <summary>
+    /// The recurring interval count of the subscription.
+    /// </summary>
+    [JsonPropertyName("recurring_interval_count")]
+    public int? RecurringIntervalCount { get; init; }
+
+    /// <summary>
+    /// Whether the subscription will be canceled at the end of the period.
+    /// </summary>
+    [JsonPropertyName("cancel_at_period_end")]
+    public bool? CancelAtPeriodEnd { get; init; }
+
+    /// <summary>
     /// The current period start date.
     /// </summary>
     [Required]
@@ -70,6 +101,18 @@ public record Subscription
     public DateTime? TrialEnd { get; init; }
 
     /// <summary>
+    /// The started at date.
+    /// </summary>
+    [JsonPropertyName("started_at")]
+    public DateTime? StartedAt { get; init; }
+
+    /// <summary>
+    /// The ends at date.
+    /// </summary>
+    [JsonPropertyName("ends_at")]
+    public DateTime? EndsAt { get; init; }
+
+    /// <summary>
     /// The canceled at date.
     /// </summary>
     [JsonPropertyName("canceled_at")]
@@ -80,6 +123,18 @@ public record Subscription
     /// </summary>
     [JsonPropertyName("ended_at")]
     public DateTime? EndedAt { get; init; }
+
+    /// <summary>
+    /// The customer cancellation reason.
+    /// </summary>
+    [JsonPropertyName("customer_cancellation_reason")]
+    public string? CustomerCancellationReason { get; init; }
+
+    /// <summary>
+    /// The customer cancellation comment.
+    /// </summary>
+    [JsonPropertyName("customer_cancellation_comment")]
+    public string? CustomerCancellationComment { get; init; }
 
     /// <summary>
     /// The metadata associated with the subscription.
@@ -130,6 +185,30 @@ public record Subscription
     /// </summary>
     [JsonPropertyName("discount")]
     public Discounts.Discount? Discount { get; init; }
+
+    /// <summary>
+    /// The prices associated with the subscription.
+    /// </summary>
+    [JsonPropertyName("prices")]
+    public List<Products.ProductPrice>? Prices { get; init; }
+
+    /// <summary>
+    /// The meters associated with the subscription.
+    /// </summary>
+    [JsonPropertyName("meters")]
+    public List<Meters.Meter>? Meters { get; init; }
+
+    /// <summary>
+    /// The custom field data associated with the subscription.
+    /// </summary>
+    [JsonPropertyName("custom_field_data")]
+    public Dictionary<string, object>? CustomFieldData { get; init; }
+
+    /// <summary>
+    /// The seats associated with the subscription.
+    /// </summary>
+    [JsonPropertyName("seats")]
+    public List<Seats.Seat>? Seats { get; init; }
 }
 
 /// <summary>
@@ -170,7 +249,22 @@ public enum SubscriptionStatus
     /// <summary>
     /// The subscription is unpaid.
     /// </summary>
-    Unpaid
+    Unpaid,
+
+    /// <summary>
+    /// The subscription is paused.
+    /// </summary>
+    Paused,
+
+    /// <summary>
+    /// The subscription is pending.
+    /// </summary>
+    Pending,
+
+    /// <summary>
+    /// The subscription is incomplete pending.
+    /// </summary>
+    IncompletePending
 }
 
 /// <summary>
@@ -223,5 +317,35 @@ public record SubscriptionCreateRequest
     /// </summary>
     [JsonPropertyName("start_immediately")]
     public bool? StartImmediately { get; init; }
+
+    /// <summary>
+    /// The recurring interval of the subscription.
+    /// </summary>
+    [JsonPropertyName("recurring_interval")]
+    public RecurringInterval? RecurringInterval { get; init; }
+
+    /// <summary>
+    /// The recurring interval count of the subscription.
+    /// </summary>
+    [JsonPropertyName("recurring_interval_count")]
+    public int? RecurringIntervalCount { get; init; }
+
+    /// <summary>
+    /// Whether the subscription should be canceled at the end of the period.
+    /// </summary>
+    [JsonPropertyName("cancel_at_period_end")]
+    public bool? CancelAtPeriodEnd { get; init; }
+
+/// <summary>
+/// The seats to assign to the subscription.
+/// </summary>
+[JsonPropertyName("seats")]
+public List<Seats.CustomerSeatAssignRequest>? Seats { get; init; }
+
+    /// <summary>
+    /// The custom field data to associate with the subscription.
+    /// </summary>
+    [JsonPropertyName("custom_field_data")]
+    public Dictionary<string, object>? CustomFieldData { get; init; }
 }
 

@@ -55,7 +55,7 @@ public class CustomFieldsApi
             () => _httpClient.GetAsync($"v1/custom_fields?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<CustomField>>(content, _jsonOptions)
@@ -76,7 +76,7 @@ public class CustomFieldsApi
             () => _httpClient.PostAsJsonAsync("v1/custom_fields", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         return await JsonSerializer.DeserializeAsync<CustomField>(stream, _jsonOptions, cancellationToken)
@@ -97,7 +97,7 @@ public class CustomFieldsApi
             () => _httpClient.GetAsync($"v1/custom_fields/{customFieldId}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         return await JsonSerializer.DeserializeAsync<CustomField>(stream, _jsonOptions, cancellationToken)
@@ -120,7 +120,7 @@ public class CustomFieldsApi
             () => _httpClient.PatchAsJsonAsync($"v1/custom_fields/{customFieldId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<CustomField>(content, _jsonOptions)
@@ -141,7 +141,7 @@ public class CustomFieldsApi
             () => _httpClient.DeleteAsync($"v1/custom_fields/{customFieldId}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
     }
 
     /// <summary>
@@ -174,13 +174,8 @@ public class CustomFieldsApi
         Func<Task<HttpResponseMessage>> operation,
         CancellationToken cancellationToken)
     {
-        return await _rateLimitPolicy.ExecuteAsync(async () =>
-        {
-            return await _retryPolicy.ExecuteAsync(async () =>
-            {
-                return await operation();
-            });
-        });
+        // Rate limiting and retry is now handled by RateLimitedHttpHandler
+        return await operation();
     }
 
     /// <summary>
@@ -219,7 +214,7 @@ public class CustomFieldsApi
             () => _httpClient.GetAsync($"v1/custom_fields?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<CustomField>>(content, _jsonOptions)

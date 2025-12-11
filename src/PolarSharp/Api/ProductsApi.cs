@@ -58,7 +58,7 @@ public class ProductsApi
             () => _httpClient.GetAsync($"v1/products/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<Product>>(content, _jsonOptions)
@@ -101,7 +101,7 @@ public class ProductsApi
             () => _httpClient.GetAsync($"v1/products/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<Product>>(content, _jsonOptions)
@@ -122,7 +122,7 @@ public class ProductsApi
             () => _httpClient.GetAsync($"v1/products/{productId}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         return await JsonSerializer.DeserializeAsync<Product>(stream, _jsonOptions, cancellationToken)
@@ -146,7 +146,7 @@ public class ProductsApi
             () => _httpClient.PostAsJsonAsync("v1/products/", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         return await JsonSerializer.DeserializeAsync<Product>(stream, _jsonOptions, cancellationToken)
@@ -169,7 +169,7 @@ public class ProductsApi
             () => _httpClient.PatchAsJsonAsync($"v1/products/{productId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Product>(content, _jsonOptions)
@@ -191,7 +191,7 @@ public class ProductsApi
             () => _httpClient.PatchAsJsonAsync($"v1/products/{productId}", archiveRequest, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Product>(content, _jsonOptions)
@@ -214,7 +214,7 @@ public class ProductsApi
             () => _httpClient.PostAsJsonAsync($"v1/products/{productId}/prices/", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<ProductPrice>(content, _jsonOptions)
@@ -251,13 +251,8 @@ public class ProductsApi
         Func<Task<HttpResponseMessage>> operation,
         CancellationToken cancellationToken)
     {
-        return await _rateLimitPolicy.ExecuteAsync(async () =>
-        {
-            return await _retryPolicy.ExecuteAsync(async () =>
-            {
-                return await operation();
-            });
-        });
+        // Rate limiting and retry is now handled by RateLimitedHttpHandler
+        return await operation();
     }
 
     /// <summary>
@@ -272,7 +267,7 @@ public class ProductsApi
         CancellationToken cancellationToken)
     {
         var response = await ExecuteWithPoliciesAsync(operation, cancellationToken);
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         return await JsonSerializer.DeserializeAsync<T>(stream, _jsonOptions, cancellationToken)
@@ -298,7 +293,7 @@ public class ProductsApi
             () => _httpClient.GetAsync($"v1/products/export/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<ProductExportResponse>(content, _jsonOptions)
@@ -326,7 +321,7 @@ public class ProductsApi
             () => _httpClient.GetAsync($"v1/products/{productId}/prices/export/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<ProductPriceExportResponse>(content, _jsonOptions)

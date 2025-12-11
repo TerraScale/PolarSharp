@@ -71,7 +71,7 @@ public class LicenseKeysApi
             () => _httpClient.GetAsync($"v1/license-keys/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<LicenseKey>>(content, _jsonOptions)
@@ -92,7 +92,7 @@ public class LicenseKeysApi
             () => _httpClient.GetAsync($"v1/license-keys/{licenseKeyId}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<LicenseKey>(content, _jsonOptions)
@@ -115,7 +115,7 @@ public class LicenseKeysApi
             () => _httpClient.PatchAsJsonAsync($"v1/license-keys/{licenseKeyId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<LicenseKey>(content, _jsonOptions)
@@ -136,7 +136,7 @@ public class LicenseKeysApi
             () => _httpClient.GetAsync($"v1/license-keys/{licenseKeyId}/activation", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<LicenseKeyActivation>(content, _jsonOptions)
@@ -157,7 +157,7 @@ public class LicenseKeysApi
             () => _httpClient.PostAsJsonAsync("license-keys/validate", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<LicenseKeyValidateResponse>(content, _jsonOptions)
@@ -180,7 +180,7 @@ public class LicenseKeysApi
             () => _httpClient.PostAsJsonAsync($"v1/license-keys/{licenseKeyId}/activate", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<LicenseKeyActivateResponse>(content, _jsonOptions)
@@ -203,7 +203,7 @@ public class LicenseKeysApi
             () => _httpClient.PostAsJsonAsync($"v1/license-keys/{licenseKeyId}/deactivate", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<LicenseKeyDeactivateResponse>(content, _jsonOptions)
@@ -247,13 +247,8 @@ public class LicenseKeysApi
         Func<Task<HttpResponseMessage>> operation,
         CancellationToken cancellationToken)
     {
-        return await _rateLimitPolicy.ExecuteAsync(async () =>
-        {
-            return await _retryPolicy.ExecuteAsync(async () =>
-            {
-                return await operation();
-            });
-        });
+        // Rate limiting and retry is now handled by RateLimitedHttpHandler
+        return await operation();
     }
 
     /// <summary>
@@ -292,7 +287,7 @@ public class LicenseKeysApi
             () => _httpClient.GetAsync($"v1/license-keys/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<LicenseKey>>(content, _jsonOptions)

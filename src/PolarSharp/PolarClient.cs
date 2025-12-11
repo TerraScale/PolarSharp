@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.Channels;
 using Microsoft.Extensions.Http;
 using PolarSharp.Models.Products;
 using PolarSharp.Api;
@@ -21,9 +22,9 @@ public class PolarClient : IPolarClient, IDisposable
     private readonly JsonSerializerOptions _jsonOptions;
     private readonly AsyncRetryPolicy<HttpResponseMessage> _retryPolicy;
     private readonly AsyncRateLimitPolicy<HttpResponseMessage> _rateLimitPolicy;
+    private readonly RateLimitedHttpHandler? _rateLimitHandler;
     private readonly SemaphoreSlim _rateLimitSemaphore;
-    private readonly DateTime[] _requestTimestamps;
-    private int _requestIndex;
+    private readonly Channel<DateTime> _requestTimestampsChannel;
     private readonly object _lockObject = new();
     private bool _disposed;
 
@@ -153,14 +154,31 @@ public class PolarClient : IPolarClient, IDisposable
             {
                 var now = DateTime.UtcNow;
                 var oneMinuteAgo = now.AddMinutes(-1);
-                var recentRequests = _requestTimestamps.Count(t => t > oneMinuteAgo);
+                var timestamps = new List<DateTime>();
+                
+                // Read all current timestamps from channel
+                while (_requestTimestampsChannel.Reader.TryRead(out var timestamp))
+                {
+                    if (timestamp > oneMinuteAgo)
+                    {
+                        timestamps.Add(timestamp);
+                    }
+                }
+                
+                // Write back valid timestamps
+                foreach (var ts in timestamps)
+                {
+                    _requestTimestampsChannel.Writer.TryWrite(ts);
+                }
+                
+                var recentRequests = timestamps.Count;
                 var available = Math.Max(0, _options.RequestsPerMinute - recentRequests);
                 
                 // Calculate when the rate limit window resets
                 TimeSpan? resetTime = null;
-                if (recentRequests > 0)
+                if (recentRequests > 0 && timestamps.Count > 0)
                 {
-                    var oldestRequest = _requestTimestamps.Where(t => t > DateTime.MinValue).Min();
+                    var oldestRequest = timestamps.Min();
                     resetTime = oldestRequest.AddMinutes(1) - now;
                     if (resetTime.Value <= TimeSpan.Zero)
                         resetTime = null;
@@ -191,17 +209,23 @@ public class PolarClient : IPolarClient, IDisposable
             throw new ArgumentException("Access token is required.", nameof(accessToken));
         }
 
-        _httpClient = httpClient ?? CreateHttpClient();
+        // Create rate limit handler and HTTP client with handler
+        _rateLimitHandler = new RateLimitedHttpHandler(_options);
+        _httpClient = httpClient ?? CreateHttpClientWithHandler(_rateLimitHandler);
         ConfigureHttpClient(_httpClient, baseUrl ?? GetDefaultBaseUrl());
         
         _jsonOptions = CreateJsonSerializerOptions(_options.JsonSerializerOptions);
         _retryPolicy = CreateRetryPolicy();
         _rateLimitPolicy = CreateRateLimitPolicy();
         
-        // Initialize rate limiting
+        // Initialize rate limiting channel for status tracking
         _rateLimitSemaphore = new SemaphoreSlim(1, 1);
-        _requestTimestamps = new DateTime[_options.RequestsPerMinute];
-        _requestIndex = 0;
+        _requestTimestampsChannel = Channel.CreateBounded<DateTime>(new BoundedChannelOptions(_options.RequestsPerMinute * 2)
+        {
+            FullMode = BoundedChannelFullMode.DropOldest,
+            SingleReader = false,
+            SingleWriter = false
+        });
 
         Products = new ProductsApi(_httpClient, _jsonOptions, _retryPolicy, _rateLimitPolicy);
         Orders = new OrdersApi(_httpClient, _jsonOptions, _retryPolicy, _rateLimitPolicy);
@@ -252,16 +276,21 @@ public class PolarClient : IPolarClient, IDisposable
 
         var clientName = httpClientName ?? "PolarClient";
         _httpClient = httpClientFactory.CreateClient(clientName);
+        _rateLimitHandler = null; // Factory-created clients manage their own handlers
         ConfigureHttpClient(_httpClient, baseUrl ?? GetDefaultBaseUrl());
         
         _jsonOptions = CreateJsonSerializerOptions(_options.JsonSerializerOptions);
         _retryPolicy = CreateRetryPolicy();
         _rateLimitPolicy = CreateRateLimitPolicy();
         
-        // Initialize rate limiting
+        // Initialize rate limiting channel for status tracking
         _rateLimitSemaphore = new SemaphoreSlim(1, 1);
-        _requestTimestamps = new DateTime[_options.RequestsPerMinute];
-        _requestIndex = 0;
+        _requestTimestampsChannel = Channel.CreateBounded<DateTime>(new BoundedChannelOptions(_options.RequestsPerMinute * 2)
+        {
+            FullMode = BoundedChannelFullMode.DropOldest,
+            SingleReader = false,
+            SingleWriter = false
+        });
 
         Products = new ProductsApi(_httpClient, _jsonOptions, _retryPolicy, _rateLimitPolicy);
         Orders = new OrdersApi(_httpClient, _jsonOptions, _retryPolicy, _rateLimitPolicy);
@@ -297,6 +326,12 @@ public class PolarClient : IPolarClient, IDisposable
     private static Uri GetDefaultBaseUrl()
     {
         return new Uri("https://api.polar.sh");
+    }
+
+    private HttpClient CreateHttpClientWithHandler(RateLimitedHttpHandler handler)
+    {
+        handler.InnerHandler = new HttpClientHandler();
+        return new HttpClient(handler);
     }
 
     private HttpClient CreateHttpClient()
@@ -377,81 +412,6 @@ public class PolarClient : IPolarClient, IDisposable
     }
 
     /// <summary>
-    /// Extracts rate limit information from response headers and updates tracking.
-    /// </summary>
-    /// <param name="response">The HTTP response.</param>
-    private void UpdateRateLimitFromHeaders(HttpResponseMessage response)
-    {
-        // Check for rate limit headers (common patterns)
-        var rateLimitHeaders = new[] { "X-RateLimit-Limit", "RateLimit-Limit", "X-RateLimit-Remaining", "RateLimit-Remaining" };
-        
-        // This method can be extended to parse specific rate limit headers from Polar API
-        // For now, we'll continue using our client-side tracking
-        
-        // Could parse headers like:
-        // if (response.Headers.TryGetValues("X-RateLimit-Remaining", out var remainingValues))
-        // {
-        //     // Update remaining requests count
-        // }
-    }
-
-    /// <summary>
-    /// Implements rate limiting using sliding window approach.
-    /// </summary>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>A task that represents the rate limiting operation.</returns>
-    private async Task WaitForRateLimitAsync(CancellationToken cancellationToken = default)
-    {
-        await _rateLimitSemaphore.WaitAsync(cancellationToken);
-        try
-        {
-            DateTime waitTime;
-            lock (_lockObject)
-            {
-                var now = DateTime.UtcNow;
-                var oneMinuteAgo = now.AddMinutes(-1);
-                
-                // Clean up old timestamps
-                for (int i = 0; i < _requestTimestamps.Length; i++)
-                {
-                    if (_requestTimestamps[i] <= oneMinuteAgo)
-                    {
-                        _requestTimestamps[i] = DateTime.MinValue;
-                    }
-                }
-                
-                // Count recent requests
-                var recentRequests = _requestTimestamps.Count(t => t > oneMinuteAgo);
-                
-                if (recentRequests >= _options.RequestsPerMinute)
-                {
-                    // Calculate wait time until oldest request expires
-                    var oldestRequest = _requestTimestamps.Where(t => t > DateTime.MinValue).Min();
-                    waitTime = oldestRequest.AddMinutes(1);
-                }
-                else
-                {
-                    waitTime = now;
-                }
-                
-                // Record this request
-                _requestTimestamps[_requestIndex] = now;
-                _requestIndex = (_requestIndex + 1) % _requestTimestamps.Length;
-            }
-            
-            var actualWaitTime = waitTime - DateTime.UtcNow;
-            if (actualWaitTime > TimeSpan.Zero)
-            {
-                await Task.Delay(actualWaitTime, cancellationToken);
-            }
-        }
-        finally
-        {
-            _rateLimitSemaphore.Release();
-        }
-    }
-
-    /// <summary>
     /// Releases all resources used by the PolarClient.
     /// </summary>
     public void Dispose()
@@ -470,6 +430,7 @@ public class PolarClient : IPolarClient, IDisposable
         {
             _httpClient?.Dispose();
             _rateLimitSemaphore?.Dispose();
+            _rateLimitHandler?.Dispose();
             _disposed = true;
         }
     }

@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using FluentResults;
 using PolarSharp.Exceptions;
 
 namespace PolarSharp.Extensions;
@@ -10,26 +11,112 @@ namespace PolarSharp.Extensions;
 internal static class ErrorHandlerExtensions
 {
     /// <summary>
-    /// Handles HTTP response errors and throws appropriate exceptions.
+    /// Handles HTTP response errors and returns a Result indicating success or failure.
+    /// This method does not throw exceptions - errors are returned as failed Results.
     /// </summary>
     /// <param name="response">The HTTP response.</param>
     /// <param name="jsonOptions">JSON serializer options.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>A task that represents the operation.</returns>
-    /// <exception cref="PolarApiException">Thrown when the API returns an error response.</exception>
-    public static async Task HandleErrorsAsync(
+    /// <returns>A Result indicating success or containing error details.</returns>
+    public static async Task<Result> HandleErrorsAsync(
         this HttpResponseMessage response,
         JsonSerializerOptions jsonOptions,
         CancellationToken cancellationToken = default)
     {
         if (response.IsSuccessStatusCode)
-            return;
+            return Result.Ok();
 
         var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
         var retryAfter = response.Headers.RetryAfter;
         var error = TryParseError(responseBody, response.StatusCode, jsonOptions, retryAfter);
         
-        throw new PolarApiException(error);
+        return Result.Fail(new PolarApiResultError(error));
+    }
+
+    /// <summary>
+    /// Handles HTTP response errors and returns a Result with value on success or error on failure.
+    /// This method does not throw exceptions - errors are returned as failed Results.
+    /// </summary>
+    /// <typeparam name="T">The type of value expected on success.</typeparam>
+    /// <param name="response">The HTTP response.</param>
+    /// <param name="jsonOptions">JSON serializer options.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A Result containing the deserialized value or error details.</returns>
+    public static async Task<Result<T>> HandleErrorsAsync<T>(
+        this HttpResponseMessage response,
+        JsonSerializerOptions jsonOptions,
+        CancellationToken cancellationToken = default)
+    {
+        if (response.IsSuccessStatusCode)
+        {
+            var content = await response.Content.ReadAsStringAsync(cancellationToken);
+            var value = JsonSerializer.Deserialize<T>(content, jsonOptions);
+            
+            if (value == null)
+                return Result.Fail<T>("Failed to deserialize response.");
+            
+            return Result.Ok(value);
+        }
+
+        var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+        var retryAfter = response.Headers.RetryAfter;
+        var error = TryParseError(responseBody, response.StatusCode, jsonOptions, retryAfter);
+        
+        return Result.Fail<T>(new PolarApiResultError(error));
+    }
+
+    /// <summary>
+    /// Ensures the Result is successful, throwing a PolarApiException if it failed.
+    /// Use this to maintain backward compatibility with exception-based error handling.
+    /// </summary>
+    /// <param name="result">The result to check.</param>
+    /// <exception cref="PolarApiException">Thrown when the result is failed.</exception>
+    public static void EnsureSuccess(this Result result)
+    {
+        if (result.IsFailed)
+        {
+            var polarError = result.Errors.OfType<PolarApiResultError>().FirstOrDefault();
+            if (polarError != null)
+            {
+                throw new PolarApiException(
+                    polarError.Message,
+                    (int)polarError.StatusCode,
+                    polarError.ResponseBody);
+            }
+            
+            throw new PolarApiException(
+                string.Join("; ", result.Errors.Select(e => e.Message)),
+                500);
+        }
+    }
+
+    /// <summary>
+    /// Ensures the Result is successful, throwing a PolarApiException if it failed.
+    /// Returns the value on success.
+    /// </summary>
+    /// <typeparam name="T">The result value type.</typeparam>
+    /// <param name="result">The result to check.</param>
+    /// <returns>The value if successful.</returns>
+    /// <exception cref="PolarApiException">Thrown when the result is failed.</exception>
+    public static T EnsureSuccess<T>(this Result<T> result)
+    {
+        if (result.IsFailed)
+        {
+            var polarError = result.Errors.OfType<PolarApiResultError>().FirstOrDefault();
+            if (polarError != null)
+            {
+                throw new PolarApiException(
+                    polarError.Message,
+                    (int)polarError.StatusCode,
+                    polarError.ResponseBody);
+            }
+            
+            throw new PolarApiException(
+                string.Join("; ", result.Errors.Select(e => e.Message)),
+                500);
+        }
+        
+        return result.Value;
     }
 
     /// <summary>
