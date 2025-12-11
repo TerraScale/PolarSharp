@@ -70,7 +70,7 @@ public class OrdersApi
             () => _httpClient.GetAsync($"v1/orders/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<Order>>(content, _jsonOptions)
@@ -91,7 +91,7 @@ public class OrdersApi
             () => _httpClient.GetAsync($"v1/orders/{orderId}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Order>(content, _jsonOptions)
@@ -112,7 +112,7 @@ public class OrdersApi
             () => _httpClient.PostAsJsonAsync("orders", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Order>(content, _jsonOptions)
@@ -135,7 +135,7 @@ public class OrdersApi
             () => _httpClient.PatchAsJsonAsync($"v1/orders/{orderId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Order>(content, _jsonOptions)
@@ -156,7 +156,7 @@ public class OrdersApi
             () => _httpClient.DeleteAsync($"v1/orders/{orderId}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Order>(content, _jsonOptions)
@@ -177,7 +177,7 @@ public class OrdersApi
             () => _httpClient.PostAsync($"v1/orders/{orderId}/generate_invoice", null, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<OrderInvoice>(content, _jsonOptions)
@@ -198,7 +198,7 @@ public class OrdersApi
             () => _httpClient.GetAsync($"v1/orders/{orderId}/invoice", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<OrderInvoice>(content, _jsonOptions)
@@ -239,7 +239,7 @@ public class OrdersApi
             () => _httpClient.GetAsync($"v1/orders/export/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<OrderExportResponse>(content, _jsonOptions)
@@ -315,7 +315,7 @@ public class OrdersApi
             () => _httpClient.GetAsync($"v1/orders/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<Order>>(content, _jsonOptions)

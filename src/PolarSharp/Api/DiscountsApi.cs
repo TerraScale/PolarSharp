@@ -55,7 +55,7 @@ public class DiscountsApi
             () => _httpClient.GetAsync($"v1/discounts?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<Discount>>(content, _jsonOptions)
@@ -76,7 +76,7 @@ public class DiscountsApi
             () => _httpClient.GetAsync($"v1/discounts/{discountId}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Discount>(content, _jsonOptions)
@@ -97,7 +97,7 @@ public class DiscountsApi
             () => _httpClient.PostAsJsonAsync("v1/discounts", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Discount>(content, _jsonOptions)
@@ -120,7 +120,7 @@ public class DiscountsApi
             () => _httpClient.PatchAsJsonAsync($"v1/discounts/{discountId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Discount>(content, _jsonOptions)
@@ -141,7 +141,7 @@ public class DiscountsApi
             () => _httpClient.DeleteAsync($"v1/discounts/{discountId}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Discount>(content, _jsonOptions)
@@ -223,7 +223,7 @@ public class DiscountsApi
             () => _httpClient.GetAsync($"v1/discounts?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<Discount>>(content, _jsonOptions)

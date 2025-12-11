@@ -55,7 +55,7 @@ public class RefundsApi
             () => _httpClient.GetAsync($"v1/refunds?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<Refund>>(content, _jsonOptions)
@@ -76,7 +76,7 @@ public class RefundsApi
             () => _httpClient.GetAsync($"v1/refunds/{refundId}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Refund>(content, _jsonOptions)
@@ -97,7 +97,7 @@ public class RefundsApi
             () => _httpClient.PostAsJsonAsync("refunds", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Refund>(content, _jsonOptions)
@@ -179,7 +179,7 @@ public class RefundsApi
             () => _httpClient.GetAsync($"v1/refunds?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<Refund>>(content, _jsonOptions)

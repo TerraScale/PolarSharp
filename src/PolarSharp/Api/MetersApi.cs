@@ -55,7 +55,7 @@ public class MetersApi
             () => _httpClient.GetAsync($"v1/meters?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<Meter>>(content, _jsonOptions)
@@ -76,7 +76,7 @@ public class MetersApi
             () => _httpClient.PostAsJsonAsync("v1/meters", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         return await JsonSerializer.DeserializeAsync<Meter>(stream, _jsonOptions, cancellationToken)
@@ -97,7 +97,7 @@ public class MetersApi
             () => _httpClient.GetAsync($"v1/meters/{meterId}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         return await JsonSerializer.DeserializeAsync<Meter>(stream, _jsonOptions, cancellationToken)
@@ -120,7 +120,7 @@ public class MetersApi
             () => _httpClient.PatchAsJsonAsync($"v1/meters/{meterId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Meter>(content, _jsonOptions)
@@ -141,7 +141,7 @@ public class MetersApi
             () => _httpClient.DeleteAsync($"v1/meters/{meterId}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Meter>(content, _jsonOptions)
@@ -172,7 +172,7 @@ public class MetersApi
             () => _httpClient.GetAsync($"v1/meters/{meterId}/quantities?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<MeterQuantity>>(content, _jsonOptions)
@@ -254,7 +254,7 @@ public class MetersApi
             () => _httpClient.GetAsync($"v1/meters?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<Meter>>(content, _jsonOptions)

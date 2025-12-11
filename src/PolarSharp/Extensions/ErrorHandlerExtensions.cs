@@ -10,26 +10,25 @@ namespace PolarSharp.Extensions;
 internal static class ErrorHandlerExtensions
 {
     /// <summary>
-    /// Handles HTTP response errors and throws appropriate exceptions.
+    /// Handles HTTP response errors and returns null (no exception thrown).
     /// </summary>
     /// <param name="response">The HTTP response.</param>
     /// <param name="jsonOptions">JSON serializer options.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>A task that represents the operation.</returns>
-    /// <exception cref="PolarApiException">Thrown when the API returns an error response.</exception>
-    public static async Task HandleErrorsAsync(
+    /// <returns>A PolarApiException if an error occurred, null otherwise.</returns>
+    public static async Task<PolarApiException?> HandleErrorsAsync(
         this HttpResponseMessage response,
         JsonSerializerOptions jsonOptions,
         CancellationToken cancellationToken = default)
     {
         if (response.IsSuccessStatusCode)
-            return;
+            return null;
 
         var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
         var retryAfter = response.Headers.RetryAfter;
         var error = TryParseError(responseBody, response.StatusCode, jsonOptions, retryAfter);
         
-        throw new PolarApiException(error);
+        return new PolarApiException(error);
     }
 
     /// <summary>

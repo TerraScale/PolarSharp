@@ -46,7 +46,7 @@ public class CustomerSessionsApi
             () => _httpClient.PostAsJsonAsync("v1/customer-sessions", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<CustomerSession>(content, _jsonOptions)
@@ -67,7 +67,7 @@ public class CustomerSessionsApi
             () => _httpClient.PostAsJsonAsync("v1/customer-sessions/introspect", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<CustomerSessionIntrospectResponse>(content, _jsonOptions)

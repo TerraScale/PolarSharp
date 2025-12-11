@@ -55,7 +55,7 @@ public class EventsApi
             () => _httpClient.GetAsync($"v1/events?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<Event>>(content, _jsonOptions)
@@ -73,7 +73,7 @@ public class EventsApi
             () => _httpClient.GetAsync("v1/events/names", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         return await JsonSerializer.DeserializeAsync<List<EventName>>(stream, _jsonOptions, cancellationToken)
@@ -94,7 +94,7 @@ public class EventsApi
             () => _httpClient.GetAsync($"v1/events/{eventId}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         return await JsonSerializer.DeserializeAsync<Event>(stream, _jsonOptions, cancellationToken)
@@ -115,7 +115,7 @@ public class EventsApi
             () => _httpClient.PostAsJsonAsync("v1/events/ingest", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
     }
 
     /// <summary>
@@ -193,7 +193,7 @@ public class EventsApi
             () => _httpClient.GetAsync($"v1/events?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<Event>>(content, _jsonOptions)

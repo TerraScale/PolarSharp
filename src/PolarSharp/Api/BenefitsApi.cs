@@ -66,7 +66,7 @@ public class BenefitsApi
             () => _httpClient.GetAsync($"v1/benefits/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<Benefit>>(content, _jsonOptions)
@@ -109,7 +109,7 @@ public class BenefitsApi
             () => _httpClient.GetAsync($"v1/benefits/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<Benefit>>(content, _jsonOptions)
@@ -130,7 +130,7 @@ public class BenefitsApi
             () => _httpClient.GetAsync($"v1/benefits/{benefitId}/", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Benefit>(content, _jsonOptions)
@@ -151,7 +151,7 @@ public class BenefitsApi
             () => _httpClient.PostAsJsonAsync("v1/benefits/", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Benefit>(content, _jsonOptions)
@@ -174,7 +174,7 @@ public class BenefitsApi
             () => _httpClient.PatchAsJsonAsync($"v1/benefits/{benefitId}/", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Benefit>(content, _jsonOptions)
@@ -195,7 +195,7 @@ public class BenefitsApi
             () => _httpClient.DeleteAsync($"v1/benefits/{benefitId}/", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Benefit>(content, _jsonOptions)
@@ -236,7 +236,7 @@ public class BenefitsApi
             () => _httpClient.GetAsync($"v1/benefits/{benefitId}/grants/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<BenefitGrant>>(content, _jsonOptions)
@@ -349,7 +349,7 @@ public class BenefitsApi
             () => _httpClient.GetAsync($"v1/benefits/export/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<BenefitExportResponse>(content, _jsonOptions)
@@ -387,7 +387,7 @@ public class BenefitsApi
             () => _httpClient.GetAsync($"v1/benefits/{benefitId}/grants/export/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<BenefitGrantExportResponse>(content, _jsonOptions)
@@ -410,7 +410,7 @@ public class BenefitsApi
             () => _httpClient.PostAsJsonAsync($"v1/benefits/{benefitId}/grant/", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<BenefitGrant>(content, _jsonOptions)
@@ -433,7 +433,7 @@ public class BenefitsApi
             () => _httpClient.DeleteAsync($"v1/benefits/{benefitId}/grants/{grantId}/", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<BenefitGrant>(content, _jsonOptions)

@@ -55,7 +55,7 @@ public class CustomerSeatsApi
             () => _httpClient.GetAsync($"v1/customer_seats?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<CustomerSeat>>(content, _jsonOptions)
@@ -76,7 +76,7 @@ public class CustomerSeatsApi
             () => _httpClient.GetAsync($"v1/customer_seats/{customerSeatId}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         return await JsonSerializer.DeserializeAsync<CustomerSeat>(stream, _jsonOptions, cancellationToken)
@@ -97,7 +97,7 @@ public async Task AssignAsync(
             () => _httpClient.PostAsJsonAsync("v1/customer_seats/assign", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
     }
 
     /// <summary>
@@ -114,7 +114,7 @@ public async Task AssignAsync(
             () => _httpClient.PostAsJsonAsync("v1/customer_seats/revoke", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
     }
 
     /// <summary>
@@ -131,7 +131,7 @@ public async Task AssignAsync(
             () => _httpClient.PostAsJsonAsync("v1/customer_seats/resend_invitation", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
     }
 
     /// <summary>
@@ -145,7 +145,7 @@ public async Task AssignAsync(
             () => _httpClient.GetAsync("v1/customer_seats/claim_info", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         return await JsonSerializer.DeserializeAsync<SeatClaimInfo>(stream, _jsonOptions, cancellationToken)
@@ -166,7 +166,7 @@ public async Task AssignAsync(
             () => _httpClient.PostAsJsonAsync("v1/customer_seats/claim", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
     }
 
     /// <summary>
@@ -244,7 +244,7 @@ public async Task AssignAsync(
             () => _httpClient.GetAsync($"v1/customer_seats?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<CustomerSeat>>(content, _jsonOptions)

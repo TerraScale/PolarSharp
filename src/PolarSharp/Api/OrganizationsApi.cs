@@ -55,7 +55,7 @@ public class OrganizationsApi
             () => _httpClient.GetAsync($"v1/organizations?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<Organization>>(content, _jsonOptions)
@@ -76,7 +76,7 @@ public class OrganizationsApi
             () => _httpClient.GetAsync($"v1/organizations/{organizationId}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Organization>(content, _jsonOptions)
@@ -97,7 +97,7 @@ public class OrganizationsApi
             () => _httpClient.PostAsJsonAsync("v1/organizations", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Organization>(content, _jsonOptions)
@@ -120,7 +120,7 @@ public class OrganizationsApi
             () => _httpClient.PatchAsJsonAsync($"v1/organizations/{organizationId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Organization>(content, _jsonOptions)
@@ -141,7 +141,7 @@ public class OrganizationsApi
             () => _httpClient.DeleteAsync($"v1/organizations/{organizationId}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Organization>(content, _jsonOptions)

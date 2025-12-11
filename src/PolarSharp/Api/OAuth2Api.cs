@@ -45,7 +45,7 @@ public class OAuth2Api
             () => _httpClient.PostAsJsonAsync("v1/oauth2/clients", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         return await JsonSerializer.DeserializeAsync<OAuth2Client>(stream, _jsonOptions, cancellationToken)
@@ -66,7 +66,7 @@ public class OAuth2Api
             () => _httpClient.GetAsync($"v1/oauth2/clients/{clientId}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         return await JsonSerializer.DeserializeAsync<OAuth2Client>(stream, _jsonOptions, cancellationToken)
@@ -89,7 +89,7 @@ public class OAuth2Api
             () => _httpClient.PatchAsJsonAsync($"v1/oauth2/clients/{clientId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<OAuth2Client>(content, _jsonOptions)
@@ -110,7 +110,7 @@ public class OAuth2Api
             () => _httpClient.DeleteAsync($"v1/oauth2/clients/{clientId}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
     }
 
     /// <summary>
@@ -127,7 +127,7 @@ public class OAuth2Api
             () => _httpClient.PostAsJsonAsync("v1/oauth2/token", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         return await JsonSerializer.DeserializeAsync<OAuth2TokenResponse>(stream, _jsonOptions, cancellationToken)
@@ -148,7 +148,7 @@ public class OAuth2Api
             () => _httpClient.PostAsJsonAsync("v1/oauth2/revoke", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
     }
 
     /// <summary>
@@ -165,7 +165,7 @@ public class OAuth2Api
             () => _httpClient.PostAsJsonAsync("v1/oauth2/introspect", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         return await JsonSerializer.DeserializeAsync<OAuth2IntrospectResponse>(stream, _jsonOptions, cancellationToken)
@@ -183,7 +183,7 @@ public class OAuth2Api
             () => _httpClient.GetAsync("v1/oauth2/userinfo", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         return await JsonSerializer.DeserializeAsync<OAuth2UserInfo>(stream, _jsonOptions, cancellationToken)

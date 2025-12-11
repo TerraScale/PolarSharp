@@ -44,7 +44,7 @@ public class MetricsApi
             () => _httpClient.GetAsync("v1/metrics", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         return await JsonSerializer.DeserializeAsync<List<Metric>>(stream, _jsonOptions, cancellationToken)
@@ -62,7 +62,7 @@ public class MetricsApi
             () => _httpClient.GetAsync("v1/metrics/limits", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         return await JsonSerializer.DeserializeAsync<List<MetricLimit>>(stream, _jsonOptions, cancellationToken)
@@ -118,7 +118,7 @@ public class MetricsApi
             () => _httpClient.GetAsync($"v1/metrics?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<Metric>>(content, _jsonOptions)

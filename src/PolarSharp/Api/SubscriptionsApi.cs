@@ -71,7 +71,7 @@ public class SubscriptionsApi
             () => _httpClient.GetAsync($"v1/subscriptions/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<Subscription>>(content, _jsonOptions)
@@ -92,7 +92,7 @@ public class SubscriptionsApi
             () => _httpClient.GetAsync($"v1/subscriptions/{subscriptionId}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Subscription>(content, _jsonOptions)
@@ -113,7 +113,7 @@ public class SubscriptionsApi
             () => _httpClient.PostAsJsonAsync("subscriptions", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Subscription>(content, _jsonOptions)
@@ -136,7 +136,7 @@ public class SubscriptionsApi
             () => _httpClient.PatchAsJsonAsync($"v1/subscriptions/{subscriptionId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Subscription>(content, _jsonOptions)
@@ -157,7 +157,7 @@ public class SubscriptionsApi
             () => _httpClient.DeleteAsync($"v1/subscriptions/{subscriptionId}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<Subscription>(content, _jsonOptions)
@@ -178,7 +178,7 @@ public class SubscriptionsApi
             () => _httpClient.PostAsJsonAsync("subscriptions/export", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<SubscriptionExportResponse>(content, _jsonOptions)
@@ -267,7 +267,7 @@ public class SubscriptionsApi
             () => _httpClient.GetAsync($"v1/subscriptions/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        await response.HandleErrorsAsync(_jsonOptions, cancellationToken);
+        if (await response.HandleErrorsAsync(_jsonOptions, cancellationToken) is { } exception) throw exception;
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<PaginatedResponse<Subscription>>(content, _jsonOptions)
