@@ -38,9 +38,9 @@ public class IntegrationTestFixture
             .WithToken(accessToken)
             .WithEnvironment(Models.Common.PolarEnvironment.Sandbox)
             .WithTimeout(30)
-            .WithMaxRetries(5) // Increase retries for tests
+            .WithMaxRetries(2) // Further reduce retries for tests
             .WithInitialRetryDelay(2000) // Longer initial delay
-            .WithRequestsPerMinute(120) // More conservative rate limiting for tests
+            .WithRequestsPerMinute(15) // Even more conservative rate limiting for tests
             .Build();
     }
 

@@ -264,7 +264,7 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
         var exception = await Assert.ThrowsAsync<PolarApiException>(
             () => client.CheckoutLinks.GetAsync(invalidId));
         
-        exception.Message.Should().Contain("404");
+        exception.StatusCode.Should().Be(404);
     }
 
     [Fact]
@@ -604,7 +604,7 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
         var exception = await Assert.ThrowsAsync<PolarApiException>(
             () => client.CheckoutLinks.DeleteAsync(invalidId));
         
-        exception.Message.Should().Contain("404");
+        exception.StatusCode.Should().Be(404);
     }
 
     [Fact]
