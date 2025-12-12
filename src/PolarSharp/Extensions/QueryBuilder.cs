@@ -258,7 +258,7 @@ public class SubscriptionsQueryBuilder : QueryBuilder<SubscriptionsQueryBuilder>
     /// <returns>The builder instance for method chaining.</returns>
     public SubscriptionsQueryBuilder WithExternalId(string? externalId)
     {
-        return AddParameter("external_id", externalId);
+        return AddParameter("external_customer_id", externalId);
     }
 }
 
