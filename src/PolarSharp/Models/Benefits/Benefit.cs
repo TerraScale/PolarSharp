@@ -84,6 +84,19 @@ public record Benefit
     /// </summary>
     [JsonPropertyName("properties")]
     public Dictionary<string, object>? Properties { get; init; }
+    
+    /// <summary>
+    /// Indicates whether the benefit is deletable.
+    /// </summary>
+    [JsonPropertyName("deletable")]
+    public bool Deletable { get; init; }
+    
+    /// <summary>
+    /// The organization ID that owns the benefit.
+    /// </summary>
+    [Required]
+    [JsonPropertyName("organization_id")]
+    public string OrganizationId { get; init; } = string.Empty;
 }
 
 /// <summary>

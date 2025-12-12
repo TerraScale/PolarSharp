@@ -50,7 +50,7 @@ public record ProductPrice
     /// The recurring interval for subscription prices.
     /// </summary>
     [JsonPropertyName("recurring_interval")]
-    public RecurringInterval? RecurringInterval { get; init; }
+    public RecurringInterval RecurringInterval { get; init; }
 
     /// <summary>
     /// The creation date of the price.

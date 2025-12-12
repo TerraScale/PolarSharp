@@ -39,7 +39,7 @@ public record Discount
     /// The amount of discount (in cents for fixed amount).
     /// </summary>
     [JsonPropertyName("amount")]
-    public long? Amount { get; init; }
+    public int? Amount { get; init; }
 
     /// <summary>
     /// The percentage of discount.
@@ -114,6 +114,20 @@ public record Discount
     [Required]
     [JsonPropertyName("updated_at")]
     public DateTime UpdatedAt { get; init; }
+    
+    /// <summary>
+    /// The organization ID associated with the discount.
+    /// </summary>
+    [Required]
+    [JsonPropertyName("organization_id")]
+    public string OrganizationId { get; init; } = string.Empty;
+    
+    /// <summary>
+    /// The code used to redeem the discount.
+    /// </summary>
+    [Required]
+    [JsonPropertyName("code")]
+    public string Code { get; init; } = string.Empty;
 }
 
 /// <summary>

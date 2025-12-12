@@ -106,6 +106,7 @@ public record Product
     /// </summary>
     [JsonPropertyName("benefits")]
     public IReadOnlyList<Benefit> Benefits { get; init; } = new List<Benefit>();
+    
 }
 /// <summary>
 /// Response for product export.

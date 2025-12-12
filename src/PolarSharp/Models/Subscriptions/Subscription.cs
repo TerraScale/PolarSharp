@@ -46,7 +46,7 @@ public record Subscription
     /// The recurring interval of the subscription (day, month, year).
     /// </summary>
     [JsonPropertyName("recurring_interval")]
-    public RecurringInterval? RecurringInterval { get; init; }
+    public RecurringInterval RecurringInterval { get; init; }
 
     /// <summary>
     /// The recurring interval count of the subscription.
@@ -183,7 +183,7 @@ public record Subscription
     /// The prices associated with the subscription.
     /// </summary>
     [JsonPropertyName("prices")]
-    public List<Products.ProductPrice>? Prices { get; init; }
+    public List<ProductPrice>? Prices { get; init; }
 
     /// <summary>
     /// The meters associated with the subscription.
