@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Polly;
 using Polly.Retry;
 using Polly.RateLimit;
+using PolarSharp.Exceptions;
 using PolarSharp.Extensions;
 using PolarSharp.Models.Common;
 using PolarSharp.Models.Customers;
@@ -66,11 +67,12 @@ public class CustomersApi
             () => _httpClient.GetAsync($"v1/customers/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<Customer>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        var result = await response.HandleErrorsAsync<PaginatedResponse<Customer>>(_jsonOptions, cancellationToken);
+        var (value, error) = result.EnsureSuccess();
+        if (error != null)
+            throw error.ToPolarApiException();
+        
+        return value ?? throw new InvalidOperationException("Failed to deserialize response.");
     }
 
     /// <summary>
@@ -87,11 +89,12 @@ public class CustomersApi
             () => _httpClient.GetAsync($"v1/customers/{customerId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Customer>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        var result = await response.HandleErrorsAsync<Customer>(_jsonOptions, cancellationToken);
+        var (value, error) = result.EnsureSuccess();
+        if (error != null)
+            throw error.ToPolarApiException();
+        
+        return value ?? throw new InvalidOperationException("Failed to deserialize response.");
     }
 
     /// <summary>
@@ -108,11 +111,12 @@ public class CustomersApi
             () => _httpClient.GetAsync($"v1/customers/external/{externalId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Customer>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        var result = await response.HandleErrorsAsync<Customer>(_jsonOptions, cancellationToken);
+        var (value, error) = result.EnsureSuccess();
+        if (error != null)
+            throw error.ToPolarApiException();
+        
+        return value ?? throw new InvalidOperationException("Failed to deserialize response.");
     }
 
     /// <summary>
@@ -132,11 +136,12 @@ public class CustomersApi
             () => _httpClient.PostAsJsonAsync("v1/customers/", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Customer>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        var result = await response.HandleErrorsAsync<Customer>(_jsonOptions, cancellationToken);
+        var (value, error) = result.EnsureSuccess();
+        if (error != null)
+            throw error.ToPolarApiException();
+        
+        return value ?? throw new InvalidOperationException("Failed to deserialize response.");
     }
 
     /// <summary>
@@ -155,11 +160,12 @@ public class CustomersApi
             () => _httpClient.PatchAsJsonAsync($"v1/customers/{customerId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Customer>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        var result = await response.HandleErrorsAsync<Customer>(_jsonOptions, cancellationToken);
+        var (value, error) = result.EnsureSuccess();
+        if (error != null)
+            throw error.ToPolarApiException();
+        
+        return value ?? throw new InvalidOperationException("Failed to deserialize response.");
     }
 
     /// <summary>
@@ -178,11 +184,12 @@ public class CustomersApi
             () => _httpClient.PatchAsJsonAsync($"v1/customers/external/{externalId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Customer>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        var result = await response.HandleErrorsAsync<Customer>(_jsonOptions, cancellationToken);
+        var (value, error) = result.EnsureSuccess();
+        if (error != null)
+            throw error.ToPolarApiException();
+        
+        return value ?? throw new InvalidOperationException("Failed to deserialize response.");
     }
 
     /// <summary>
@@ -199,7 +206,9 @@ public class CustomersApi
             () => _httpClient.DeleteAsync($"v1/customers/{customerId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
+        var error = (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
+        if (error != null)
+            throw error.ToPolarApiException();
     }
 
     /// <summary>
@@ -216,11 +225,12 @@ public class CustomersApi
             () => _httpClient.DeleteAsync($"v1/customers/external/{externalId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Customer>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        var result = await response.HandleErrorsAsync<Customer>(_jsonOptions, cancellationToken);
+        var (value, error) = result.EnsureSuccess();
+        if (error != null)
+            throw error.ToPolarApiException();
+        
+        return value ?? throw new InvalidOperationException("Failed to deserialize response.");
     }
 
     /// <summary>
@@ -237,11 +247,12 @@ public class CustomersApi
             () => _httpClient.GetAsync($"v1/customers/{customerId}/state", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<CustomerState>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        var result = await response.HandleErrorsAsync<CustomerState>(_jsonOptions, cancellationToken);
+        var (value, error) = result.EnsureSuccess();
+        if (error != null)
+            throw error.ToPolarApiException();
+        
+        return value ?? throw new InvalidOperationException("Failed to deserialize response.");
     }
 
     /// <summary>
@@ -258,11 +269,12 @@ public class CustomersApi
             () => _httpClient.GetAsync($"v1/customers/external/{externalId}/state", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<CustomerState>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        var result = await response.HandleErrorsAsync<CustomerState>(_jsonOptions, cancellationToken);
+        var (value, error) = result.EnsureSuccess();
+        if (error != null)
+            throw error.ToPolarApiException();
+        
+        return value ?? throw new InvalidOperationException("Failed to deserialize response.");
     }
 
     /// <summary>
@@ -279,11 +291,12 @@ public class CustomersApi
             () => _httpClient.GetAsync($"v1/customers/{customerId}/balance", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<CustomerBalance>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        var result = await response.HandleErrorsAsync<CustomerBalance>(_jsonOptions, cancellationToken);
+        var (value, error) = result.EnsureSuccess();
+        if (error != null)
+            throw error.ToPolarApiException();
+        
+        return value ?? throw new InvalidOperationException("Failed to deserialize response.");
     }
 
     /// <summary>
@@ -300,11 +313,12 @@ public class CustomersApi
             () => _httpClient.PostAsJsonAsync("v1/customers/export/", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<CustomerExportResponse>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        var result = await response.HandleErrorsAsync<CustomerExportResponse>(_jsonOptions, cancellationToken);
+        var (value, error) = result.EnsureSuccess();
+        if (error != null)
+            throw error.ToPolarApiException();
+        
+        return value ?? throw new InvalidOperationException("Failed to deserialize response.");
     }
 
     /// <summary>
@@ -382,11 +396,12 @@ public class CustomersApi
             () => _httpClient.GetAsync($"v1/customers/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<Customer>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        var result = await response.HandleErrorsAsync<PaginatedResponse<Customer>>(_jsonOptions, cancellationToken);
+        var (value, error) = result.EnsureSuccess();
+        if (error != null)
+            throw error.ToPolarApiException();
+        
+        return value ?? throw new InvalidOperationException("Failed to deserialize response.");
     }
 
     private static string GetQueryString(Dictionary<string, string> parameters)

@@ -106,6 +106,18 @@ public class PolarApiResultError : Error
     /// Returns true if this error is a client-side error (4xx).
     /// </summary>
     public bool IsClientError => (int)StatusCode >= 400 && (int)StatusCode < 500;
+
+    /// <summary>
+    /// Converts this error to a PolarApiException for throwing.
+    /// </summary>
+    /// <returns>A PolarApiException instance.</returns>
+    public PolarApiException ToPolarApiException()
+    {
+        return new PolarApiException(
+            Message,
+            (int)StatusCode,
+            ResponseBody);
+    }
 }
 
 /// <summary>

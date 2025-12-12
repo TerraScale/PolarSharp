@@ -67,11 +67,10 @@ public record Customer
     public DateTime? DeletedAt { get; init; }
 
     /// <summary>
-    /// The last update date of customer.
+    /// The last modification date of customer.
     /// </summary>
-    [Required]
-    [JsonPropertyName("updated_at")]
-    public DateTime UpdatedAt { get; init; }
+    [JsonPropertyName("modified_at")]
+    public DateTime? ModifiedAt { get; init; }
 
     /// <summary>
     /// The customer's billing address.

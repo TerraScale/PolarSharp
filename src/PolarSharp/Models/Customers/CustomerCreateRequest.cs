@@ -63,76 +63,331 @@ public record CustomerCreateRequest
 
 /// <summary>
 /// Represents the state of a customer.
+/// A customer along with additional state information including active subscriptions, granted benefits, and active meters.
 /// </summary>
 public record CustomerState
 {
     /// <summary>
-    /// The customer ID.
+    /// The ID of the customer.
     /// </summary>
     [Required]
-    public string CustomerId { get; init; } = string.Empty;
+    [JsonPropertyName("id")]
+    public string Id { get; init; } = string.Empty;
 
     /// <summary>
-    /// Whether the customer has active subscriptions.
-    /// </summary>
-    public bool HasActiveSubscriptions { get; init; }
-
-    /// <summary>
-    /// Whether the customer has active benefits.
-    /// </summary>
-    public bool HasActiveBenefits { get; init; }
-
-    /// <summary>
-    /// Whether the customer has active license keys.
-    /// </summary>
-    public bool HasActiveLicenseKeys { get; init; }
-
-    /// <summary>
-    /// The number of active subscriptions.
-    /// </summary>
-    public int ActiveSubscriptionsCount { get; init; }
-
-    /// <summary>
-    /// The number of active benefits.
-    /// </summary>
-    public int ActiveBenefitsCount { get; init; }
-
-    /// <summary>
-    /// The number of active license keys.
-    /// </summary>
-    public int ActiveLicenseKeysCount { get; init; }
-
-    /// <summary>
-    /// The total amount spent by the customer.
-    /// </summary>
-    public long TotalAmountSpent { get; init; }
-
-    /// <summary>
-    /// The currency of the total amount spent.
-    /// </summary>
-    public string Currency { get; init; } = string.Empty;
-
-    /// <summary>
-    /// The last order date of the customer.
-    /// </summary>
-    public DateTime? LastOrderAt { get; init; }
-
-    /// <summary>
-    /// The last subscription date of the customer.
-    /// </summary>
-    public DateTime? LastSubscriptionAt { get; init; }
-
-    /// <summary>
-    /// The creation date of the customer state.
+    /// The email address of the customer.
     /// </summary>
     [Required]
+    [JsonPropertyName("email")]
+    public string Email { get; init; } = string.Empty;
+
+    /// <summary>
+    /// The name of the customer.
+    /// </summary>
+    [JsonPropertyName("name")]
+    public string? Name { get; init; }
+
+    /// <summary>
+    /// The external ID for the customer.
+    /// </summary>
+    [JsonPropertyName("external_id")]
+    public string? ExternalId { get; init; }
+
+    /// <summary>
+    /// The metadata associated with the customer.
+    /// </summary>
+    [JsonPropertyName("metadata")]
+    public Dictionary<string, object>? Metadata { get; init; }
+
+    /// <summary>
+    /// Whether customer has a verified email address.
+    /// </summary>
+    [JsonPropertyName("email_verified")]
+    public bool EmailVerified { get; init; }
+
+    /// <summary>
+    /// The avatar URL of customer.
+    /// </summary>
+    [JsonPropertyName("avatar_url")]
+    public string? AvatarUrl { get; init; }
+
+    /// <summary>
+    /// Creation timestamp of the object.
+    /// </summary>
+    [Required]
+    [JsonPropertyName("created_at")]
     public DateTime CreatedAt { get; init; }
 
     /// <summary>
-    /// The last update date of the customer state.
+    /// Last modification timestamp of the object.
+    /// </summary>
+    [JsonPropertyName("modified_at")]
+    public DateTime? ModifiedAt { get; init; }
+
+    /// <summary>
+    /// Timestamp for when the customer was soft deleted.
+    /// </summary>
+    [JsonPropertyName("deleted_at")]
+    public DateTime? DeletedAt { get; init; }
+
+    /// <summary>
+    /// The customer's billing address.
+    /// </summary>
+    [JsonPropertyName("billing_address")]
+    public Address? BillingAddress { get; init; }
+
+    /// <summary>
+    /// The customer's tax ID.
+    /// </summary>
+    [JsonPropertyName("tax_id")]
+    public List<object>? TaxId { get; init; }
+
+    /// <summary>
+    /// The ID of the organization owning the customer.
     /// </summary>
     [Required]
-    public DateTime UpdatedAt { get; init; }
+    [JsonPropertyName("organization_id")]
+    public string OrganizationId { get; init; } = string.Empty;
+
+    /// <summary>
+    /// The customer's active subscriptions.
+    /// </summary>
+    [JsonPropertyName("active_subscriptions")]
+    public List<CustomerStateSubscription>? ActiveSubscriptions { get; init; }
+
+    /// <summary>
+    /// The customer's active benefit grants.
+    /// </summary>
+    [JsonPropertyName("granted_benefits")]
+    public List<CustomerStateBenefitGrant>? GrantedBenefits { get; init; }
+
+    /// <summary>
+    /// The customer's active meters.
+    /// </summary>
+    [JsonPropertyName("active_meters")]
+    public List<CustomerStateMeter>? ActiveMeters { get; init; }
+}
+
+/// <summary>
+/// Represents a subscription in customer state.
+/// </summary>
+public record CustomerStateSubscription
+{
+    /// <summary>
+    /// The subscription ID.
+    /// </summary>
+    [JsonPropertyName("id")]
+    public string Id { get; init; } = string.Empty;
+
+    /// <summary>
+    /// Creation timestamp.
+    /// </summary>
+    [JsonPropertyName("created_at")]
+    public DateTime CreatedAt { get; init; }
+
+    /// <summary>
+    /// Last modification timestamp.
+    /// </summary>
+    [JsonPropertyName("modified_at")]
+    public DateTime? ModifiedAt { get; init; }
+
+    /// <summary>
+    /// Metadata.
+    /// </summary>
+    [JsonPropertyName("metadata")]
+    public Dictionary<string, object>? Metadata { get; init; }
+
+    /// <summary>
+    /// The subscription status.
+    /// </summary>
+    [JsonPropertyName("status")]
+    public string Status { get; init; } = string.Empty;
+
+    /// <summary>
+    /// The amount.
+    /// </summary>
+    [JsonPropertyName("amount")]
+    public long? Amount { get; init; }
+
+    /// <summary>
+    /// The currency.
+    /// </summary>
+    [JsonPropertyName("currency")]
+    public string? Currency { get; init; }
+
+    /// <summary>
+    /// The recurring interval.
+    /// </summary>
+    [JsonPropertyName("recurring_interval")]
+    public string? RecurringInterval { get; init; }
+
+    /// <summary>
+    /// Current period start.
+    /// </summary>
+    [JsonPropertyName("current_period_start")]
+    public DateTime? CurrentPeriodStart { get; init; }
+
+    /// <summary>
+    /// Current period end.
+    /// </summary>
+    [JsonPropertyName("current_period_end")]
+    public DateTime? CurrentPeriodEnd { get; init; }
+
+    /// <summary>
+    /// Trial start.
+    /// </summary>
+    [JsonPropertyName("trial_start")]
+    public DateTime? TrialStart { get; init; }
+
+    /// <summary>
+    /// Trial end.
+    /// </summary>
+    [JsonPropertyName("trial_end")]
+    public DateTime? TrialEnd { get; init; }
+
+    /// <summary>
+    /// Whether to cancel at period end.
+    /// </summary>
+    [JsonPropertyName("cancel_at_period_end")]
+    public bool CancelAtPeriodEnd { get; init; }
+
+    /// <summary>
+    /// Canceled at timestamp.
+    /// </summary>
+    [JsonPropertyName("canceled_at")]
+    public DateTime? CanceledAt { get; init; }
+
+    /// <summary>
+    /// Started at timestamp.
+    /// </summary>
+    [JsonPropertyName("started_at")]
+    public DateTime? StartedAt { get; init; }
+
+    /// <summary>
+    /// Ends at timestamp.
+    /// </summary>
+    [JsonPropertyName("ends_at")]
+    public DateTime? EndsAt { get; init; }
+
+    /// <summary>
+    /// The product ID.
+    /// </summary>
+    [JsonPropertyName("product_id")]
+    public string? ProductId { get; init; }
+
+    /// <summary>
+    /// The discount ID.
+    /// </summary>
+    [JsonPropertyName("discount_id")]
+    public string? DiscountId { get; init; }
+
+    /// <summary>
+    /// Custom field data.
+    /// </summary>
+    [JsonPropertyName("custom_field_data")]
+    public Dictionary<string, object>? CustomFieldData { get; init; }
+}
+
+/// <summary>
+/// Represents a benefit grant in customer state.
+/// </summary>
+public record CustomerStateBenefitGrant
+{
+    /// <summary>
+    /// The benefit grant ID.
+    /// </summary>
+    [JsonPropertyName("id")]
+    public string Id { get; init; } = string.Empty;
+
+    /// <summary>
+    /// Creation timestamp.
+    /// </summary>
+    [JsonPropertyName("created_at")]
+    public DateTime CreatedAt { get; init; }
+
+    /// <summary>
+    /// Last modification timestamp.
+    /// </summary>
+    [JsonPropertyName("modified_at")]
+    public DateTime? ModifiedAt { get; init; }
+
+    /// <summary>
+    /// Granted at timestamp.
+    /// </summary>
+    [JsonPropertyName("granted_at")]
+    public DateTime? GrantedAt { get; init; }
+
+    /// <summary>
+    /// The benefit ID.
+    /// </summary>
+    [JsonPropertyName("benefit_id")]
+    public string? BenefitId { get; init; }
+
+    /// <summary>
+    /// The benefit type.
+    /// </summary>
+    [JsonPropertyName("benefit_type")]
+    public string? BenefitType { get; init; }
+
+    /// <summary>
+    /// Benefit metadata.
+    /// </summary>
+    [JsonPropertyName("benefit_metadata")]
+    public Dictionary<string, object>? BenefitMetadata { get; init; }
+
+    /// <summary>
+    /// Properties.
+    /// </summary>
+    [JsonPropertyName("properties")]
+    public Dictionary<string, object>? Properties { get; init; }
+}
+
+/// <summary>
+/// Represents a meter in customer state.
+/// </summary>
+public record CustomerStateMeter
+{
+    /// <summary>
+    /// The meter ID.
+    /// </summary>
+    [JsonPropertyName("id")]
+    public string Id { get; init; } = string.Empty;
+
+    /// <summary>
+    /// Creation timestamp.
+    /// </summary>
+    [JsonPropertyName("created_at")]
+    public DateTime CreatedAt { get; init; }
+
+    /// <summary>
+    /// Last modification timestamp.
+    /// </summary>
+    [JsonPropertyName("modified_at")]
+    public DateTime? ModifiedAt { get; init; }
+
+    /// <summary>
+    /// The meter ID.
+    /// </summary>
+    [JsonPropertyName("meter_id")]
+    public string? MeterId { get; init; }
+
+    /// <summary>
+    /// Consumed units.
+    /// </summary>
+    [JsonPropertyName("consumed_units")]
+    public long? ConsumedUnits { get; init; }
+
+    /// <summary>
+    /// Credited units.
+    /// </summary>
+    [JsonPropertyName("credited_units")]
+    public long? CreditedUnits { get; init; }
+
+    /// <summary>
+    /// Balance.
+    /// </summary>
+    [JsonPropertyName("balance")]
+    public long? Balance { get; init; }
 }
 
 /// <summary>
@@ -144,27 +399,18 @@ public record CustomerBalance
     /// The customer ID.
     /// </summary>
     [Required]
+    [JsonPropertyName("customer_id")]
     public string CustomerId { get; init; } = string.Empty;
 
     /// <summary>
-    /// The current balance of the customer.
+    /// The current balance of the customer in cents.
     /// </summary>
-    public long Balance { get; init; }
+    [JsonPropertyName("amount")]
+    public long Amount { get; init; }
 
     /// <summary>
     /// The currency of the balance.
     /// </summary>
+    [JsonPropertyName("currency")]
     public string Currency { get; init; } = string.Empty;
-
-    /// <summary>
-    /// The creation date of the customer balance.
-    /// </summary>
-    [Required]
-    public DateTime CreatedAt { get; init; }
-
-    /// <summary>
-    /// The last update date of the customer balance.
-    /// </summary>
-    [Required]
-    public DateTime UpdatedAt { get; init; }
 }
