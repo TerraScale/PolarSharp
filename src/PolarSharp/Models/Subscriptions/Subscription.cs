@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
-using PolarSharp.Models.Products; // Add this using directive
+using PolarSharp.Models.Products;
 
 namespace PolarSharp.Models.Subscriptions;
 
@@ -10,6 +10,20 @@ namespace PolarSharp.Models.Subscriptions;
 public record Subscription
 {
     /// <summary>
+    /// The creation date of the subscription.
+    /// </summary>
+    [Required]
+    [JsonPropertyName("created_at")]
+    public DateTime CreatedAt { get; init; }
+
+    /// <summary>
+    /// The last modification date of the subscription.
+    /// </summary>
+    [Required]
+    [JsonPropertyName("modified_at")]
+    public DateTime ModifiedAt { get; init; }
+
+    /// <summary>
     /// The unique identifier of the subscription.
     /// </summary>
     [Required]
@@ -17,47 +31,19 @@ public record Subscription
     public string Id { get; init; } = string.Empty;
 
     /// <summary>
-    /// The status of the subscription.
-    /// </summary>
-    [Required]
-    [JsonPropertyName("status")]
-    public SubscriptionStatus Status { get; init; }
-
-    /// <summary>
-    /// The customer ID associated with the subscription.
-    /// </summary>
-    [Required]
-    [JsonPropertyName("customer_id")]
-    public string CustomerId { get; init; } = string.Empty;
-
-    /// <summary>
-    /// The product ID associated with the subscription.
-    /// </summary>
-    [Required]
-    [JsonPropertyName("product_id")]
-    public string ProductId { get; init; } = string.Empty;
-
-    /// <summary>
-    /// The product price ID associated with the subscription.
-    /// </summary>
-    [Required]
-    [JsonPropertyName("product_price_id")]
-    public string ProductPriceId { get; init; } = string.Empty;
-
-    /// <summary>
-    /// The amount of the subscription.
+    /// The amount of the subscription in cents.
     /// </summary>
     [JsonPropertyName("amount")]
-    public decimal? Amount { get; init; }
+    public int Amount { get; init; }
 
     /// <summary>
     /// The currency of the subscription.
     /// </summary>
     [JsonPropertyName("currency")]
-    public string? Currency { get; init; }
+    public string Currency { get; init; } = string.Empty;
 
     /// <summary>
-    /// The recurring interval of the subscription.
+    /// The recurring interval of the subscription (day, month, year).
     /// </summary>
     [JsonPropertyName("recurring_interval")]
     public RecurringInterval? RecurringInterval { get; init; }
@@ -66,13 +52,14 @@ public record Subscription
     /// The recurring interval count of the subscription.
     /// </summary>
     [JsonPropertyName("recurring_interval_count")]
-    public int? RecurringIntervalCount { get; init; }
+    public int RecurringIntervalCount { get; init; }
 
     /// <summary>
-    /// Whether the subscription will be canceled at the end of the period.
+    /// The status of the subscription.
     /// </summary>
-    [JsonPropertyName("cancel_at_period_end")]
-    public bool? CancelAtPeriodEnd { get; init; }
+    [Required]
+    [JsonPropertyName("status")]
+    public SubscriptionStatus Status { get; init; }
 
     /// <summary>
     /// The current period start date.
@@ -101,6 +88,18 @@ public record Subscription
     public DateTime? TrialEnd { get; init; }
 
     /// <summary>
+    /// Whether the subscription will be canceled at the end of the period.
+    /// </summary>
+    [JsonPropertyName("cancel_at_period_end")]
+    public bool CancelAtPeriodEnd { get; init; }
+
+    /// <summary>
+    /// The canceled at date.
+    /// </summary>
+    [JsonPropertyName("canceled_at")]
+    public DateTime? CanceledAt { get; init; }
+
+    /// <summary>
     /// The started at date.
     /// </summary>
     [JsonPropertyName("started_at")]
@@ -113,22 +112,42 @@ public record Subscription
     public DateTime? EndsAt { get; init; }
 
     /// <summary>
-    /// The canceled at date.
-    /// </summary>
-    [JsonPropertyName("canceled_at")]
-    public DateTime? CanceledAt { get; init; }
-
-    /// <summary>
     /// The ended at date.
     /// </summary>
     [JsonPropertyName("ended_at")]
     public DateTime? EndedAt { get; init; }
 
     /// <summary>
+    /// The customer ID associated with the subscription.
+    /// </summary>
+    [Required]
+    [JsonPropertyName("customer_id")]
+    public string CustomerId { get; init; } = string.Empty;
+
+    /// <summary>
+    /// The product ID associated with the subscription.
+    /// </summary>
+    [Required]
+    [JsonPropertyName("product_id")]
+    public string ProductId { get; init; } = string.Empty;
+
+    /// <summary>
+    /// The discount ID associated with the subscription.
+    /// </summary>
+    [JsonPropertyName("discount_id")]
+    public string? DiscountId { get; init; }
+
+    /// <summary>
+    /// The checkout ID associated with the subscription.
+    /// </summary>
+    [JsonPropertyName("checkout_id")]
+    public string? CheckoutId { get; init; }
+
+    /// <summary>
     /// The customer cancellation reason.
     /// </summary>
     [JsonPropertyName("customer_cancellation_reason")]
-    public string? CustomerCancellationReason { get; init; }
+    public CustomerCancellationReason? CustomerCancellationReason { get; init; }
 
     /// <summary>
     /// The customer cancellation comment.
@@ -143,42 +162,16 @@ public record Subscription
     public Dictionary<string, object>? Metadata { get; init; }
 
     /// <summary>
-    /// The external ID for the subscription.
-    /// </summary>
-    [JsonPropertyName("external_id")]
-    public string? ExternalId { get; init; }
-
-    /// <summary>
-    /// The creation date of the subscription.
-    /// </summary>
-    [Required]
-    [JsonPropertyName("created_at")]
-    public DateTime CreatedAt { get; init; }
-
-    /// <summary>
-    /// The last update date of the subscription.
-    /// </summary>
-    [Required]
-    [JsonPropertyName("updated_at")]
-    public DateTime UpdatedAt { get; init; }
-
-    /// <summary>
     /// The customer information.
     /// </summary>
     [JsonPropertyName("customer")]
-    public Customers.Customer? Customer { get; init; }
+    public Customers.Customer Customer { get; init; } = new();
 
     /// <summary>
     /// The product information.
     /// </summary>
     [JsonPropertyName("product")]
-    public Products.Product? Product { get; init; }
-
-    /// <summary>
-    /// The product price information.
-    /// </summary>
-    [JsonPropertyName("product_price")]
-    public Products.ProductPrice? ProductPrice { get; init; }
+    public Product Product { get; init; } = new();
 
     /// <summary>
     /// The discount information.
@@ -196,75 +189,285 @@ public record Subscription
     /// The meters associated with the subscription.
     /// </summary>
     [JsonPropertyName("meters")]
-    public List<Meters.Meter>? Meters { get; init; }
+    public List<SubscriptionMeterInfo>? Meters { get; init; }
+
+    /// <summary>
+    /// The number of seats associated with the subscription.
+    /// </summary>
+    [JsonPropertyName("seats")]
+    public int Seats { get; init; }
 
     /// <summary>
     /// The custom field data associated with the subscription.
     /// </summary>
     [JsonPropertyName("custom_field_data")]
     public Dictionary<string, object>? CustomFieldData { get; init; }
+}
+
+/// <summary>
+/// Represents meter information associated with a subscription.
+/// </summary>
+public record SubscriptionMeterInfo
+{
+    /// <summary>
+    /// The creation date of the meter info.
+    /// </summary>
+    [JsonPropertyName("created_at")]
+    public DateTime CreatedAt { get; init; }
 
     /// <summary>
-    /// The seats associated with the subscription.
+    /// The last modification date of the meter info.
     /// </summary>
-    [JsonPropertyName("seats")]
-    public List<Seats.Seat>? Seats { get; init; }
+    [JsonPropertyName("modified_at")]
+    public DateTime ModifiedAt { get; init; }
+
+    /// <summary>
+    /// The unique identifier of the subscription meter info.
+    /// </summary>
+    [JsonPropertyName("id")]
+    public string Id { get; init; } = string.Empty;
+
+    /// <summary>
+    /// The number of consumed units.
+    /// </summary>
+    [JsonPropertyName("consumed_units")]
+    public int ConsumedUnits { get; init; }
+
+    /// <summary>
+    /// The number of credited units.
+    /// </summary>
+    [JsonPropertyName("credited_units")]
+    public int CreditedUnits { get; init; }
+
+    /// <summary>
+    /// The amount.
+    /// </summary>
+    [JsonPropertyName("amount")]
+    public int Amount { get; init; }
+
+    /// <summary>
+    /// The meter ID.
+    /// </summary>
+    [JsonPropertyName("meter_id")]
+    public string MeterId { get; init; } = string.Empty;
+
+    /// <summary>
+    /// The meter details.
+    /// </summary>
+    [JsonPropertyName("meter")]
+    public SubscriptionMeterDetails Meter { get; init; } = new();
+}
+
+/// <summary>
+/// Represents meter details within a subscription.
+/// </summary>
+public record SubscriptionMeterDetails
+{
+    /// <summary>
+    /// The metadata associated with the meter.
+    /// </summary>
+    [JsonPropertyName("metadata")]
+    public Dictionary<string, object>? Metadata { get; init; }
+
+    /// <summary>
+    /// The creation date of the meter.
+    /// </summary>
+    [JsonPropertyName("created_at")]
+    public DateTime CreatedAt { get; init; }
+
+    /// <summary>
+    /// The last modification date of the meter.
+    /// </summary>
+    [JsonPropertyName("modified_at")]
+    public DateTime ModifiedAt { get; init; }
+
+    /// <summary>
+    /// The unique identifier of the meter.
+    /// </summary>
+    [JsonPropertyName("id")]
+    public string Id { get; init; } = string.Empty;
+
+    /// <summary>
+    /// The name of the meter.
+    /// </summary>
+    [JsonPropertyName("name")]
+    public string Name { get; init; } = string.Empty;
+
+    /// <summary>
+    /// The filter configuration for the meter.
+    /// </summary>
+    [JsonPropertyName("filter")]
+    public MeterFilter Filter { get; init; } = new();
+
+    /// <summary>
+    /// The aggregation configuration for the meter.
+    /// </summary>
+    [JsonPropertyName("aggregation")]
+    public MeterAggregation Aggregation { get; init; } = new();
+
+    /// <summary>
+    /// The organization ID that owns the meter.
+    /// </summary>
+    [JsonPropertyName("organization_id")]
+    public string OrganizationId { get; init; } = string.Empty;
+
+    /// <summary>
+    /// The archived date of the meter, if archived.
+    /// </summary>
+    [JsonPropertyName("archived_at")]
+    public DateTime? ArchivedAt { get; init; }
+}
+
+/// <summary>
+/// Represents the filter configuration for a meter.
+/// </summary>
+public record MeterFilter
+{
+    /// <summary>
+    /// The conjunction type (and/or).
+    /// </summary>
+    [JsonPropertyName("conjunction")]
+    public string Conjunction { get; init; } = "and";
+
+    /// <summary>
+    /// The filter clauses.
+    /// </summary>
+    [JsonPropertyName("clauses")]
+    public List<MeterFilterClause> Clauses { get; init; } = new();
+}
+
+/// <summary>
+/// Represents a filter clause for a meter.
+/// </summary>
+public record MeterFilterClause
+{
+    /// <summary>
+    /// The property to filter on.
+    /// </summary>
+    [JsonPropertyName("property")]
+    public string Property { get; init; } = string.Empty;
+
+    /// <summary>
+    /// The operator for the filter (eq, ne, gt, lt, etc.).
+    /// </summary>
+    [JsonPropertyName("operator")]
+    public string Operator { get; init; } = "eq";
+
+    /// <summary>
+    /// The value to compare against.
+    /// </summary>
+    [JsonPropertyName("value")]
+    public string Value { get; init; } = string.Empty;
+}
+
+/// <summary>
+/// Represents the aggregation configuration for a meter.
+/// </summary>
+public record MeterAggregation
+{
+    /// <summary>
+    /// The aggregation function (count, sum, avg, etc.).
+    /// </summary>
+    [JsonPropertyName("func")]
+    public string Func { get; init; } = "count";
 }
 
 /// <summary>
 /// Represents the status of a subscription.
 /// </summary>
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum SubscriptionStatus
 {
     /// <summary>
-    /// The subscription is active.
-    /// </summary>
-    Active,
-
-    /// <summary>
-    /// The subscription is trialing.
-    /// </summary>
-    Trialing,
-
-    /// <summary>
-    /// The subscription is past due.
-    /// </summary>
-    PastDue,
-
-    /// <summary>
-    /// The subscription is canceled.
-    /// </summary>
-    Canceled,
-
-    /// <summary>
     /// The subscription is incomplete.
     /// </summary>
+    [JsonPropertyName("incomplete")]
     Incomplete,
 
     /// <summary>
     /// The subscription is incomplete expired.
     /// </summary>
+    [JsonPropertyName("incomplete_expired")]
     IncompleteExpired,
+
+    /// <summary>
+    /// The subscription is trialing.
+    /// </summary>
+    [JsonPropertyName("trialing")]
+    Trialing,
+
+    /// <summary>
+    /// The subscription is active.
+    /// </summary>
+    [JsonPropertyName("active")]
+    Active,
+
+    /// <summary>
+    /// The subscription is past due.
+    /// </summary>
+    [JsonPropertyName("past_due")]
+    PastDue,
+
+    /// <summary>
+    /// The subscription is canceled.
+    /// </summary>
+    [JsonPropertyName("canceled")]
+    Canceled,
 
     /// <summary>
     /// The subscription is unpaid.
     /// </summary>
-    Unpaid,
+    [JsonPropertyName("unpaid")]
+    Unpaid
+}
+
+/// <summary>
+/// Represents the customer cancellation reason for a subscription.
+/// </summary>
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum CustomerCancellationReason
+{
+    /// <summary>
+    /// Customer service related cancellation.
+    /// </summary>
+    [JsonPropertyName("customer_service")]
+    CustomerService,
 
     /// <summary>
-    /// The subscription is paused.
+    /// Too expensive.
     /// </summary>
-    Paused,
+    [JsonPropertyName("too_expensive")]
+    TooExpensive,
 
     /// <summary>
-    /// The subscription is pending.
+    /// Missing features.
     /// </summary>
-    Pending,
+    [JsonPropertyName("missing_features")]
+    MissingFeatures,
 
     /// <summary>
-    /// The subscription is incomplete pending.
+    /// Switched to competitor.
     /// </summary>
-    IncompletePending
+    [JsonPropertyName("switched_service")]
+    SwitchedService,
+
+    /// <summary>
+    /// Not using the service.
+    /// </summary>
+    [JsonPropertyName("unused")]
+    Unused,
+
+    /// <summary>
+    /// Technical issues.
+    /// </summary>
+    [JsonPropertyName("too_complex")]
+    TooComplex,
+
+    /// <summary>
+    /// Other reason.
+    /// </summary>
+    [JsonPropertyName("other")]
+    Other
 }
 
 /// <summary>

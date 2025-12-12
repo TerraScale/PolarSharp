@@ -59,6 +59,12 @@ public record Customer
     [Required]
     [JsonPropertyName("created_at")]
     public DateTime CreatedAt { get; init; }
+    
+    /// <summary>
+    /// The deletion date of customer.
+    /// </summary>
+    [JsonPropertyName("deleted_at")]
+    public DateTime? DeletedAt { get; init; }
 
     /// <summary>
     /// The last update date of customer.
@@ -93,6 +99,18 @@ public record Customer
     /// The customer's orders.
     /// </summary>
     public List<Orders.Order>? Orders { get; init; }
+    
+    /// <summary>
+    /// The customer's tax ID.
+    /// </summary>
+    [JsonPropertyName("tax_id")]
+    public Dictionary<string, string>? TaxIds { get; init; }
+    
+    /// <summary>
+    /// The organization ID associated with the customer.
+    /// </summary>
+    [JsonPropertyName("organization_id")]
+    public string OrganizationId { get; init; } = string.Empty;
 }
 
 /// <summary>
@@ -129,6 +147,18 @@ public record Address
     /// </summary>
     [JsonPropertyName("country")]
     public string? Country { get; init; }
+    
+    /// <summary>
+    /// The phone number.
+    /// </summary>
+    [JsonPropertyName("line1")]
+    public string? Line1 { get; init; }
+    
+    /// <summary>
+    /// The phone number.
+    /// </summary>
+    [JsonPropertyName("line2")]
+    public string? Line2 { get; init; }
 }
 
 /// <summary>

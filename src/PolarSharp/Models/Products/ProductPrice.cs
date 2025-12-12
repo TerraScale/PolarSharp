@@ -72,4 +72,36 @@ public record ProductPrice
     [Required]
     [JsonPropertyName("product_id")]
     public string ProductId { get; init; } = string.Empty;
+    
+    /// <summary>
+    /// The source of the price.
+    /// </summary>
+    [JsonPropertyName("source")]
+    public PriceSource Source { get; init; }
+    
+    /// <summary>
+    /// Indicates whether the price is archived.
+    /// </summary>
+    [JsonPropertyName("is_archived")]
+    public bool IsArchived { get; init; }
+
+}
+
+/// <summary>
+///  The source of the price.
+/// </summary>
+public enum PriceSource
+{
+    /// <summary>
+    ///  Catalog price.
+    /// </summary>
+    [JsonPropertyName("catalog")]
+    Catalog = 0,
+    
+    
+    /// <summary>
+    ///  Ad-hoc price.
+    /// </summary>
+    [JsonPropertyName("ad_hoc")]
+    AdHoc = 1
 }

@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
+using PolarSharp.Models.Benefits;
 using PolarSharp.Models.Common;
 
 namespace PolarSharp.Models.Products;
@@ -99,6 +100,12 @@ public record Product
     /// The type of product (derived from IsRecurring).
     /// </summary>
     public ProductType Type => IsRecurring ? ProductType.Subscription : ProductType.OneTime;
+    
+    /// <summary>
+    /// The benefits associated with this product.
+    /// </summary>
+    [JsonPropertyName("benefits")]
+    public IReadOnlyList<Benefit> Benefits { get; init; } = new List<Benefit>();
 }
 /// <summary>
 /// Response for product export.
