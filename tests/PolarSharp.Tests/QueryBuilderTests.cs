@@ -310,7 +310,7 @@ public class SubscriptionsQueryBuilderTests
 
         // Assert
         var result = builder.Build();
-        result.Should().Be("external_id=ext_789");
+        result.Should().Be("external_customer_id=ext_789");
     }
 
     [Fact]
@@ -332,7 +332,7 @@ public class SubscriptionsQueryBuilderTests
         result.Should().Contain("status=active");
         result.Should().Contain("customer_id=cust_123");
         result.Should().Contain("product_id=prod_456");
-        result.Should().Contain("external_id=ext_789");
+        result.Should().Contain("external_customer_id=ext_789");
         result.Should().Contain("canceled=false");
     }
 }
