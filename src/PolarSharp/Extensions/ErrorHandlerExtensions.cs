@@ -66,33 +66,122 @@ internal static class ErrorHandlerExtensions
     }
 
     /// <summary>
+    /// Validates the Result and returns a structured error if it failed.
+    /// This method does not throw exceptions - use for functional error handling.
+    /// </summary>
+    /// <param name="result">The result to check.</param>
+    /// <returns>A PolarApiResultError if the result failed, null if successful.</returns>
+    public static PolarApiResultError? GetError(this Result result)
+    {
+        if (result.IsSuccess)
+            return null;
+
+        return result.Errors.OfType<PolarApiResultError>().FirstOrDefault()
+               ?? new PolarApiResultError(
+                   string.Join("; ", result.Errors.Select(e => e.Message)),
+                   System.Net.HttpStatusCode.InternalServerError);
+    }
+
+    /// <summary>
+    /// Validates the Result and returns a structured error if it failed.
+    /// This method does not throw exceptions - use for functional error handling.
+    /// </summary>
+    /// <typeparam name="T">The result value type.</typeparam>
+    /// <param name="result">The result to check.</param>
+    /// <returns>A PolarApiResultError if the result failed, null if successful.</returns>
+    public static PolarApiResultError? GetError<T>(this Result<T> result)
+    {
+        if (result.IsSuccess)
+            return null;
+
+        return result.Errors.OfType<PolarApiResultError>().FirstOrDefault()
+               ?? new PolarApiResultError(
+                   string.Join("; ", result.Errors.Select(e => e.Message)),
+                   System.Net.HttpStatusCode.InternalServerError);
+    }
+
+    /// <summary>
+    /// Tries to get the value from a Result, returning false if it failed.
+    /// This method does not throw exceptions - use for functional error handling.
+    /// </summary>
+    /// <typeparam name="T">The result value type.</typeparam>
+    /// <param name="result">The result to check.</param>
+    /// <param name="value">The value if successful.</param>
+    /// <param name="error">The error if failed.</param>
+    /// <returns>True if successful, false otherwise.</returns>
+    public static bool TryGetValue<T>(this Result<T> result, out T? value, out PolarApiResultError? error)
+    {
+        if (result.IsSuccess)
+        {
+            value = result.Value;
+            error = null;
+            return true;
+        }
+
+        value = default;
+        error = result.GetError();
+        return false;
+    }
+
+    /// <summary>
+    /// Validates the Result and returns the structured error if it failed, or null if successful.
+    /// This method does not throw exceptions - use for functional error handling.
+    /// </summary>
+    /// <param name="result">The result to check.</param>
+    /// <returns>A PolarApiResultError if failed, null if successful.</returns>
+    public static PolarApiResultError? ValidateResult(this Result result)
+    {
+        if (result.IsSuccess)
+            return null;
+
+        return result.Errors.OfType<PolarApiResultError>().FirstOrDefault()
+               ?? new PolarApiResultError(
+                   string.Join("; ", result.Errors.Select(e => e.Message)),
+                   System.Net.HttpStatusCode.InternalServerError);
+    }
+
+    /// <summary>
+    /// Validates the Result and returns either the value or the error.
+    /// This method does not throw exceptions - use for functional error handling.
+    /// </summary>
+    /// <typeparam name="T">The result value type.</typeparam>
+    /// <param name="result">The result to check.</param>
+    /// <returns>A tuple containing the value (if successful) and error (if failed).</returns>
+    public static (T? Value, PolarApiResultError? Error) ValidateResult<T>(this Result<T> result)
+    {
+        if (result.IsSuccess)
+            return (result.Value, null);
+
+        var error = result.Errors.OfType<PolarApiResultError>().FirstOrDefault()
+                    ?? new PolarApiResultError(
+                        string.Join("; ", result.Errors.Select(e => e.Message)),
+                        System.Net.HttpStatusCode.InternalServerError);
+
+        return (default, error);
+    }
+
+    /// <summary>
     /// Ensures the Result is successful, throwing a PolarApiException if it failed.
-    /// Use this to maintain backward compatibility with exception-based error handling.
+    /// For functional error handling without exceptions, use <see cref="ValidateResult(Result)"/> instead.
     /// </summary>
     /// <param name="result">The result to check.</param>
     /// <exception cref="PolarApiException">Thrown when the result is failed.</exception>
     public static void EnsureSuccess(this Result result)
     {
-        if (result.IsFailed)
+        var error = result.ValidateResult();
+        if (error != null)
         {
-            var polarError = result.Errors.OfType<PolarApiResultError>().FirstOrDefault();
-            if (polarError != null)
-            {
-                throw new PolarApiException(
-                    polarError.Message,
-                    (int)polarError.StatusCode,
-                    polarError.ResponseBody);
-            }
-            
             throw new PolarApiException(
-                string.Join("; ", result.Errors.Select(e => e.Message)),
-                500);
+                error.Message,
+                (int)error.StatusCode,
+                error.ResponseBody);
         }
     }
 
     /// <summary>
     /// Ensures the Result is successful, throwing a PolarApiException if it failed.
     /// Returns the value on success.
+    /// For functional error handling without exceptions, use <see cref="ValidateResult{T}"/> instead.
     /// </summary>
     /// <typeparam name="T">The result value type.</typeparam>
     /// <param name="result">The result to check.</param>
@@ -100,23 +189,16 @@ internal static class ErrorHandlerExtensions
     /// <exception cref="PolarApiException">Thrown when the result is failed.</exception>
     public static T EnsureSuccess<T>(this Result<T> result)
     {
-        if (result.IsFailed)
+        var (value, error) = result.ValidateResult();
+        if (error != null)
         {
-            var polarError = result.Errors.OfType<PolarApiResultError>().FirstOrDefault();
-            if (polarError != null)
-            {
-                throw new PolarApiException(
-                    polarError.Message,
-                    (int)polarError.StatusCode,
-                    polarError.ResponseBody);
-            }
-            
             throw new PolarApiException(
-                string.Join("; ", result.Errors.Select(e => e.Message)),
-                500);
+                error.Message,
+                (int)error.StatusCode,
+                error.ResponseBody);
         }
-        
-        return result.Value;
+
+        return value!;
     }
 
     /// <summary>

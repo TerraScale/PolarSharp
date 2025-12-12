@@ -102,7 +102,7 @@ public class DiscountsIntegrationTests : IClassFixture<IntegrationTestFixture>
         discount.Name.Should().Be(request.Name);
         discount.Description.Should().Be(request.Description);
         discount.Type.Should().Be(request.Type);
-        discount.Amount.Should().Be(request.Amount);
+        discount.Amount.Should().Be((int?)request.Amount);
         discount.Currency.Should().Be(request.Currency);
         discount.Active.Should().Be(request.Active);
         discount.MaxRedemptions.Should().Be(request.MaxRedemptions);
