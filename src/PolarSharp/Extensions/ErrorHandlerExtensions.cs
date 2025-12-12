@@ -161,44 +161,26 @@ internal static class ErrorHandlerExtensions
     }
 
     /// <summary>
-    /// Ensures the Result is successful, throwing a PolarApiException if it failed.
-    /// For functional error handling without exceptions, use <see cref="ValidateResult(Result)"/> instead.
+    /// Validates the Result and returns the structured error if it failed, or null if successful.
+    /// This method does not throw exceptions - use for functional error handling.
     /// </summary>
     /// <param name="result">The result to check.</param>
-    /// <exception cref="PolarApiException">Thrown when the result is failed.</exception>
-    public static void EnsureSuccess(this Result result)
+    /// <returns>A PolarApiResultError if failed, null if successful.</returns>
+    public static PolarApiResultError? EnsureSuccess(this Result result)
     {
-        var error = result.ValidateResult();
-        if (error != null)
-        {
-            throw new PolarApiException(
-                error.Message,
-                (int)error.StatusCode,
-                error.ResponseBody);
-        }
+        return result.ValidateResult();
     }
 
     /// <summary>
-    /// Ensures the Result is successful, throwing a PolarApiException if it failed.
-    /// Returns the value on success.
-    /// For functional error handling without exceptions, use <see cref="ValidateResult{T}"/> instead.
+    /// Validates the Result and returns either the value or the error.
+    /// This method does not throw exceptions - use for functional error handling.
     /// </summary>
     /// <typeparam name="T">The result value type.</typeparam>
     /// <param name="result">The result to check.</param>
-    /// <returns>The value if successful.</returns>
-    /// <exception cref="PolarApiException">Thrown when the result is failed.</exception>
-    public static T EnsureSuccess<T>(this Result<T> result)
+    /// <returns>A tuple containing the value (if successful) and error (if failed).</returns>
+    public static (T? Value, PolarApiResultError? Error) EnsureSuccess<T>(this Result<T> result)
     {
-        var (value, error) = result.ValidateResult();
-        if (error != null)
-        {
-            throw new PolarApiException(
-                error.Message,
-                (int)error.StatusCode,
-                error.ResponseBody);
-        }
-
-        return value!;
+        return result.ValidateResult();
     }
 
     /// <summary>
