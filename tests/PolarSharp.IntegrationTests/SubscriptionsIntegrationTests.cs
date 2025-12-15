@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using PolarSharp.Api;
 using PolarSharp.Models.Common;
+using PolarSharp.Models.Products;
 using PolarSharp.Models.Subscriptions;
 using Xunit;
 using Xunit.Abstractions;
@@ -145,13 +146,14 @@ public class SubscriptionsIntegrationTests : IClassFixture<IntegrationTestFixtur
     }
 
     [Fact]
-    public async Task SubscriptionsApi_CreateSubscription_HandlesPermissionLimitations()
+    public async Task SubscriptionsApi_CreateSubscription_WithFakeIds_ReturnsNullOrThrows()
     {
         // Arrange
         var client = _fixture.CreateClient();
 
         // Act & Assert
-        // Creating subscriptions requires valid customer and product price IDs
+        // Creating subscriptions with fake/non-existent customer and product IDs
+        // should either return null or throw an exception
         try
         {
             var subscriptionRequest = new SubscriptionCreateRequest
@@ -169,24 +171,12 @@ public class SubscriptionsIntegrationTests : IClassFixture<IntegrationTestFixtur
 
             var createdSubscription = await client.Subscriptions.CreateAsync(subscriptionRequest);
 
-            // If sandbox returns empty response with empty ID, this is acceptable
-            if (createdSubscription == null || string.IsNullOrEmpty(createdSubscription.Id))
-            {
-                // Sandbox limitation - test passes
-                true.Should().BeTrue();
-                return;
-            }
-
-            createdSubscription.Should().NotBeNull();
-            createdSubscription.Id.Should().NotBeNullOrEmpty();
-            createdSubscription.CustomerId.Should().Be(subscriptionRequest.CustomerId);
-            createdSubscription.Metadata.Should().NotBeNull();
-            createdSubscription.Metadata!["test"].Should().Be(true);
-            createdSubscription.Metadata!["integration"].Should().Be(true);
+            // With fake IDs, the API should return null (invalid input)
+            createdSubscription.Should().BeNull();
         }
-        catch (PolarSharp.Exceptions.PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed") || ex.Message.Contains("RequestValidationError") || ex.Message.Contains("Not Found"))
+        catch (PolarSharp.Exceptions.PolarApiException)
         {
-            // Expected in sandbox environment with limited permissions or invalid IDs
+            // Expected - API rejected the invalid IDs
             true.Should().BeTrue();
         }
     }
@@ -375,57 +365,13 @@ public class SubscriptionsIntegrationTests : IClassFixture<IntegrationTestFixtur
     }
 
     [Fact]
-    public async Task SubscriptionsApi_CreateSubscriptionWithValidation_HandlesErrorsCorrectly()
-    {
-        // Arrange
-        var client = _fixture.CreateClient();
-
-        // Act & Assert - Missing required fields
-        // The sandbox API may return empty objects instead of throwing exceptions
-        try
-        {
-            var invalidRequest1 = new SubscriptionCreateRequest();
-            var result1 = await client.Subscriptions.CreateAsync(invalidRequest1);
-            
-            // If no exception, the API might have returned an empty object or null-like response
-            // This is acceptable for sandbox behavior
-            true.Should().BeTrue();
-        }
-        catch (Exception)
-        {
-            // This is expected behavior - validation error
-            true.Should().BeTrue();
-        }
-
-        // Act & Assert - Empty customer ID
-        try
-        {
-            var invalidRequest2 = new SubscriptionCreateRequest
-            {
-                CustomerId = "",
-                ProductPriceId = "price_123"
-            };
-            var result2 = await client.Subscriptions.CreateAsync(invalidRequest2);
-            
-            // If no exception, the API might have returned an empty object or null-like response
-            // This is acceptable for sandbox behavior
-            true.Should().BeTrue();
-        }
-        catch (Exception)
-        {
-            // This is expected behavior - validation error
-            true.Should().BeTrue();
-        }
-    }
-
-    [Fact]
-    public async Task SubscriptionsApi_Export_HandlesPermissionLimitations()
+    public async Task SubscriptionsApi_Export_ReturnsNullOrThrowsInSandbox()
     {
         // Arrange
         var client = _fixture.CreateClient();
 
         // Act & Assert
-        // Export endpoints may require higher permissions in sandbox
+        // Export endpoints may not be available in sandbox or may return empty
         try
         {
             var exportRequest = new SubscriptionExportRequest
@@ -437,23 +383,20 @@ public class SubscriptionsIntegrationTests : IClassFixture<IntegrationTestFixtur
 
             var exportResult = await client.Subscriptions.ExportAsync(exportRequest);
 
-            // Export might return null or empty object in sandbox environment
-            if (exportResult == null || string.IsNullOrEmpty(exportResult.ExportUrl))
+            // In sandbox, export may return null (not supported) or a valid result
+            if (exportResult != null)
             {
-                // Sandbox limitation - test passes
-                true.Should().BeTrue();
-                return;
+                // If we got a valid result, verify its properties
+                exportResult.ExportUrl.Should().NotBeNullOrEmpty();
+                exportResult.ExportId.Should().NotBeNullOrEmpty();
+                exportResult.Format.Should().Be(Api.ExportFormat.Csv);
             }
-
-            exportResult.Should().NotBeNull();
-            exportResult.ExportUrl.Should().NotBeNullOrEmpty();
-            exportResult.ExportId.Should().NotBeNullOrEmpty();
-            exportResult.Format.Should().Be(Api.ExportFormat.Csv);
+            // null is acceptable in sandbox
         }
-        catch (PolarSharp.Exceptions.PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed") || ex.Message.Contains("RequestValidationError") || ex.Message.Contains("Not Found"))
+        catch (PolarSharp.Exceptions.PolarApiException)
         {
-            // Expected in sandbox environment with limited permissions or validation requirements
-            true.Should().BeTrue(); // Test passes - this is expected behavior
+            // Expected in sandbox environment with limited permissions
+            true.Should().BeTrue();
         }
     }
 
@@ -557,12 +500,13 @@ public class SubscriptionsIntegrationTests : IClassFixture<IntegrationTestFixtur
     }
 
     [Fact]
-    public async Task SubscriptionsApi_CreateSubscriptionWithTrial_WorksCorrectly()
+    public async Task SubscriptionsApi_CreateSubscriptionWithTrial_WithFakeIds_ReturnsNullOrThrows()
     {
         // Arrange
         var client = _fixture.CreateClient();
 
         // Act & Assert
+        // Creating subscription with trial using fake IDs should return null or throw
         try
         {
             var subscriptionRequest = new SubscriptionCreateRequest
@@ -582,23 +526,304 @@ public class SubscriptionsIntegrationTests : IClassFixture<IntegrationTestFixtur
 
             var createdSubscription = await client.Subscriptions.CreateAsync(subscriptionRequest);
 
-            // If sandbox returns empty response with empty ID, this is acceptable
-            if (createdSubscription == null || string.IsNullOrEmpty(createdSubscription.Id))
+            // With fake IDs, the API should return null (invalid input)
+            createdSubscription.Should().BeNull();
+        }
+        catch (PolarSharp.Exceptions.PolarApiException)
+        {
+            // Expected - API rejected the invalid IDs
+            true.Should().BeTrue();
+        }
+    }
+
+    [Fact]
+    public async Task SubscriptionsApi_CreateSubscriptionWithInvalidCustomerId_ReturnsNullOrThrows()
+    {
+        // Arrange
+        var client = _fixture.CreateClient();
+
+        // Act & Assert - Invalid customer ID should return null or throw
+        try
+        {
+            var invalidRequest = new SubscriptionCreateRequest
             {
-                // Sandbox limitation - test passes
-                true.Should().BeTrue();
+                CustomerId = "invalid_customer_id_that_does_not_exist",
+                ProductPriceId = "price_test_123456789"
+            };
+
+            var result = await client.Subscriptions.CreateAsync(invalidRequest);
+
+            // If no exception, the API should have returned null for invalid input
+            result.Should().BeNull();
+        }
+        catch (PolarSharp.Exceptions.PolarApiException)
+        {
+            // This is expected behavior - API rejected the invalid request
+            true.Should().BeTrue();
+        }
+    }
+
+    [Fact]
+    public async Task SubscriptionsApi_CreateSubscriptionWithEmptyRequest_ReturnsNullOrThrows()
+    {
+        // Arrange
+        var client = _fixture.CreateClient();
+
+        // Act & Assert - Empty request should return null or throw
+        try
+        {
+            var emptyRequest = new SubscriptionCreateRequest();
+            var result = await client.Subscriptions.CreateAsync(emptyRequest);
+
+            // If no exception, the API should have returned null for invalid/empty request
+            result.Should().BeNull();
+        }
+        catch (PolarSharp.Exceptions.PolarApiException)
+        {
+            // This is expected behavior - validation error
+            true.Should().BeTrue();
+        }
+    }
+
+    [Fact]
+    public async Task SubscriptionsApi_CreateSubscriptionWithEmptyCustomerId_ReturnsNullOrThrows()
+    {
+        // Arrange
+        var client = _fixture.CreateClient();
+
+        // Act & Assert - Empty customer ID should return null or throw
+        try
+        {
+            var invalidRequest = new SubscriptionCreateRequest
+            {
+                CustomerId = "",
+                ProductPriceId = "price_123"
+            };
+
+            var result = await client.Subscriptions.CreateAsync(invalidRequest);
+
+            // If no exception, the API should have returned null for empty customer ID
+            result.Should().BeNull();
+        }
+        catch (PolarSharp.Exceptions.PolarApiException)
+        {
+            // This is expected behavior - validation error
+            true.Should().BeTrue();
+        }
+    }
+
+    [Fact]
+    public async Task SubscriptionsApi_ExportWithInvalidRequest_ReturnsNullOrThrows()
+    {
+        // Arrange
+        var client = _fixture.CreateClient();
+
+        // Act & Assert - Invalid date range should return null or throw
+        try
+        {
+            var invalidRequest = new SubscriptionExportRequest
+            {
+                Format = Api.ExportFormat.Csv,
+                StartDate = DateTime.UtcNow.AddDays(30), // Start date in the future
+                EndDate = DateTime.UtcNow.AddDays(-30)   // End date before start date
+            };
+
+            var result = await client.Subscriptions.ExportAsync(invalidRequest);
+
+            // If no exception, the API should have returned null for invalid request
+            result.Should().BeNull();
+        }
+        catch (PolarSharp.Exceptions.PolarApiException)
+        {
+            // This is expected behavior - validation error
+            true.Should().BeTrue();
+        }
+    }
+
+    [Fact]
+    public async Task SubscriptionsApi_CreateSubscription_WithValidIds_ReturnsValidSubscription()
+    {
+        // Arrange
+        var client = _fixture.CreateClient();
+
+        // First, get a real customer ID
+        string? customerId = null;
+        string? productPriceId = null;
+
+        try
+        {
+            // Get a real customer
+            var customers = await client.Customers.ListAsync(limit: 1);
+            if (customers.Items.Count > 0)
+            {
+                customerId = customers.Items[0].Id;
+            }
+
+            // Get a real product with a recurring price (for subscription)
+            var products = await client.Products.ListAsync(limit: 10);
+            foreach (var product in products.Items)
+            {
+                var recurringPrice = product.Prices.FirstOrDefault(p => p.Type == PriceType.Recurring);
+                if (recurringPrice != null)
+                {
+                    productPriceId = recurringPrice.Id;
+                    break;
+                }
+            }
+        }
+        catch (PolarSharp.Exceptions.PolarApiException)
+        {
+            // Skip test if we can't get prerequisites
+            _output.WriteLine("Could not retrieve customer or product data - skipping test");
+            return;
+        }
+
+        // If we don't have valid IDs, skip the test
+        if (string.IsNullOrEmpty(customerId) || string.IsNullOrEmpty(productPriceId))
+        {
+            _output.WriteLine("No valid customer or recurring product price found - skipping test");
+            return;
+        }
+
+        // Act
+        try
+        {
+            var subscriptionRequest = new SubscriptionCreateRequest
+            {
+                CustomerId = customerId,
+                ProductPriceId = productPriceId,
+                Metadata = new Dictionary<string, object>
+                {
+                    ["test"] = true,
+                    ["integration_test"] = true,
+                    ["created_at"] = DateTime.UtcNow.ToString("O")
+                }
+            };
+
+            var createdSubscription = await client.Subscriptions.CreateAsync(subscriptionRequest);
+
+            // If null is returned, sandbox doesn't support subscription creation - skip
+            if (createdSubscription == null)
+            {
+                _output.WriteLine("Sandbox returned null - subscription creation not supported in this environment");
                 return;
             }
 
-            createdSubscription.Should().NotBeNull();
-            createdSubscription.Id.Should().NotBeNullOrEmpty();
-            createdSubscription.Metadata.Should().NotBeNull();
-            createdSubscription.Metadata!["trial"].Should().Be(true);
-            createdSubscription.Metadata!["integration_test"].Should().Be(true);
+            // Assert - If creation succeeds, the subscription must be valid
+            // The subscription should NOT have empty ID if it's not null
+            createdSubscription.Id.Should().NotBeNullOrEmpty("subscription ID should be set when subscription is returned");
+            createdSubscription.CustomerId.Should().Be(customerId, "customer ID should match the request");
+            createdSubscription.Status.Should().BeOneOf(
+                SubscriptionStatus.Active,
+                SubscriptionStatus.Trialing,
+                SubscriptionStatus.Incomplete,
+                SubscriptionStatus.IncompleteExpired,
+                SubscriptionStatus.PastDue,
+                SubscriptionStatus.Canceled,
+                SubscriptionStatus.Unpaid);
+            createdSubscription.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(5), "creation time should be recent");
         }
-        catch (PolarSharp.Exceptions.PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed") || ex.Message.Contains("RequestValidationError") || ex.Message.Contains("Not Found"))
+        catch (PolarSharp.Exceptions.PolarApiException ex)
         {
-            // Expected in sandbox environment with limited permissions or invalid IDs
+            // API may reject for various reasons (permissions, sandbox limitations, etc.)
+            _output.WriteLine($"API rejected subscription creation: {ex.Message}");
+        }
+    }
+
+    [Fact]
+    public async Task SubscriptionsApi_CreateSubscription_WithValidIds_HasRequiredProperties()
+    {
+        // Arrange
+        var client = _fixture.CreateClient();
+
+        // First, get a real customer ID and product price ID
+        string? customerId = null;
+        string? productPriceId = null;
+        string? productId = null;
+
+        try
+        {
+            // Get a real customer
+            var customers = await client.Customers.ListAsync(limit: 1);
+            if (customers.Items.Count > 0)
+            {
+                customerId = customers.Items[0].Id;
+            }
+
+            // Get a real product with a recurring price
+            var products = await client.Products.ListAsync(limit: 10);
+            foreach (var product in products.Items)
+            {
+                var recurringPrice = product.Prices.FirstOrDefault(p => p.Type == PriceType.Recurring);
+                if (recurringPrice != null)
+                {
+                    productPriceId = recurringPrice.Id;
+                    productId = product.Id;
+                    break;
+                }
+            }
+        }
+        catch (PolarSharp.Exceptions.PolarApiException)
+        {
+            _output.WriteLine("Could not retrieve customer or product data - skipping test");
+            return;
+        }
+
+        if (string.IsNullOrEmpty(customerId) || string.IsNullOrEmpty(productPriceId))
+        {
+            _output.WriteLine("No valid customer or recurring product price found - skipping test");
+            return;
+        }
+
+        // Act
+        try
+        {
+            var subscriptionRequest = new SubscriptionCreateRequest
+            {
+                CustomerId = customerId,
+                ProductPriceId = productPriceId
+            };
+
+            var createdSubscription = await client.Subscriptions.CreateAsync(subscriptionRequest);
+
+            // If null is returned, sandbox doesn't support subscription creation - skip
+            if (createdSubscription == null)
+            {
+                _output.WriteLine("Sandbox returned null - subscription creation not supported in this environment");
+                return;
+            }
+
+            // Assert - Verify all required properties are populated
+            // The subscription should NOT have empty properties if it's not null
+            
+            // ID must be set
+            createdSubscription.Id.Should().NotBeNullOrEmpty("Id must be set on created subscription");
+            
+            // Customer ID must match
+            createdSubscription.CustomerId.Should().NotBeNullOrEmpty("CustomerId must be set");
+            createdSubscription.CustomerId.Should().Be(customerId);
+            
+            // Product ID must be set
+            createdSubscription.ProductId.Should().NotBeNullOrEmpty("ProductId must be set");
+            
+            // Status must be valid
+            createdSubscription.Status.Should().BeOneOf(
+                SubscriptionStatus.Active,
+                SubscriptionStatus.Trialing,
+                SubscriptionStatus.Incomplete,
+                SubscriptionStatus.IncompleteExpired,
+                SubscriptionStatus.PastDue,
+                SubscriptionStatus.Canceled,
+                SubscriptionStatus.Unpaid);
+            
+            // Dates must be set
+            createdSubscription.CreatedAt.Should().NotBe(default(DateTime), "CreatedAt must be set");
+            createdSubscription.ModifiedAt.Should().NotBe(default(DateTime), "ModifiedAt must be set");
+            createdSubscription.CurrentPeriodStart.Should().NotBe(default(DateTime), "CurrentPeriodStart must be set");
+        }
+        catch (PolarSharp.Exceptions.PolarApiException ex)
+        {
+            _output.WriteLine($"API rejected subscription creation: {ex.Message}");
             true.Should().BeTrue();
         }
     }

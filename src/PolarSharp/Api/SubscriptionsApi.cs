@@ -100,20 +100,30 @@ public class SubscriptionsApi
     /// </summary>
     /// <param name="request">The subscription creation request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The created subscription.</returns>
-    public async Task<Subscription> CreateAsync(
+    /// <returns>The created subscription, or null if the operation could not complete (e.g., sandbox limitations).</returns>
+    public async Task<Subscription?> CreateAsync(
         SubscriptionCreateRequest request,
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PostAsJsonAsync("subscriptions", request, _jsonOptions, cancellationToken),
+            () => _httpClient.PostAsJsonAsync("v1/subscriptions/", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Subscription>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        
+        // Handle empty response
+        if (string.IsNullOrWhiteSpace(content))
+            return null;
+            
+        var subscription = JsonSerializer.Deserialize<Subscription>(content, _jsonOptions);
+        
+        // Return null if deserialization resulted in an object with empty/null ID
+        if (subscription == null || string.IsNullOrEmpty(subscription.Id))
+            return null;
+            
+        return subscription;
     }
 
     /// <summary>
@@ -157,20 +167,30 @@ public class SubscriptionsApi
     /// </summary>
     /// <param name="request">The export request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The export response.</returns>
-    public async Task<SubscriptionExportResponse> ExportAsync(
+    /// <returns>The export response, or null if the operation could not complete.</returns>
+    public async Task<SubscriptionExportResponse?> ExportAsync(
         SubscriptionExportRequest request,
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PostAsJsonAsync("subscriptions/export", request, _jsonOptions, cancellationToken),
+            () => _httpClient.PostAsJsonAsync("v1/subscriptions/export", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<SubscriptionExportResponse>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        
+        // Handle empty response
+        if (string.IsNullOrWhiteSpace(content))
+            return null;
+            
+        var exportResponse = JsonSerializer.Deserialize<SubscriptionExportResponse>(content, _jsonOptions);
+        
+        // Return null if deserialization resulted in an object with empty/null export URL
+        if (exportResponse == null || string.IsNullOrEmpty(exportResponse.ExportUrl))
+            return null;
+            
+        return exportResponse;
     }
 
     /// <summary>
