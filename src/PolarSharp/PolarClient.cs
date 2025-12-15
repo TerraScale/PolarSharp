@@ -212,7 +212,7 @@ public class PolarClient : IPolarClient, IDisposable
         // Create rate limit handler and HTTP client with handler
         _rateLimitHandler = new RateLimitedHttpHandler(_options);
         _httpClient = httpClient ?? CreateHttpClientWithHandler(_rateLimitHandler);
-        ConfigureHttpClient(_httpClient, baseUrl ?? GetDefaultBaseUrl());
+        ConfigureHttpClient(_httpClient, baseUrl ?? GetBaseUrl());
         
         _jsonOptions = CreateJsonSerializerOptions(_options.JsonSerializerOptions);
         _retryPolicy = CreateRetryPolicy();
@@ -277,7 +277,7 @@ public class PolarClient : IPolarClient, IDisposable
         var clientName = httpClientName ?? "PolarClient";
         _httpClient = httpClientFactory.CreateClient(clientName);
         _rateLimitHandler = null; // Factory-created clients manage their own handlers
-        ConfigureHttpClient(_httpClient, baseUrl ?? GetDefaultBaseUrl());
+        ConfigureHttpClient(_httpClient, baseUrl ?? GetBaseUrl());
         
         _jsonOptions = CreateJsonSerializerOptions(_options.JsonSerializerOptions);
         _retryPolicy = CreateRetryPolicy();
@@ -323,9 +323,25 @@ public class PolarClient : IPolarClient, IDisposable
     /// <returns>A new instance of <see cref="PolarClientBuilder"/>.</returns>
     public static PolarClientBuilder Create() => new();
 
-    private static Uri GetDefaultBaseUrl()
+    /// <summary>
+    /// Gets the base URL based on configuration options.
+    /// Priority: 1) options.BaseUrl if set, 2) URL based on options.Environment
+    /// </summary>
+    private Uri GetBaseUrl()
     {
-        return new Uri("https://api.polar.sh");
+        // If explicit BaseUrl is provided in options, use it
+        if (_options.BaseUrl != null)
+        {
+            return _options.BaseUrl;
+        }
+
+        // Otherwise, determine URL based on Environment setting
+        return _options.Environment switch
+        {
+            PolarEnvironment.Sandbox => new Uri("https://sandbox-api.polar.sh"),
+            PolarEnvironment.Production => new Uri("https://api.polar.sh"),
+            _ => new Uri("https://api.polar.sh")
+        };
     }
 
     private HttpClient CreateHttpClientWithHandler(RateLimitedHttpHandler handler)
