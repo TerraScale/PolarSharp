@@ -95,6 +95,23 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
     }
 
     [Fact]
+    public async Task ProductsApi_ListAsync_WithQueryBuilder_FilterByName_WorksCorrectly()
+    {
+        // Arrange
+        var client = _fixture.CreateClient();
+        var query = client.Products.Query()
+            .WithName("test");
+
+        // Act
+        var result = await client.Products.ListAsync(query, page: 1, limit: 10);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Items.Should().NotBeNull();
+        // The API should filter products by name - verify the query executes successfully
+    }
+
+    [Fact]
     public async Task ProductsApi_ListAsync_WithQueryBuilder_FilterByType_WorksCorrectly()
     {
         // Arrange
@@ -154,6 +171,7 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
         // Arrange
         var client = _fixture.CreateClient();
         var query = client.Products.Query()
+            .WithName("product")
             .WithActive(true)
             .CreatedAfter(DateTime.UtcNow.AddYears(-1))
             .CreatedBefore(DateTime.UtcNow.AddDays(1));

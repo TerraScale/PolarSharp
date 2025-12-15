@@ -100,6 +100,16 @@ public class ProductsQueryBuilder : QueryBuilder<ProductsQueryBuilder>
     public ProductsQueryBuilder() : base() { }
 
     /// <summary>
+    /// Filters products by name (search query).
+    /// </summary>
+    /// <param name="name">The name to search for.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    public ProductsQueryBuilder WithName(string? name)
+    {
+        return AddParameter("query", name);
+    }
+
+    /// <summary>
     /// Filters products that are active.
     /// </summary>
     /// <param name="active">Whether to filter by active status.</param>
