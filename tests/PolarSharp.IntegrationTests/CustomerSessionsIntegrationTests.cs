@@ -25,7 +25,7 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
         // First, create a customer to get a valid customer ID
         var customerRequest = new PolarSharp.Models.Customers.CustomerCreateRequest
         {
-            Email = $"testcustomer{Guid.NewGuid()}@example.com",
+            Email = $"testcustomer{Guid.NewGuid()}@mailinator.com",
             Name = "Test Customer"
         };
 
@@ -76,7 +76,7 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
         // First, create a customer to get a valid customer ID
         var customerRequest = new PolarSharp.Models.Customers.CustomerCreateRequest
         {
-            Email = $"testcustomer{Guid.NewGuid()}@example.com",
+            Email = $"testcustomer{Guid.NewGuid()}@mailinator.com",
             Name = "Test Customer"
         };
 
@@ -151,7 +151,7 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
         // First, create a customer and session
         var customerRequest = new PolarSharp.Models.Customers.CustomerCreateRequest
         {
-            Email = $"testcustomer{Guid.NewGuid()}@example.com",
+            Email = $"testcustomer{Guid.NewGuid()}@mailinator.com",
             Name = "Test Customer"
         };
 
@@ -241,7 +241,7 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
         // First, create a customer and session with short expiration
         var customerRequest = new PolarSharp.Models.Customers.CustomerCreateRequest
         {
-            Email = $"testcustomer{Guid.NewGuid()}@example.com",
+            Email = $"testcustomer{Guid.NewGuid()}@mailinator.com",
             Name = "Test Customer"
         };
 
@@ -289,7 +289,7 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
         // First, create a customer to get a valid customer ID
         var customerRequest = new PolarSharp.Models.Customers.CustomerCreateRequest
         {
-            Email = $"testcustomer{Guid.NewGuid()}@example.com",
+            Email = $"testcustomer{Guid.NewGuid()}@mailinator.com",
             Name = "Test Customer"
         };
 
@@ -330,7 +330,7 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
         // First, create a customer to get a valid customer ID
         var customerRequest = new PolarSharp.Models.Customers.CustomerCreateRequest
         {
-            Email = $"testcustomer{Guid.NewGuid()}@example.com",
+            Email = $"testcustomer{Guid.NewGuid()}@mailinator.com",
             Name = "Test Customer"
         };
 
@@ -389,7 +389,7 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
         // First, create a customer and session
         var customerRequest = new PolarSharp.Models.Customers.CustomerCreateRequest
         {
-            Email = $"testcustomer{Guid.NewGuid()}@example.com",
+            Email = $"testcustomer{Guid.NewGuid()}@mailinator.com",
             Name = "Test Customer"
         };
 

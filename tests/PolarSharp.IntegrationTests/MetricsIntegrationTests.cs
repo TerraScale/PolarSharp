@@ -155,7 +155,7 @@ public class MetricsIntegrationTests : IClassFixture<IntegrationTestFixture>
         // First create a customer to filter by
         var customerRequest = new PolarSharp.Models.Customers.CustomerCreateRequest
         {
-            Email = "metrics-test@example.com",
+            Email = "metrics-test@mailinator.com",
             Name = "Metrics Test Customer"
         };
         var customer = await client.Customers.CreateAsync(customerRequest);

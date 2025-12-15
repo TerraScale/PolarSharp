@@ -505,7 +505,7 @@ public class BenefitsIntegrationTests : IClassFixture<IntegrationTestFixture>
     {
         var request = new CustomerCreateRequest
         {
-            Email = $"test-{Guid.NewGuid():N}@example.com",
+            Email = $"test-{Guid.NewGuid():N}@mailinator.com",
             Name = "Test Customer",
             Metadata = new Dictionary<string, object>
             {

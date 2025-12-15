@@ -77,7 +77,7 @@ public class CustomerSeatsIntegrationTests : IClassFixture<IntegrationTestFixtur
         {
             SeatId = "test_seat_id",
             UserId = "test_user_id",
-            Email = $"testuser{Guid.NewGuid()}@example.com"
+            Email = $"testuser{Guid.NewGuid()}@mailinator.com"
         };
 
         // Act & Assert
@@ -277,7 +277,7 @@ public class CustomerSeatsIntegrationTests : IClassFixture<IntegrationTestFixtur
         {
             SeatId = "", // Empty seat ID
             UserId = "", // Empty user ID
-            Email = "test@example.com"
+            Email = "test@mailinator.com"
         };
 
         // Act & Assert
@@ -371,7 +371,7 @@ public class CustomerSeatsIntegrationTests : IClassFixture<IntegrationTestFixtur
         // Arrange
         var client = _fixture.CreateClient();
         
-        var longEmail = new string('a', 300) + "@example.com"; // Very long email
+        var longEmail = new string('a', 300) + "@mailinator.com"; // Very long email
         
         var assignRequest = new CustomerSeatAssignRequest
         {

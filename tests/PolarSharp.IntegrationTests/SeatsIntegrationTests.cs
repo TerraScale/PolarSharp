@@ -60,7 +60,7 @@ public class SeatsIntegrationTests : IClassFixture<IntegrationTestFixture>
         var assignRequest = new SubscriptionSeatAssignRequest
         {
             SubscriptionId = subscriptionId,
-            Email = $"testuser{Guid.NewGuid()}@example.com"
+            Email = $"testuser{Guid.NewGuid()}@mailinator.com"
         };
 
         // Act & Assert
@@ -216,7 +216,7 @@ public class SeatsIntegrationTests : IClassFixture<IntegrationTestFixture>
         var assignRequest = new SubscriptionSeatAssignRequest
         {
             SubscriptionId = "", // Empty subscription ID
-            Email = "test@example.com"
+            Email = "test@mailinator.com"
         };
 
         // Act & Assert
@@ -278,7 +278,7 @@ public class SeatsIntegrationTests : IClassFixture<IntegrationTestFixture>
         // Arrange
         var client = _fixture.CreateClient();
         
-        var longEmail = new string('a', 300) + "@example.com"; // Very long email
+        var longEmail = new string('a', 300) + "@mailinator.com"; // Very long email
         
         var assignRequest = new SubscriptionSeatAssignRequest
         {

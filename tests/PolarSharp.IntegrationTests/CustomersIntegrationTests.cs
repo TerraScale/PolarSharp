@@ -72,7 +72,7 @@ public class CustomersIntegrationTests : IClassFixture<IntegrationTestFixture>
         // Test with email filter
         try
         {
-            var resultWithEmail = await client.Customers.ListAsync(email: "test@example.com");
+            var resultWithEmail = await client.Customers.ListAsync(email: "test@mailinator.com");
             resultWithEmail.Should().NotBeNull();
             resultWithEmail.Items.Should().NotBeNull();
         }
@@ -104,7 +104,7 @@ public class CustomersIntegrationTests : IClassFixture<IntegrationTestFixture>
         var uniqueId = Guid.NewGuid().ToString("N")[..8];
         var createRequest = new CustomerCreateRequest
         {
-            Email = $"test_{uniqueId}@example.com",
+            Email = $"test_{uniqueId}@mailinator.com",
             Name = $"Test Customer {uniqueId}",
             ExternalId = $"ext_{uniqueId}",
             Metadata = new Dictionary<string, object>
@@ -155,7 +155,7 @@ public class CustomersIntegrationTests : IClassFixture<IntegrationTestFixture>
         var externalId = $"ext_{uniqueId}";
         var createRequest = new CustomerCreateRequest
         {
-            Email = $"test_{uniqueId}@example.com",
+            Email = $"test_{uniqueId}@mailinator.com",
             Name = $"Test Customer {uniqueId}",
             ExternalId = externalId
         };
@@ -193,7 +193,7 @@ public class CustomersIntegrationTests : IClassFixture<IntegrationTestFixture>
         var uniqueId = Guid.NewGuid().ToString("N")[..8];
         var createRequest = new CustomerCreateRequest
         {
-            Email = $"test_{uniqueId}@example.com",
+            Email = $"test_{uniqueId}@mailinator.com",
             Name = $"Test Customer {uniqueId}"
         };
 
@@ -243,7 +243,7 @@ public class CustomersIntegrationTests : IClassFixture<IntegrationTestFixture>
         var externalId = $"ext_{uniqueId}";
         var createRequest = new CustomerCreateRequest
         {
-            Email = $"test_{uniqueId}@example.com",
+            Email = $"test_{uniqueId}@mailinator.com",
             Name = $"Test Customer {uniqueId}",
             ExternalId = externalId
         };
@@ -287,7 +287,7 @@ public class CustomersIntegrationTests : IClassFixture<IntegrationTestFixture>
         var uniqueId = Guid.NewGuid().ToString("N")[..8];
         var createRequest = new CustomerCreateRequest
         {
-            Email = $"test_delete_{uniqueId}@example.com",
+            Email = $"test_delete_{uniqueId}@mailinator.com",
             Name = $"Test Delete Customer {uniqueId}"
         };
 
@@ -321,7 +321,7 @@ public class CustomersIntegrationTests : IClassFixture<IntegrationTestFixture>
         var externalId = $"ext_del_{uniqueId}";
         var createRequest = new CustomerCreateRequest
         {
-            Email = $"test_delete_{uniqueId}@example.com",
+            Email = $"test_delete_{uniqueId}@mailinator.com",
             Name = $"Test Delete Customer {uniqueId}",
             ExternalId = externalId
         };
@@ -572,7 +572,7 @@ public class CustomersIntegrationTests : IClassFixture<IntegrationTestFixture>
         var uniqueId = Guid.NewGuid().ToString("N")[..8];
         var createRequest = new CustomerCreateRequest
         {
-            Email = $"test_{uniqueId}@example.com",
+            Email = $"test_{uniqueId}@mailinator.com",
             Name = $"Test Customer {uniqueId}",
             BillingAddress = new Address
             {
