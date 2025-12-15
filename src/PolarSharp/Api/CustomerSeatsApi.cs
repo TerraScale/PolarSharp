@@ -67,8 +67,8 @@ public class CustomerSeatsApi
     /// </summary>
     /// <param name="customerSeatId">The customer seat ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The customer seat.</returns>
-    public async Task<CustomerSeat> GetAsync(
+    /// <returns>The customer seat, or null if not found.</returns>
+    public async Task<CustomerSeat?> GetAsync(
         string customerSeatId,
         CancellationToken cancellationToken = default)
     {
@@ -76,11 +76,7 @@ public class CustomerSeatsApi
             () => _httpClient.GetAsync($"v1/customer_seats/{customerSeatId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        return await JsonSerializer.DeserializeAsync<CustomerSeat>(stream, _jsonOptions, cancellationToken)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<CustomerSeat>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -138,18 +134,14 @@ public async Task AssignAsync(
     /// Gets seat claim information.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The seat claim information.</returns>
-    public async Task<SeatClaimInfo> GetClaimInfoAsync(CancellationToken cancellationToken = default)
+    /// <returns>The seat claim information, or null if not found.</returns>
+    public async Task<SeatClaimInfo?> GetClaimInfoAsync(CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
             () => _httpClient.GetAsync("v1/customer_seats/claim_info", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        return await JsonSerializer.DeserializeAsync<SeatClaimInfo>(stream, _jsonOptions, cancellationToken)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<SeatClaimInfo>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>

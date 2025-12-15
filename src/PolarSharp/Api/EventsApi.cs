@@ -85,8 +85,8 @@ public class EventsApi
     /// </summary>
     /// <param name="eventId">The event ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The event.</returns>
-    public async Task<Event> GetAsync(
+    /// <returns>The event, or null if not found.</returns>
+    public async Task<Event?> GetAsync(
         string eventId,
         CancellationToken cancellationToken = default)
     {
@@ -94,11 +94,7 @@ public class EventsApi
             () => _httpClient.GetAsync($"v1/events/{eventId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        return await JsonSerializer.DeserializeAsync<Event>(stream, _jsonOptions, cancellationToken)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<Event>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>

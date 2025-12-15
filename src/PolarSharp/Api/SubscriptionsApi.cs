@@ -83,8 +83,8 @@ public class SubscriptionsApi
     /// </summary>
     /// <param name="subscriptionId">The subscription ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The subscription.</returns>
-    public async Task<Subscription> GetAsync(
+    /// <returns>The subscription, or null if not found.</returns>
+    public async Task<Subscription?> GetAsync(
         string subscriptionId,
         CancellationToken cancellationToken = default)
     {
@@ -92,11 +92,7 @@ public class SubscriptionsApi
             () => _httpClient.GetAsync($"v1/subscriptions/{subscriptionId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Subscription>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<Subscription>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -126,8 +122,8 @@ public class SubscriptionsApi
     /// <param name="subscriptionId">The subscription ID.</param>
     /// <param name="request">The subscription update request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The updated subscription.</returns>
-    public async Task<Subscription> UpdateAsync(
+    /// <returns>The updated subscription, or null if not found.</returns>
+    public async Task<Subscription?> UpdateAsync(
         string subscriptionId,
         SubscriptionUpdateRequest request,
         CancellationToken cancellationToken = default)
@@ -136,11 +132,7 @@ public class SubscriptionsApi
             () => _httpClient.PatchAsJsonAsync($"v1/subscriptions/{subscriptionId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Subscription>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<Subscription>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -148,8 +140,8 @@ public class SubscriptionsApi
     /// </summary>
     /// <param name="subscriptionId">The subscription ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The revoked subscription.</returns>
-    public async Task<Subscription> RevokeAsync(
+    /// <returns>The revoked subscription, or null if not found.</returns>
+    public async Task<Subscription?> RevokeAsync(
         string subscriptionId,
         CancellationToken cancellationToken = default)
     {
@@ -157,11 +149,7 @@ public class SubscriptionsApi
             () => _httpClient.DeleteAsync($"v1/subscriptions/{subscriptionId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Subscription>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<Subscription>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>

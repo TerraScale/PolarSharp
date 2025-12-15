@@ -67,8 +67,8 @@ public class PaymentsApi
     /// </summary>
     /// <param name="paymentId">The payment ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The payment.</returns>
-    public async Task<Payment> GetAsync(
+    /// <returns>The payment, or null if not found.</returns>
+    public async Task<Payment?> GetAsync(
         string paymentId,
         CancellationToken cancellationToken = default)
     {
@@ -76,11 +76,7 @@ public class PaymentsApi
             () => _httpClient.GetAsync($"v1/payments/{paymentId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Payment>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<Payment>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>

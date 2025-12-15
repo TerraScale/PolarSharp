@@ -67,8 +67,8 @@ public class OrganizationsApi
     /// </summary>
     /// <param name="organizationId">The organization ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The organization.</returns>
-    public async Task<Organization> GetAsync(
+    /// <returns>The organization, or null if not found.</returns>
+    public async Task<Organization?> GetAsync(
         string organizationId,
         CancellationToken cancellationToken = default)
     {
@@ -76,11 +76,7 @@ public class OrganizationsApi
             () => _httpClient.GetAsync($"v1/organizations/{organizationId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Organization>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<Organization>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -110,8 +106,8 @@ public class OrganizationsApi
     /// <param name="organizationId">The organization ID.</param>
     /// <param name="request">The organization update request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The updated organization.</returns>
-    public async Task<Organization> UpdateAsync(
+    /// <returns>The updated organization, or null if not found.</returns>
+    public async Task<Organization?> UpdateAsync(
         string organizationId,
         OrganizationUpdateRequest request,
         CancellationToken cancellationToken = default)
@@ -120,11 +116,7 @@ public class OrganizationsApi
             () => _httpClient.PatchAsJsonAsync($"v1/organizations/{organizationId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Organization>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<Organization>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>

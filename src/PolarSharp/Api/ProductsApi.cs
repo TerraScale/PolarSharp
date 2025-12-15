@@ -113,8 +113,8 @@ public class ProductsApi
     /// </summary>
     /// <param name="productId">The product ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The product.</returns>
-    public async Task<Product> GetAsync(
+    /// <returns>The product, or null if not found.</returns>
+    public async Task<Product?> GetAsync(
         string productId,
         CancellationToken cancellationToken = default)
     {
@@ -122,11 +122,7 @@ public class ProductsApi
             () => _httpClient.GetAsync($"v1/products/{productId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        return await JsonSerializer.DeserializeAsync<Product>(stream, _jsonOptions, cancellationToken)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<Product>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -159,8 +155,8 @@ public class ProductsApi
     /// <param name="productId">The product ID.</param>
     /// <param name="request">The product update request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The updated product.</returns>
-    public async Task<Product> UpdateAsync(
+    /// <returns>The updated product, or null if not found.</returns>
+    public async Task<Product?> UpdateAsync(
         string productId,
         ProductUpdateRequest request,
         CancellationToken cancellationToken = default)
@@ -169,11 +165,7 @@ public class ProductsApi
             () => _httpClient.PatchAsJsonAsync($"v1/products/{productId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Product>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<Product>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -181,8 +173,8 @@ public class ProductsApi
     /// </summary>
     /// <param name="productId">The product ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The archived product.</returns>
-    public async Task<Product> ArchiveAsync(
+    /// <returns>The archived product, or null if not found.</returns>
+    public async Task<Product?> ArchiveAsync(
         string productId,
         CancellationToken cancellationToken = default)
     {
@@ -191,11 +183,7 @@ public class ProductsApi
             () => _httpClient.PatchAsJsonAsync($"v1/products/{productId}", archiveRequest, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Product>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<Product>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -204,8 +192,8 @@ public class ProductsApi
     /// <param name="productId">The product ID.</param>
     /// <param name="request">The price creation request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The created price.</returns>
-    public async Task<ProductPrice> CreatePriceAsync(
+    /// <returns>The created price, or null if the product was not found.</returns>
+    public async Task<ProductPrice?> CreatePriceAsync(
         string productId,
         ProductPriceCreateRequest request,
         CancellationToken cancellationToken = default)
@@ -214,11 +202,7 @@ public class ProductsApi
             () => _httpClient.PostAsJsonAsync($"v1/products/{productId}/prices/", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<ProductPrice>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<ProductPrice>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>

@@ -82,8 +82,8 @@ public class OrdersApi
     /// </summary>
     /// <param name="orderId">The order ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The order.</returns>
-    public async Task<Order> GetAsync(
+    /// <returns>The order, or null if not found.</returns>
+    public async Task<Order?> GetAsync(
         string orderId,
         CancellationToken cancellationToken = default)
     {
@@ -91,11 +91,7 @@ public class OrdersApi
             () => _httpClient.GetAsync($"v1/orders/{orderId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Order>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<Order>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -125,8 +121,8 @@ public class OrdersApi
     /// <param name="orderId">The order ID.</param>
     /// <param name="request">The order update request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The updated order.</returns>
-    public async Task<Order> UpdateAsync(
+    /// <returns>The updated order, or null if not found.</returns>
+    public async Task<Order?> UpdateAsync(
         string orderId,
         OrderUpdateRequest request,
         CancellationToken cancellationToken = default)
@@ -135,11 +131,7 @@ public class OrdersApi
             () => _httpClient.PatchAsJsonAsync($"v1/orders/{orderId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Order>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<Order>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -147,8 +139,8 @@ public class OrdersApi
     /// </summary>
     /// <param name="orderId">The order ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The deleted order.</returns>
-    public async Task<Order> DeleteAsync(
+    /// <returns>The deleted order, or null if not found.</returns>
+    public async Task<Order?> DeleteAsync(
         string orderId,
         CancellationToken cancellationToken = default)
     {
@@ -156,11 +148,7 @@ public class OrdersApi
             () => _httpClient.DeleteAsync($"v1/orders/{orderId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Order>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<Order>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -168,8 +156,8 @@ public class OrdersApi
     /// </summary>
     /// <param name="orderId">The order ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The generated invoice.</returns>
-    public async Task<OrderInvoice> GenerateInvoiceAsync(
+    /// <returns>The generated invoice, or null if not found.</returns>
+    public async Task<OrderInvoice?> GenerateInvoiceAsync(
         string orderId,
         CancellationToken cancellationToken = default)
     {
@@ -177,11 +165,7 @@ public class OrdersApi
             () => _httpClient.PostAsync($"v1/orders/{orderId}/generate_invoice", null, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<OrderInvoice>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<OrderInvoice>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -189,8 +173,8 @@ public class OrdersApi
     /// </summary>
     /// <param name="orderId">The order ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The order invoice.</returns>
-    public async Task<OrderInvoice> GetInvoiceAsync(
+    /// <returns>The order invoice, or null if not found.</returns>
+    public async Task<OrderInvoice?> GetInvoiceAsync(
         string orderId,
         CancellationToken cancellationToken = default)
     {
@@ -198,11 +182,7 @@ public class OrdersApi
             () => _httpClient.GetAsync($"v1/orders/{orderId}/invoice", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<OrderInvoice>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<OrderInvoice>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>

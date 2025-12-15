@@ -67,8 +67,8 @@ public class DiscountsApi
     /// </summary>
     /// <param name="discountId">The discount ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The discount.</returns>
-    public async Task<Discount> GetAsync(
+    /// <returns>The discount, or null if not found.</returns>
+    public async Task<Discount?> GetAsync(
         string discountId,
         CancellationToken cancellationToken = default)
     {
@@ -76,11 +76,7 @@ public class DiscountsApi
             () => _httpClient.GetAsync($"v1/discounts/{discountId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Discount>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<Discount>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -110,8 +106,8 @@ public class DiscountsApi
     /// <param name="discountId">The discount ID.</param>
     /// <param name="request">The discount update request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The updated discount.</returns>
-    public async Task<Discount> UpdateAsync(
+    /// <returns>The updated discount, or null if not found.</returns>
+    public async Task<Discount?> UpdateAsync(
         string discountId,
         DiscountUpdateRequest request,
         CancellationToken cancellationToken = default)
@@ -120,11 +116,7 @@ public class DiscountsApi
             () => _httpClient.PatchAsJsonAsync($"v1/discounts/{discountId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Discount>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<Discount>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -132,8 +124,8 @@ public class DiscountsApi
     /// </summary>
     /// <param name="discountId">The discount ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The deleted discount.</returns>
-    public async Task<Discount> DeleteAsync(
+    /// <returns>The deleted discount, or null if not found.</returns>
+    public async Task<Discount?> DeleteAsync(
         string discountId,
         CancellationToken cancellationToken = default)
     {
@@ -141,11 +133,7 @@ public class DiscountsApi
             () => _httpClient.DeleteAsync($"v1/discounts/{discountId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Discount>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<Discount>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>

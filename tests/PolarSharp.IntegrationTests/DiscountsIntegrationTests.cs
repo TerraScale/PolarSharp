@@ -219,12 +219,11 @@ public class DiscountsIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Assert
         deletedDiscount.Should().NotBeNull();
-        deletedDiscount.Id.Should().Be(createdDiscount.Id);
+        deletedDiscount!.Id.Should().Be(createdDiscount.Id);
         
-        // Verify discount is deleted by trying to get it (should fail)
-        var exception = await Assert.ThrowsAsync<PolarApiException>(
-            () => client.Discounts.GetAsync(createdDiscount.Id));
-        exception.StatusCode.Should().Be(404);
+        // Verify discount is deleted by trying to get it (returns null for deleted items)
+        var afterDelete = await client.Discounts.GetAsync(createdDiscount.Id);
+        afterDelete.Should().BeNull();
     }
 
     [Fact]

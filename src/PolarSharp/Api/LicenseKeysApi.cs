@@ -83,8 +83,8 @@ public class LicenseKeysApi
     /// </summary>
     /// <param name="licenseKeyId">The license key ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The license key.</returns>
-    public async Task<LicenseKey> GetAsync(
+    /// <returns>The license key, or null if not found.</returns>
+    public async Task<LicenseKey?> GetAsync(
         string licenseKeyId,
         CancellationToken cancellationToken = default)
     {
@@ -92,11 +92,7 @@ public class LicenseKeysApi
             () => _httpClient.GetAsync($"v1/license-keys/{licenseKeyId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<LicenseKey>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<LicenseKey>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -105,8 +101,8 @@ public class LicenseKeysApi
     /// <param name="licenseKeyId">The license key ID.</param>
     /// <param name="request">The license key update request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The updated license key.</returns>
-    public async Task<LicenseKey> UpdateAsync(
+    /// <returns>The updated license key, or null if not found.</returns>
+    public async Task<LicenseKey?> UpdateAsync(
         string licenseKeyId,
         LicenseKeyUpdateRequest request,
         CancellationToken cancellationToken = default)
@@ -115,11 +111,7 @@ public class LicenseKeysApi
             () => _httpClient.PatchAsJsonAsync($"v1/license-keys/{licenseKeyId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<LicenseKey>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<LicenseKey>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -127,8 +119,8 @@ public class LicenseKeysApi
     /// </summary>
     /// <param name="licenseKeyId">The license key ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The activation information.</returns>
-    public async Task<LicenseKeyActivation> GetActivationAsync(
+    /// <returns>The activation information, or null if not found.</returns>
+    public async Task<LicenseKeyActivation?> GetActivationAsync(
         string licenseKeyId,
         CancellationToken cancellationToken = default)
     {
@@ -136,11 +128,7 @@ public class LicenseKeysApi
             () => _httpClient.GetAsync($"v1/license-keys/{licenseKeyId}/activation", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<LicenseKeyActivation>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<LicenseKeyActivation>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>

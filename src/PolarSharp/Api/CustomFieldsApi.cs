@@ -88,8 +88,8 @@ public class CustomFieldsApi
     /// </summary>
     /// <param name="customFieldId">The custom field ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The custom field.</returns>
-    public async Task<CustomField> GetAsync(
+    /// <returns>The custom field, or null if not found.</returns>
+    public async Task<CustomField?> GetAsync(
         string customFieldId,
         CancellationToken cancellationToken = default)
     {
@@ -97,11 +97,7 @@ public class CustomFieldsApi
             () => _httpClient.GetAsync($"v1/custom_fields/{customFieldId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        return await JsonSerializer.DeserializeAsync<CustomField>(stream, _jsonOptions, cancellationToken)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<CustomField>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -110,8 +106,8 @@ public class CustomFieldsApi
     /// <param name="customFieldId">The custom field ID.</param>
     /// <param name="request">The custom field update request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The updated custom field.</returns>
-    public async Task<CustomField> UpdateAsync(
+    /// <returns>The updated custom field, or null if not found.</returns>
+    public async Task<CustomField?> UpdateAsync(
         string customFieldId,
         CustomFieldUpdateRequest request,
         CancellationToken cancellationToken = default)
@@ -120,11 +116,7 @@ public class CustomFieldsApi
             () => _httpClient.PatchAsJsonAsync($"v1/custom_fields/{customFieldId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<CustomField>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<CustomField>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -132,8 +124,8 @@ public class CustomFieldsApi
     /// </summary>
     /// <param name="customFieldId">The custom field ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>A task that represents the operation.</returns>
-    public async Task DeleteAsync(
+    /// <returns>True if deleted, or null if not found.</returns>
+    public async Task<bool?> DeleteAsync(
         string customFieldId,
         CancellationToken cancellationToken = default)
     {
@@ -141,7 +133,7 @@ public class CustomFieldsApi
             () => _httpClient.DeleteAsync($"v1/custom_fields/{customFieldId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
+        return await response.HandleNotFoundAsNullAsync(_jsonOptions, cancellationToken);
     }
 
     /// <summary>

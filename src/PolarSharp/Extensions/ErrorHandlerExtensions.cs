@@ -66,6 +66,103 @@ internal static class ErrorHandlerExtensions
     }
 
     /// <summary>
+    /// Checks if the result contains a NotFound (404) error.
+    /// </summary>
+    /// <param name="result">The result to check.</param>
+    /// <returns>True if the result is a NotFound error, false otherwise.</returns>
+    public static bool IsNotFoundError(this Result result)
+    {
+        if (result.IsSuccess)
+            return false;
+
+        var error = result.Errors.OfType<PolarApiResultError>().FirstOrDefault();
+        return error?.StatusCode == HttpStatusCode.NotFound;
+    }
+
+    /// <summary>
+    /// Checks if the result contains a NotFound (404) error.
+    /// </summary>
+    /// <typeparam name="T">The result value type.</typeparam>
+    /// <param name="result">The result to check.</param>
+    /// <returns>True if the result is a NotFound error, false otherwise.</returns>
+    public static bool IsNotFoundError<T>(this Result<T> result)
+    {
+        if (result.IsSuccess)
+            return false;
+
+        var error = result.Errors.OfType<PolarApiResultError>().FirstOrDefault();
+        return error?.StatusCode == HttpStatusCode.NotFound;
+    }
+
+    /// <summary>
+    /// Handles HTTP response errors with nullable return for NotFound (404) responses.
+    /// Returns null for 404 or 422 (validation error for invalid/non-existent resource IDs),
+    /// the deserialized value for success, or throws for other errors.
+    /// </summary>
+    /// <typeparam name="T">The type of value expected on success.</typeparam>
+    /// <param name="response">The HTTP response.</param>
+    /// <param name="jsonOptions">JSON serializer options.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The value if successful, null if not found or resource validation failed, or throws for other errors.</returns>
+    public static async Task<T?> HandleNotFoundAsNullAsync<T>(
+        this HttpResponseMessage response,
+        JsonSerializerOptions jsonOptions,
+        CancellationToken cancellationToken = default) where T : class
+    {
+        // Return null for NotFound (404) and UnprocessableEntity (422) which is often used
+        // for resource ID validation errors (non-existent resource)
+        if (response.StatusCode == HttpStatusCode.NotFound || 
+            response.StatusCode == HttpStatusCode.UnprocessableEntity)
+            return null;
+
+        if (response.IsSuccessStatusCode)
+        {
+            var content = await response.Content.ReadAsStringAsync(cancellationToken);
+            // Handle empty response (e.g., 204 No Content)
+            if (string.IsNullOrWhiteSpace(content))
+                return null;
+            return JsonSerializer.Deserialize<T>(content, jsonOptions);
+        }
+
+        // For other errors, parse and throw
+        var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+        var retryAfter = response.Headers.RetryAfter;
+        var error = TryParseError(responseBody, response.StatusCode, jsonOptions, retryAfter);
+        throw new PolarApiResultError(error).ToPolarApiException();
+    }
+
+    /// <summary>
+    /// Handles HTTP response errors with nullable return for NotFound (404) responses.
+    /// Returns null for 404 or 422 (validation error for invalid/non-existent resource IDs),
+    /// true for success, or throws for other errors.
+    /// Use this for DELETE operations that don't return content.
+    /// </summary>
+    /// <param name="response">The HTTP response.</param>
+    /// <param name="jsonOptions">JSON serializer options.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>True if successful, null if not found or resource validation failed, or throws for other errors.</returns>
+    public static async Task<bool?> HandleNotFoundAsNullAsync(
+        this HttpResponseMessage response,
+        JsonSerializerOptions jsonOptions,
+        CancellationToken cancellationToken = default)
+    {
+        // Return null for NotFound (404) and UnprocessableEntity (422) which is often used
+        // for resource ID validation errors (non-existent resource)
+        if (response.StatusCode == HttpStatusCode.NotFound || 
+            response.StatusCode == HttpStatusCode.UnprocessableEntity)
+            return null;
+
+        if (response.IsSuccessStatusCode)
+            return true;
+
+        // For other errors, parse and throw
+        var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+        var retryAfter = response.Headers.RetryAfter;
+        var error = TryParseError(responseBody, response.StatusCode, jsonOptions, retryAfter);
+        throw new PolarApiResultError(error).ToPolarApiException();
+    }
+
+    /// <summary>
     /// Validates the Result and returns a structured error if it failed.
     /// This method does not throw exceptions - use for functional error handling.
     /// </summary>

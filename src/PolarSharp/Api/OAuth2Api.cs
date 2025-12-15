@@ -57,8 +57,8 @@ public class OAuth2Api
     /// </summary>
     /// <param name="clientId">The client ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The OAuth2 client.</returns>
-    public async Task<OAuth2Client> GetClientAsync(
+    /// <returns>The OAuth2 client, or null if not found.</returns>
+    public async Task<OAuth2Client?> GetClientAsync(
         string clientId,
         CancellationToken cancellationToken = default)
     {
@@ -66,11 +66,7 @@ public class OAuth2Api
             () => _httpClient.GetAsync($"v1/oauth2/clients/{clientId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        return await JsonSerializer.DeserializeAsync<OAuth2Client>(stream, _jsonOptions, cancellationToken)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<OAuth2Client>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -79,8 +75,8 @@ public class OAuth2Api
     /// <param name="clientId">The client ID.</param>
     /// <param name="request">The OAuth2 client update request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The updated OAuth2 client.</returns>
-    public async Task<OAuth2Client> UpdateClientAsync(
+    /// <returns>The updated OAuth2 client, or null if not found.</returns>
+    public async Task<OAuth2Client?> UpdateClientAsync(
         string clientId,
         OAuth2ClientUpdateRequest request,
         CancellationToken cancellationToken = default)
@@ -89,11 +85,7 @@ public class OAuth2Api
             () => _httpClient.PatchAsJsonAsync($"v1/oauth2/clients/{clientId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<OAuth2Client>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<OAuth2Client>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -101,8 +93,8 @@ public class OAuth2Api
     /// </summary>
     /// <param name="clientId">The client ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>A task that represents the operation.</returns>
-    public async Task DeleteClientAsync(
+    /// <returns>True if deleted, or null if not found.</returns>
+    public async Task<bool?> DeleteClientAsync(
         string clientId,
         CancellationToken cancellationToken = default)
     {
@@ -110,7 +102,7 @@ public class OAuth2Api
             () => _httpClient.DeleteAsync($"v1/oauth2/clients/{clientId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
+        return await response.HandleNotFoundAsNullAsync(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -176,18 +168,14 @@ public class OAuth2Api
     /// Gets OAuth2 user info.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The OAuth2 user info.</returns>
-    public async Task<OAuth2UserInfo> GetUserInfoAsync(CancellationToken cancellationToken = default)
+    /// <returns>The OAuth2 user info, or null if not found.</returns>
+    public async Task<OAuth2UserInfo?> GetUserInfoAsync(CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
             () => _httpClient.GetAsync("v1/oauth2/userinfo", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        return await JsonSerializer.DeserializeAsync<OAuth2UserInfo>(stream, _jsonOptions, cancellationToken)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<OAuth2UserInfo>(_jsonOptions, cancellationToken);
     }
 
     private async Task<HttpResponseMessage> ExecuteWithPoliciesAsync(

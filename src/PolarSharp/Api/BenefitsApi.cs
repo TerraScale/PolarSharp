@@ -121,8 +121,8 @@ public class BenefitsApi
     /// </summary>
     /// <param name="benefitId">The benefit ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The benefit.</returns>
-    public async Task<Benefit> GetAsync(
+    /// <returns>The benefit, or null if not found.</returns>
+    public async Task<Benefit?> GetAsync(
         string benefitId,
         CancellationToken cancellationToken = default)
     {
@@ -130,11 +130,7 @@ public class BenefitsApi
             () => _httpClient.GetAsync($"v1/benefits/{benefitId}/", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Benefit>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<Benefit>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -164,8 +160,8 @@ public class BenefitsApi
     /// <param name="benefitId">The benefit ID.</param>
     /// <param name="request">The benefit update request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The updated benefit.</returns>
-    public async Task<Benefit> UpdateAsync(
+    /// <returns>The updated benefit, or null if not found.</returns>
+    public async Task<Benefit?> UpdateAsync(
         string benefitId,
         BenefitUpdateRequest request,
         CancellationToken cancellationToken = default)
@@ -174,11 +170,7 @@ public class BenefitsApi
             () => _httpClient.PatchAsJsonAsync($"v1/benefits/{benefitId}/", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Benefit>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<Benefit>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -186,8 +178,8 @@ public class BenefitsApi
     /// </summary>
     /// <param name="benefitId">The benefit ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The deleted benefit.</returns>
-    public async Task<Benefit> DeleteAsync(
+    /// <returns>The deleted benefit, or null if not found.</returns>
+    public async Task<Benefit?> DeleteAsync(
         string benefitId,
         CancellationToken cancellationToken = default)
     {
@@ -195,11 +187,7 @@ public class BenefitsApi
             () => _httpClient.DeleteAsync($"v1/benefits/{benefitId}/", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Benefit>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<Benefit>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>

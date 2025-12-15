@@ -69,8 +69,8 @@ public class FilesApi
     /// </summary>
     /// <param name="fileId">The file ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The file.</returns>
-    public async Task<Files_File> GetAsync(
+    /// <returns>The file, or null if not found.</returns>
+    public async Task<Files_File?> GetAsync(
         string fileId,
         CancellationToken cancellationToken = default)
     {
@@ -78,11 +78,7 @@ public class FilesApi
             () => _httpClient.GetAsync($"v1/files/{fileId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Files_File>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<Files_File>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -112,8 +108,8 @@ public class FilesApi
     /// <param name="fileId">The file ID.</param>
     /// <param name="request">The file update request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The updated file.</returns>
-    public async Task<Files_File> UpdateAsync(
+    /// <returns>The updated file, or null if not found.</returns>
+    public async Task<Files_File?> UpdateAsync(
         string fileId,
         FileUpdateRequest request,
         CancellationToken cancellationToken = default)
@@ -122,11 +118,7 @@ public class FilesApi
             () => _httpClient.PatchAsJsonAsync($"v1/files/{fileId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Files_File>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<Files_File>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -134,8 +126,8 @@ public class FilesApi
     /// </summary>
     /// <param name="fileId">The file ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The deleted file.</returns>
-    public async Task<Files_File> DeleteAsync(
+    /// <returns>The deleted file, or null if not found.</returns>
+    public async Task<Files_File?> DeleteAsync(
         string fileId,
         CancellationToken cancellationToken = default)
     {
@@ -143,11 +135,7 @@ public class FilesApi
             () => _httpClient.DeleteAsync($"v1/files/{fileId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Files_File>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<Files_File>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>

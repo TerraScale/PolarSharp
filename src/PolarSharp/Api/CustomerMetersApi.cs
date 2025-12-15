@@ -67,8 +67,8 @@ public class CustomerMetersApi
     /// </summary>
     /// <param name="customerMeterId">The customer meter ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The customer meter.</returns>
-    public async Task<CustomerMeter> GetAsync(
+    /// <returns>The customer meter, or null if not found.</returns>
+    public async Task<CustomerMeter?> GetAsync(
         string customerMeterId,
         CancellationToken cancellationToken = default)
     {
@@ -76,11 +76,7 @@ public class CustomerMetersApi
             () => _httpClient.GetAsync($"v1/customer_meters/{customerMeterId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        return await JsonSerializer.DeserializeAsync<CustomerMeter>(stream, _jsonOptions, cancellationToken)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<CustomerMeter>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>

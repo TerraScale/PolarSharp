@@ -124,8 +124,8 @@ public class CheckoutLinksApi
     /// </summary>
     /// <param name="checkoutLinkId">The checkout link ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The checkout link.</returns>
-    public async Task<CheckoutLink> GetAsync(
+    /// <returns>The checkout link, or null if not found.</returns>
+    public async Task<CheckoutLink?> GetAsync(
         string checkoutLinkId,
         CancellationToken cancellationToken = default)
     {
@@ -133,11 +133,7 @@ public class CheckoutLinksApi
             () => _httpClient.GetAsync($"v1/checkout_links/{checkoutLinkId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<CheckoutLink>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<CheckoutLink>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -167,8 +163,8 @@ public class CheckoutLinksApi
     /// <param name="checkoutLinkId">The checkout link ID.</param>
     /// <param name="request">The checkout link update request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The updated checkout link.</returns>
-    public async Task<CheckoutLink> UpdateAsync(
+    /// <returns>The updated checkout link, or null if not found.</returns>
+    public async Task<CheckoutLink?> UpdateAsync(
         string checkoutLinkId,
         CheckoutLinkUpdateRequest request,
         CancellationToken cancellationToken = default)
@@ -177,11 +173,7 @@ public class CheckoutLinksApi
             () => _httpClient.PatchAsJsonAsync($"v1/checkout_links/{checkoutLinkId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<CheckoutLink>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<CheckoutLink>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -189,8 +181,8 @@ public class CheckoutLinksApi
     /// </summary>
     /// <param name="checkoutLinkId">The checkout link ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The deleted checkout link.</returns>
-    public async Task<CheckoutLink> DeleteAsync(
+    /// <returns>The deleted checkout link, or null if not found.</returns>
+    public async Task<CheckoutLink?> DeleteAsync(
         string checkoutLinkId,
         CancellationToken cancellationToken = default)
     {
@@ -198,11 +190,7 @@ public class CheckoutLinksApi
             () => _httpClient.DeleteAsync($"v1/checkout_links/{checkoutLinkId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<CheckoutLink>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<CheckoutLink>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>

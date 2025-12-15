@@ -67,8 +67,8 @@ public class RefundsApi
     /// </summary>
     /// <param name="refundId">The refund ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The refund.</returns>
-    public async Task<Refund> GetAsync(
+    /// <returns>The refund, or null if not found.</returns>
+    public async Task<Refund?> GetAsync(
         string refundId,
         CancellationToken cancellationToken = default)
     {
@@ -76,11 +76,7 @@ public class RefundsApi
             () => _httpClient.GetAsync($"v1/refunds/{refundId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Refund>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<Refund>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>

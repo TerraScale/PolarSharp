@@ -67,8 +67,8 @@ public class WebhooksApi
     /// </summary>
     /// <param name="endpointId">The webhook endpoint ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The webhook endpoint.</returns>
-    public async Task<WebhookEndpoint> GetEndpointAsync(
+    /// <returns>The webhook endpoint, or null if not found.</returns>
+    public async Task<WebhookEndpoint?> GetEndpointAsync(
         string endpointId,
         CancellationToken cancellationToken = default)
     {
@@ -76,11 +76,7 @@ public class WebhooksApi
             () => _httpClient.GetAsync($"v1/webhooks/endpoints/{endpointId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<WebhookEndpoint>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<WebhookEndpoint>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -110,8 +106,8 @@ public class WebhooksApi
     /// <param name="endpointId">The webhook endpoint ID.</param>
     /// <param name="request">The webhook endpoint update request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The updated webhook endpoint.</returns>
-    public async Task<WebhookEndpoint> UpdateEndpointAsync(
+    /// <returns>The updated webhook endpoint, or null if not found.</returns>
+    public async Task<WebhookEndpoint?> UpdateEndpointAsync(
         string endpointId,
         WebhookEndpointUpdateRequest request,
         CancellationToken cancellationToken = default)
@@ -120,11 +116,7 @@ public class WebhooksApi
             () => _httpClient.PatchAsJsonAsync($"v1/webhooks/endpoints/{endpointId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<WebhookEndpoint>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<WebhookEndpoint>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -132,8 +124,8 @@ public class WebhooksApi
     /// </summary>
     /// <param name="endpointId">The webhook endpoint ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The deleted webhook endpoint.</returns>
-    public async Task<WebhookEndpoint> DeleteEndpointAsync(
+    /// <returns>The deleted webhook endpoint, or null if not found.</returns>
+    public async Task<WebhookEndpoint?> DeleteEndpointAsync(
         string endpointId,
         CancellationToken cancellationToken = default)
     {
@@ -141,11 +133,7 @@ public class WebhooksApi
             () => _httpClient.DeleteAsync($"v1/webhooks/endpoints/{endpointId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<WebhookEndpoint>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<WebhookEndpoint>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>

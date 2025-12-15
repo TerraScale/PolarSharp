@@ -81,19 +81,15 @@ public class CustomerPortalApi
     /// Gets the current customer information.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The customer information.</returns>
-    public async Task<Models.Customers.Customer> GetCustomerAsync(
+    /// <returns>The customer information, or null if not found.</returns>
+    public async Task<Models.Customers.Customer?> GetCustomerAsync(
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
             () => _httpClient.GetAsync("v1/customer-portal/customers", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Models.Customers.Customer>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<Models.Customers.Customer>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -267,8 +263,8 @@ public class CustomerPortalApi
     /// </summary>
     /// <param name="orderId">The order ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The order.</returns>
-    public async Task<Models.Orders.Order> GetOrderAsync(
+    /// <returns>The order, or null if not found.</returns>
+    public async Task<Models.Orders.Order?> GetOrderAsync(
         string orderId,
         CancellationToken cancellationToken = default)
     {
@@ -276,11 +272,7 @@ public class CustomerPortalApi
             () => _httpClient.GetAsync($"v1/customer-portal/orders/{orderId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Models.Orders.Order>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<Models.Orders.Order>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -351,8 +343,8 @@ public class CustomerPortalApi
     /// </summary>
     /// <param name="subscriptionId">The subscription ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The subscription.</returns>
-    public async Task<Models.Subscriptions.Subscription> GetSubscriptionAsync(
+    /// <returns>The subscription, or null if not found.</returns>
+    public async Task<Models.Subscriptions.Subscription?> GetSubscriptionAsync(
         string subscriptionId,
         CancellationToken cancellationToken = default)
     {
@@ -360,11 +352,7 @@ public class CustomerPortalApi
             () => _httpClient.GetAsync($"v1/customer-portal/subscriptions/{subscriptionId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Models.Subscriptions.Subscription>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<Models.Subscriptions.Subscription>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -456,8 +444,8 @@ public class CustomerPortalApi
     /// </summary>
     /// <param name="benefitGrantId">The benefit grant ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The benefit grant.</returns>
-    public async Task<Models.Benefits.BenefitGrant> GetBenefitGrantAsync(
+    /// <returns>The benefit grant, or null if not found.</returns>
+    public async Task<Models.Benefits.BenefitGrant?> GetBenefitGrantAsync(
         string benefitGrantId,
         CancellationToken cancellationToken = default)
     {
@@ -465,11 +453,7 @@ public class CustomerPortalApi
             () => _httpClient.GetAsync($"v1/customer-portal/benefit-grants/{benefitGrantId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Models.Benefits.BenefitGrant>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<Models.Benefits.BenefitGrant>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -540,8 +524,8 @@ public class CustomerPortalApi
     /// </summary>
     /// <param name="licenseKeyId">The license key ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The license key.</returns>
-    public async Task<Models.LicenseKeys.LicenseKey> GetLicenseKeyAsync(
+    /// <returns>The license key, or null if not found.</returns>
+    public async Task<Models.LicenseKeys.LicenseKey?> GetLicenseKeyAsync(
         string licenseKeyId,
         CancellationToken cancellationToken = default)
     {
@@ -549,11 +533,7 @@ public class CustomerPortalApi
             () => _httpClient.GetAsync($"v1/customer-portal/license-keys/{licenseKeyId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Models.LicenseKeys.LicenseKey>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<Models.LicenseKeys.LicenseKey>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -646,19 +626,15 @@ public class CustomerPortalApi
     /// Gets customer's organization information.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The organization information.</returns>
-    public async Task<Models.Organizations.Organization> GetOrganizationAsync(
+    /// <returns>The organization information, or null if not found.</returns>
+    public async Task<Models.Organizations.Organization?> GetOrganizationAsync(
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
             () => _httpClient.GetAsync("v1/customer-portal/organizations", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Models.Organizations.Organization>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<Models.Organizations.Organization>(_jsonOptions, cancellationToken);
     }
 
     private async Task<HttpResponseMessage> ExecuteWithPoliciesAsync(

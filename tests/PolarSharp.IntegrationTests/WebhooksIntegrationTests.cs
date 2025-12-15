@@ -173,12 +173,11 @@ public class WebhooksIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Assert
         deletedEndpoint.Should().NotBeNull();
-        deletedEndpoint.Id.Should().Be(createdEndpoint.Id);
+        deletedEndpoint!.Id.Should().Be(createdEndpoint.Id);
         
-        // Verify endpoint is deleted by trying to get it (should fail)
-        var exception = await Assert.ThrowsAsync<PolarApiException>(
-            () => client.Webhooks.GetEndpointAsync(createdEndpoint.Id));
-        exception.StatusCode.Should().Be(404);
+        // Verify endpoint is deleted by trying to get it (returns null for deleted items)
+        var afterDelete = await client.Webhooks.GetEndpointAsync(createdEndpoint.Id);
+        afterDelete.Should().BeNull();
     }
 
     [Fact]

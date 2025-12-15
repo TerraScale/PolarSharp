@@ -88,8 +88,8 @@ public class MetersApi
     /// </summary>
     /// <param name="meterId">The meter ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The meter.</returns>
-    public async Task<Meter> GetAsync(
+    /// <returns>The meter, or null if not found.</returns>
+    public async Task<Meter?> GetAsync(
         string meterId,
         CancellationToken cancellationToken = default)
     {
@@ -97,11 +97,7 @@ public class MetersApi
             () => _httpClient.GetAsync($"v1/meters/{meterId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        return await JsonSerializer.DeserializeAsync<Meter>(stream, _jsonOptions, cancellationToken)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<Meter>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -110,8 +106,8 @@ public class MetersApi
     /// <param name="meterId">The meter ID.</param>
     /// <param name="request">The meter update request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The updated meter.</returns>
-    public async Task<Meter> UpdateAsync(
+    /// <returns>The updated meter, or null if not found.</returns>
+    public async Task<Meter?> UpdateAsync(
         string meterId,
         MeterUpdateRequest request,
         CancellationToken cancellationToken = default)
@@ -120,11 +116,7 @@ public class MetersApi
             () => _httpClient.PatchAsJsonAsync($"v1/meters/{meterId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Meter>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<Meter>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -132,8 +124,8 @@ public class MetersApi
     /// </summary>
     /// <param name="meterId">The meter ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The deleted meter.</returns>
-    public async Task<Meter> DeleteAsync(
+    /// <returns>The deleted meter, or null if not found.</returns>
+    public async Task<Meter?> DeleteAsync(
         string meterId,
         CancellationToken cancellationToken = default)
     {
@@ -141,11 +133,7 @@ public class MetersApi
             () => _httpClient.DeleteAsync($"v1/meters/{meterId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Meter>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.HandleNotFoundAsNullAsync<Meter>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
