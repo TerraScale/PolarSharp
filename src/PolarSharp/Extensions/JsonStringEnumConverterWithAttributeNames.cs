@@ -31,7 +31,7 @@ public class JsonStringEnumConverterWithAttributeNames : JsonConverterFactory
             typeof(EnumConverter<>).MakeGenericType(typeToConvert))!;
     }
 
-    private class EnumConverter<T> : JsonConverter<T> where T : Enum
+    private class EnumConverter<T> : JsonConverter<T> where T : struct, Enum
     {
         private readonly Dictionary<T, string> _enumToString;
         private readonly Dictionary<string, T> _stringToEnum;
@@ -55,7 +55,14 @@ public class JsonStringEnumConverterWithAttributeNames : JsonConverterFactory
         public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             var value = reader.GetString();
-            if (value == null || !_stringToEnum.TryGetValue(value, out var result))
+            
+            // Handle null or empty string by returning default enum value
+            if (string.IsNullOrEmpty(value))
+            {
+                return default;
+            }
+            
+            if (!_stringToEnum.TryGetValue(value, out var result))
             {
                 throw new JsonException($"Unable to convert \"{value}\" to enum {typeof(T).Name}.");
             }
