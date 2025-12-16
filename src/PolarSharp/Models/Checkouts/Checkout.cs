@@ -169,6 +169,12 @@ public record Checkout
     /// </summary>
     [JsonPropertyName("subscription")]
     public Subscriptions.Subscription? Subscription { get; init; }
+    
+    /// <summary>
+    /// Seats information for the checkout session.
+    /// </summary>
+    [JsonPropertyName("seats")]
+    public int? Seats { get; init; }
 }
 
 /// <summary>
