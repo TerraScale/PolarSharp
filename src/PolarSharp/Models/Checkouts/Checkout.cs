@@ -200,18 +200,26 @@ public enum CheckoutStatus
 public record CheckoutCreateRequest
 {
     /// <summary>
-    /// The product ID to create a checkout session for.
+    /// List of product IDs available to select at that checkout.
+    /// The first one will be selected by default.
     /// </summary>
     [Required]
+    [JsonPropertyName("products")]
+    public List<string> Products { get; init; } = new();
+
+    /// <summary>
+    /// The product ID to create a checkout session for.
+    /// Deprecated: Use Products instead.
+    /// </summary>
     [JsonPropertyName("product_id")]
-    public string ProductId { get; init; } = string.Empty;
+    public string? ProductId { get; init; }
 
     /// <summary>
     /// The product price ID to create a checkout session for.
+    /// Deprecated: Use Products instead.
     /// </summary>
-    [Required]
     [JsonPropertyName("product_price_id")]
-    public string ProductPriceId { get; init; } = string.Empty;
+    public string? ProductPriceId { get; init; }
 
     /// <summary>
     /// The customer ID to create a checkout session for.
@@ -245,16 +253,22 @@ public record CheckoutCreateRequest
     public string? CancelUrl { get; init; }
 
     /// <summary>
+    /// URL where the customer can return to from the checkout.
+    /// </summary>
+    [JsonPropertyName("return_url")]
+    public string? ReturnUrl { get; init; }
+
+    /// <summary>
     /// The metadata to associate with the checkout session.
     /// </summary>
     [JsonPropertyName("metadata")]
     public Dictionary<string, object>? Metadata { get; init; }
 
     /// <summary>
-    /// The external ID for checkout session.
+    /// The external customer ID for checkout session.
     /// </summary>
-    [JsonPropertyName("external_id")]
-    public string? ExternalId { get; init; }
+    [JsonPropertyName("external_customer_id")]
+    public string? ExternalCustomerId { get; init; }
 
     /// <summary>
     /// Whether checkout session is for a subscription.

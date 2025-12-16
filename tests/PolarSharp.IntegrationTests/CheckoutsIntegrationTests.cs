@@ -106,6 +106,71 @@ public class CheckoutsIntegrationTests : IClassFixture<IntegrationTestFixture>
     }
 
     [Fact]
+    public async Task CheckoutsApi_CreateAsync_ReturnsSuccessfulCheckout()
+    {
+        // Arrange
+        var client = _fixture.CreateClient();
+        
+        // First create a product to use for the checkout
+        var productRequest = new ProductCreateRequest
+        {
+            Name = $"Checkout Test Product {Guid.NewGuid()}",
+            Description = "Product created for checkout integration test",
+            Type = ProductType.OneTime,
+            Prices = new List<ProductPriceCreateRequest>
+            {
+                new ProductPriceCreateRequest
+                {
+                    Amount = 1500, // $15.00
+                    Currency = "usd",
+                    Type = ProductPriceType.Fixed
+                }
+            }
+        };
+        
+        var createdProduct = await client.Products.CreateAsync(productRequest);
+        createdProduct.Should().NotBeNull();
+        createdProduct.Id.Should().NotBeNullOrEmpty();
+        createdProduct.Prices.Should().NotBeEmpty();
+
+        try
+        {
+            // Act - Create checkout session
+            var checkoutRequest = new CheckoutCreateRequest
+            {
+                Products = new List<string> { createdProduct.Id },
+                SuccessUrl = "https://polar.sh/success",
+                Metadata = new Dictionary<string, object>
+                {
+                    ["test_key"] = "test_value",
+                    ["is_integration_test"] = true
+                }
+            };
+
+            var createdCheckout = await client.Checkouts.CreateAsync(checkoutRequest);
+
+            // Assert - Verify checkout was created successfully
+            createdCheckout.Should().NotBeNull();
+            createdCheckout.Id.Should().NotBeNullOrEmpty("Checkout ID should be set by the API");
+            createdCheckout.Status.Should().Be(CheckoutStatus.Open);
+            createdCheckout.ProductId.Should().Be(createdProduct.Id);
+            createdCheckout.SuccessUrl.Should().Be(checkoutRequest.SuccessUrl);
+            createdCheckout.Url.Should().NotBeNullOrEmpty("Checkout should have a URL for the customer to complete payment");
+            createdCheckout.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(5));
+            createdCheckout.Amount.Should().Be(1500);
+            createdCheckout.Currency.Should().Be("usd");
+
+            _output.WriteLine($"Successfully created checkout with ID: {createdCheckout.Id}");
+            _output.WriteLine($"Checkout URL: {createdCheckout.Url}");
+        }
+        finally
+        {
+            // Cleanup - archive the product
+            await client.Products.ArchiveAsync(createdProduct.Id);
+        }
+    }
+
+    [Fact]
     public async Task CheckoutsApi_GetCheckout_WorksCorrectly()
     {
         // Arrange
