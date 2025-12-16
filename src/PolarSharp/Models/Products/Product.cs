@@ -86,9 +86,8 @@ public record Product
     /// <summary>
     /// The last modification date of product.
     /// </summary>
-    [Required]
     [JsonPropertyName("modified_at")]
-    public DateTime ModifiedAt { get; init; }
+    public DateTime? ModifiedAt { get; init; }
 
     /// <summary>
     /// The prices associated with this product.

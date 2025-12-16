@@ -1,10 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using FluentAssertions;
-using PolarSharp.Api;
-using PolarSharp.Models.Common;
 using PolarSharp.Models.Products;
 using PolarSharp.Models.Subscriptions;
 using Xunit;

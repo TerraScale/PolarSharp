@@ -71,11 +71,12 @@ public class CheckoutsApi
             () => _httpClient.GetAsync($"v1/checkouts/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<Checkout>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        var result = await response.HandleErrorsAsync<PaginatedResponse<Checkout>>(_jsonOptions, cancellationToken);
+        var (value, error) = result.EnsureSuccess();
+        if (error != null)
+            throw error.ToPolarApiException();
+        
+        return value ?? throw new InvalidOperationException("Failed to deserialize response.");
     }
 
     /// <summary>
@@ -114,11 +115,12 @@ public class CheckoutsApi
             () => _httpClient.GetAsync($"v1/checkouts/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<Checkout>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        var result = await response.HandleErrorsAsync<PaginatedResponse<Checkout>>(_jsonOptions, cancellationToken);
+        var (value, error) = result.EnsureSuccess();
+        if (error != null)
+            throw error.ToPolarApiException();
+        
+        return value ?? throw new InvalidOperationException("Failed to deserialize response.");
     }
 
     /// <summary>
@@ -152,11 +154,12 @@ public class CheckoutsApi
             () => _httpClient.PostAsJsonAsync("v1/checkouts/", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Checkout>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        var result = await response.HandleErrorsAsync<Checkout>(_jsonOptions, cancellationToken);
+        var (value, error) = result.EnsureSuccess();
+        if (error != null)
+            throw error.ToPolarApiException();
+        
+        return value ?? throw new InvalidOperationException("Failed to deserialize response.");
     }
 
     /// <summary>

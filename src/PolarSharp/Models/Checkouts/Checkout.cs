@@ -84,6 +84,13 @@ public record Checkout
     public string? Url { get; init; }
 
     /// <summary>
+    /// The client secret for client-side operations.
+    /// This is used with the /v1/checkouts/client/{client_secret} endpoints.
+    /// </summary>
+    [JsonPropertyName("client_secret")]
+    public string? ClientSecret { get; init; }
+
+    /// <summary>
     /// The metadata associated with the checkout session.
     /// </summary>
     [JsonPropertyName("metadata")]

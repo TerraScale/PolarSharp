@@ -55,16 +55,14 @@ public record ProductPrice
     /// <summary>
     /// The creation date of the price.
     /// </summary>
-    [Required]
     [JsonPropertyName("created_at")]
-    public DateTime CreatedAt { get; init; }
+    public DateTime? CreatedAt { get; init; }
 
     /// <summary>
     /// The last modification date of the price.
     /// </summary>
-    [Required]
     [JsonPropertyName("modified_at")]
-    public DateTime ModifiedAt { get; init; }
+    public DateTime? ModifiedAt { get; init; }
 
     /// <summary>
     /// The product ID this price belongs to.
