@@ -595,7 +595,7 @@ public class CheckoutsIntegrationTests : IClassFixture<IntegrationTestFixture>
         {
             Products = new List<string> { productId },
             SuccessUrl = "https://example.com/success"
-        };
+        }; 
 
         // Act
         var checkout = await client.Checkouts.CreateAsync(request);

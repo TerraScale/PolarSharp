@@ -144,7 +144,7 @@ public record Checkout
     /// The product information.
     /// </summary>
     [JsonPropertyName("product")]
-    public Products.Product? Product { get; init; }
+    public required Products.Product Product { get; init; }
 
     /// <summary>
     /// The product price information.
