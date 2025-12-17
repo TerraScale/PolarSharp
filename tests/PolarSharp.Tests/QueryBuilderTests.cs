@@ -182,6 +182,33 @@ public class OrdersQueryBuilderTests
     }
 
     [Fact]
+    public void WithCheckoutId_ShouldAddParameter()
+    {
+        // Arrange
+        var builder = new OrdersQueryBuilder();
+
+        // Act
+        builder.WithCheckoutId("checkout_789");
+
+        // Assert
+        var result = builder.Build();
+        result.Should().Be("checkout_id=checkout_789");
+    }
+
+    [Fact]
+    public void WithCheckoutId_WithNull_ShouldNotAddParameter()
+    {
+        // Arrange
+        var builder = new OrdersQueryBuilder();
+
+        // Act
+        builder.WithCheckoutId(null);
+
+        // Assert
+        builder.Build().Should().BeEmpty();
+    }
+
+    [Fact]
     public void ChainedMethods_ShouldBuildCorrectQuery()
     {
         // Arrange
@@ -193,6 +220,7 @@ public class OrdersQueryBuilderTests
             .WithStatus("COMPLETED")
             .WithCustomerId("cust_123")
             .WithProductId("prod_456")
+            .WithCheckoutId("checkout_789")
             .CreatedAfter(createdAfter)
             .Build();
 
@@ -200,6 +228,7 @@ public class OrdersQueryBuilderTests
         result.Should().Contain("status=completed");
         result.Should().Contain("customer_id=cust_123");
         result.Should().Contain("product_id=prod_456");
+        result.Should().Contain("checkout_id=checkout_789");
         result.Should().Contain("created_after=2023-01-01T00%3A00%3A00Z");
     }
 }

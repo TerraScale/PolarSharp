@@ -209,6 +209,16 @@ public class OrdersQueryBuilder : QueryBuilder<OrdersQueryBuilder>
     {
         return AddParameter("created_before", date?.ToString("yyyy-MM-ddTHH:mm:ssZ"));
     }
+
+    /// <summary>
+    /// Filters orders by checkout ID.
+    /// </summary>
+    /// <param name="checkoutId">The checkout ID to filter by.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    public OrdersQueryBuilder WithCheckoutId(string? checkoutId)
+    {
+        return AddParameter("checkout_id", checkoutId);
+    }
 }
 
 /// <summary>
