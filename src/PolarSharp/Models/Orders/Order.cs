@@ -22,13 +22,20 @@ public record Order
     [Required]
     [JsonPropertyName("status")]
     public OrderStatus Status { get; init; }
-
+    
     /// <summary>
-    /// The amount of the order in the smallest currency unit (e.g., cents).
+    /// If the order is paid.
     /// </summary>
     [Required]
-    [JsonPropertyName("amount")]
-    public long Amount { get; init; }
+    [JsonPropertyName("is_paid")]
+    public bool IsPaid { get; init; }
+
+    /// <summary>
+    /// The total amount after discounts in the smallest currency unit.
+    /// </summary>
+    [Required]
+    [JsonPropertyName("total_amount")]
+    public int Amount { get; init; }
 
     /// <summary>
     /// The currency of the order (ISO 4217 format).
