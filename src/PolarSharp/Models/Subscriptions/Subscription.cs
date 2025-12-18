@@ -195,7 +195,7 @@ public record Subscription
     /// The number of seats associated with the subscription.
     /// </summary>
     [JsonPropertyName("seats")]
-    public int Seats { get; init; }
+    public int? Seats { get; init; }
 
     /// <summary>
     /// The custom field data associated with the subscription.
