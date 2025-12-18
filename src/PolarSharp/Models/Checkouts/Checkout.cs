@@ -81,7 +81,7 @@ public record Checkout
     /// The URL for the checkout session.
     /// </summary>
     [JsonPropertyName("url")]
-    public string? Url { get; init; }
+    public string Url { get; init; }
 
     /// <summary>
     /// The client secret for client-side operations.
