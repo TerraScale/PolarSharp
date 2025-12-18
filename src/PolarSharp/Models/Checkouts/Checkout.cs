@@ -26,7 +26,7 @@ public record Checkout
     /// The customer ID associated with the checkout session.
     /// </summary>
     [JsonPropertyName("customer_id")]
-    public string? CustomerId { get; init; }
+    public string CustomerId { get; init; } = null!;
 
     /// <summary>
     /// The customer email for the checkout session.
@@ -134,11 +134,7 @@ public record Checkout
     [JsonPropertyName("expires_at")]
     public DateTime? ExpiresAt { get; init; }
 
-    /// <summary>
-    /// The customer information.
-    /// </summary>
-    [JsonPropertyName("customer")]
-    public Customers.Customer? Customer { get; init; }
+
 
     /// <summary>
     /// The product information.
