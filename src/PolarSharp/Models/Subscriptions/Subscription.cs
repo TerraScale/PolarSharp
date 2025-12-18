@@ -21,7 +21,7 @@ public record Subscription
     /// </summary>
     [Required]
     [JsonPropertyName("modified_at")]
-    public DateTime ModifiedAt { get; init; }
+    public DateTime? ModifiedAt { get; init; }
 
     /// <summary>
     /// The unique identifier of the subscription.
@@ -73,7 +73,7 @@ public record Subscription
     /// </summary>
     [Required]
     [JsonPropertyName("current_period_end")]
-    public DateTime CurrentPeriodEnd { get; init; }
+    public DateTime? CurrentPeriodEnd { get; init; }
 
     /// <summary>
     /// The trial period start date.
