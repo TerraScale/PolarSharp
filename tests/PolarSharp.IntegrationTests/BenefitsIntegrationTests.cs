@@ -283,7 +283,7 @@ public class BenefitsIntegrationTests : IClassFixture<IntegrationTestFixture>
         updatedBenefit.Description.Should().Be(updateRequest.Description);
         updatedBenefit.Active.Should().Be(updateRequest.Active.Value);
         updatedBenefit.Selectable.Should().Be(updateRequest.Selectable.Value);
-        updatedBenefit.UpdatedAt.Should().BeAfter(createdBenefit.UpdatedAt);
+        updatedBenefit.UpdatedAt.Should().BeAfter(createdBenefit.UpdatedAt ?? DateTime.MinValue);
         
         _output.WriteLine($"Updated benefit: {updatedBenefit.Name} ({updatedBenefit.Id})");
     }

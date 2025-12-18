@@ -50,16 +50,14 @@ public record Benefit
     /// <summary>
     /// The creation date of the benefit.
     /// </summary>
-    [Required]
     [JsonPropertyName("created_at")]
-    public DateTime CreatedAt { get; init; }
+    public DateTime? CreatedAt { get; init; }
 
     /// <summary>
     /// The last update date of the benefit.
     /// </summary>
-    [Required]
     [JsonPropertyName("updated_at")]
-    public DateTime UpdatedAt { get; init; }
+    public DateTime? UpdatedAt { get; init; }
 
     /// <summary>
     /// The selectable property for the benefit.

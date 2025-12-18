@@ -104,16 +104,14 @@ public record Discount
     /// <summary>
     /// The creation date of discount.
     /// </summary>
-    [Required]
     [JsonPropertyName("created_at")]
-    public DateTime CreatedAt { get; init; }
+    public DateTime? CreatedAt { get; init; }
 
     /// <summary>
     /// The last update date of discount.
     /// </summary>
-    [Required]
     [JsonPropertyName("updated_at")]
-    public DateTime UpdatedAt { get; init; }
+    public DateTime? UpdatedAt { get; init; }
     
     /// <summary>
     /// The organization ID associated with the discount.
