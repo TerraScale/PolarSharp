@@ -81,7 +81,7 @@ public record Checkout
     /// The URL for the checkout session.
     /// </summary>
     [JsonPropertyName("url")]
-    public string Url { get; init; }
+    public string Url { get; init; } = null!;
 
     /// <summary>
     /// The client secret for client-side operations.
@@ -133,9 +133,7 @@ public record Checkout
     /// </summary>
     [JsonPropertyName("expires_at")]
     public DateTime? ExpiresAt { get; init; }
-
-
-
+    
     /// <summary>
     /// The product information.
     /// </summary>
@@ -161,10 +159,10 @@ public record Checkout
     public Orders.Order? Order { get; init; }
 
     /// <summary>
-    /// The subscription information if checkout is for a subscription.
+    /// The subscription id if checkout is for a subscription.
     /// </summary>
-    [JsonPropertyName("subscription")]
-    public Subscriptions.Subscription? Subscription { get; init; }
+    [JsonPropertyName("subscription_id")]
+    public string? SubscriptionId { get; init; }
     
     /// <summary>
     /// Seats information for the checkout session.
