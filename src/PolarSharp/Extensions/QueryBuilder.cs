@@ -69,6 +69,27 @@ public class QueryBuilder<TBuilder> where TBuilder : QueryBuilder<TBuilder>
     }
 
     /// <summary>
+    /// Adds metadata parameters using deepObject style (e.g., metadata[key]=value).
+    /// </summary>
+    /// <param name="baseKey">The base parameter key (e.g., "metadata").</param>
+    /// <param name="metadata">The dictionary of key-value pairs.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    protected TBuilder AddMetadataParameters(string baseKey, IDictionary<string, string>? metadata)
+    {
+        if (metadata != null)
+        {
+            foreach (var kvp in metadata)
+            {
+                if (!string.IsNullOrEmpty(kvp.Key) && !string.IsNullOrEmpty(kvp.Value))
+                {
+                    _parameters[$"{baseKey}[{kvp.Key}]"] = kvp.Value;
+                }
+            }
+        }
+        return (TBuilder)this;
+    }
+
+    /// <summary>
     /// Builds query string.
     /// </summary>
     /// <returns>The query string.</returns>
@@ -279,6 +300,17 @@ public class SubscriptionsQueryBuilder : QueryBuilder<SubscriptionsQueryBuilder>
     public SubscriptionsQueryBuilder WithExternalId(string? externalId)
     {
         return AddParameter("external_customer_id", externalId);
+    }
+
+    /// <summary>
+    /// Filters subscriptions by metadata key-value pairs.
+    /// Uses deepObject style, e.g., ?metadata[key]=value.
+    /// </summary>
+    /// <param name="metadata">The metadata key-value pairs to filter by.</param>
+    /// <returns>The builder instance for method chaining.</returns>
+    public SubscriptionsQueryBuilder WithMetadata(IDictionary<string, string>? metadata)
+    {
+        return AddMetadataParameters("metadata", metadata);
     }
 }
 

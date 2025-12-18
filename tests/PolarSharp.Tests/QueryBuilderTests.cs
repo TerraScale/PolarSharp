@@ -364,6 +364,106 @@ public class SubscriptionsQueryBuilderTests
         result.Should().Contain("external_customer_id=ext_789");
         result.Should().Contain("canceled=false");
     }
+
+    [Fact]
+    public void WithMetadata_WithSingleKeyValue_ShouldAddDeepObjectParameter()
+    {
+        // Arrange
+        var builder = new SubscriptionsQueryBuilder();
+        var metadata = new Dictionary<string, string> { { "plan", "premium" } };
+
+        // Act
+        builder.WithMetadata(metadata);
+
+        // Assert
+        var result = builder.Build();
+        result.Should().Be("metadata%5Bplan%5D=premium");
+    }
+
+    [Fact]
+    public void WithMetadata_WithMultipleKeyValues_ShouldAddAllDeepObjectParameters()
+    {
+        // Arrange
+        var builder = new SubscriptionsQueryBuilder();
+        var metadata = new Dictionary<string, string>
+        {
+            { "plan", "premium" },
+            { "region", "us-east" }
+        };
+
+        // Act
+        builder.WithMetadata(metadata);
+
+        // Assert
+        var result = builder.Build();
+        result.Should().Contain("metadata%5Bplan%5D=premium");
+        result.Should().Contain("metadata%5Bregion%5D=us-east");
+    }
+
+    [Fact]
+    public void WithMetadata_WithNull_ShouldNotAddParameter()
+    {
+        // Arrange
+        var builder = new SubscriptionsQueryBuilder();
+
+        // Act
+        builder.WithMetadata(null);
+
+        // Assert
+        builder.Build().Should().BeEmpty();
+    }
+
+    [Fact]
+    public void WithMetadata_WithEmptyDictionary_ShouldNotAddParameter()
+    {
+        // Arrange
+        var builder = new SubscriptionsQueryBuilder();
+        var metadata = new Dictionary<string, string>();
+
+        // Act
+        builder.WithMetadata(metadata);
+
+        // Assert
+        builder.Build().Should().BeEmpty();
+    }
+
+    [Fact]
+    public void WithMetadata_WithEmptyValues_ShouldNotAddParameter()
+    {
+        // Arrange
+        var builder = new SubscriptionsQueryBuilder();
+        var metadata = new Dictionary<string, string>
+        {
+            { "key1", "" },
+            { "", "value2" }
+        };
+
+        // Act
+        builder.WithMetadata(metadata);
+
+        // Assert
+        builder.Build().Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ChainedMethods_WithMetadata_ShouldBuildCorrectQuery()
+    {
+        // Arrange
+        var builder = new SubscriptionsQueryBuilder();
+        var metadata = new Dictionary<string, string> { { "tier", "enterprise" } };
+
+        // Act
+        var result = builder
+            .WithStatus("ACTIVE")
+            .WithCustomerId("cust_123")
+            .WithMetadata(metadata)
+            .Build();
+
+        // Assert
+        result.Should().Contain("status=active");
+        result.Should().Contain("customer_id=cust_123");
+        result.Should().Contain("metadata%5Btier%5D=enterprise");
+    }
 }
 
 public class CustomersQueryBuilderTests
