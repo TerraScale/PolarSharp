@@ -34,12 +34,7 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
         var createRequest = new CustomerSessionCreateRequest
         {
             CustomerId = customer.Id,
-            CustomerAccessTokenExpiresAt = DateTime.UtcNow.AddHours(24),
-            Metadata = new Dictionary<string, object>
-            {
-                ["test"] = true,
-                ["environment"] = "integration"
-            }
+            ReturnUrl = "https://example.com/account"
         };
 
         // Act
@@ -49,12 +44,10 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
         customerSession.Should().NotBeNull();
         customerSession.Id.Should().NotBeNullOrEmpty();
         customerSession.CustomerId.Should().Be(customer.Id);
-        customerSession.CustomerAccessToken.Should().NotBeNullOrEmpty();
-        customerSession.CustomerAccessTokenExpiresAt.Should().BeCloseTo(DateTime.UtcNow.AddHours(24), TimeSpan.FromMinutes(1));
-        customerSession.Metadata.Should().NotBeNull();
-        customerSession.Metadata.Should().ContainKey("test");
-        customerSession.CreatedAt.Should().BeBefore(DateTime.UtcNow);
-        customerSession.UpdatedAt.Should().BeOnOrAfter(customerSession.CreatedAt);
+        customerSession.Token.Should().NotBeNullOrEmpty();
+        customerSession.ExpiresAt.Should().BeAfter(DateTime.UtcNow);
+        customerSession.ReturnUrl.Should().Be("https://example.com/account");
+        customerSession.CreatedAt.Should().BeBefore(DateTime.UtcNow.AddMinutes(1));
 
         // Cleanup
         try
@@ -94,10 +87,8 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
         customerSession.Should().NotBeNull();
         customerSession.Id.Should().NotBeNullOrEmpty();
         customerSession.CustomerId.Should().Be(customer.Id);
-        customerSession.CustomerAccessToken.Should().NotBeNullOrEmpty();
-        customerSession.Metadata.Should().BeNull();
-        customerSession.CreatedAt.Should().BeBefore(DateTime.UtcNow);
-        customerSession.UpdatedAt.Should().BeOnOrAfter(customerSession.CreatedAt);
+        customerSession.Token.Should().NotBeNullOrEmpty();
+        customerSession.CreatedAt.Should().BeBefore(DateTime.UtcNow.AddMinutes(1));
 
         // Cleanup
         try
@@ -159,15 +150,14 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
 
         var sessionCreateRequest = new CustomerSessionCreateRequest
         {
-            CustomerId = customer.Id,
-            CustomerAccessTokenExpiresAt = DateTime.UtcNow.AddHours(1)
+            CustomerId = customer.Id
         };
 
         var customerSession = await client.CustomerSessions.CreateAsync(sessionCreateRequest);
 
         var introspectRequest = new CustomerSessionIntrospectRequest
         {
-            CustomerAccessToken = customerSession.CustomerAccessToken
+            CustomerAccessToken = customerSession.Token
         };
 
         // Act
@@ -177,7 +167,7 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
         introspectResponse.Should().NotBeNull();
         introspectResponse.Valid.Should().BeTrue();
         introspectResponse.CustomerId.Should().Be(customer.Id);
-        introspectResponse.ExpiresAt.Should().BeCloseTo(customerSession.CustomerAccessTokenExpiresAt, TimeSpan.FromMinutes(1));
+        introspectResponse.ExpiresAt.Should().BeCloseTo(customerSession.ExpiresAt, TimeSpan.FromMinutes(1));
 
         // Cleanup
         try
@@ -249,15 +239,14 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
 
         var sessionCreateRequest = new CustomerSessionCreateRequest
         {
-            CustomerId = customer.Id,
-            CustomerAccessTokenExpiresAt = DateTime.UtcNow.AddSeconds(-1) // Already expired
+            CustomerId = customer.Id
         };
 
         var customerSession = await client.CustomerSessions.CreateAsync(sessionCreateRequest);
 
         var introspectRequest = new CustomerSessionIntrospectRequest
         {
-            CustomerAccessToken = customerSession.CustomerAccessToken
+            CustomerAccessToken = customerSession.Token
         };
 
         // Act
@@ -295,12 +284,10 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
 
         var customer = await client.Customers.CreateAsync(customerRequest);
 
-        var futureExpiration = DateTime.UtcNow.AddDays(30);
-
         var createRequest = new CustomerSessionCreateRequest
         {
             CustomerId = customer.Id,
-            CustomerAccessTokenExpiresAt = futureExpiration
+            ReturnUrl = "https://example.com/return"
         };
 
         // Act
@@ -308,7 +295,7 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
 
         // Assert
         customerSession.Should().NotBeNull();
-        customerSession.CustomerAccessTokenExpiresAt.Should().BeCloseTo(futureExpiration, TimeSpan.FromMinutes(1));
+        customerSession.ExpiresAt.Should().BeAfter(DateTime.UtcNow);
 
         // Cleanup
         try
@@ -339,12 +326,7 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
         var createRequest = new CustomerSessionCreateRequest
         {
             CustomerId = customer.Id,
-            CustomerAccessTokenExpiresAt = DateTime.UtcNow.AddHours(12),
-            Metadata = new Dictionary<string, object>
-            {
-                ["source"] = "integration_test",
-                ["version"] = "1.0"
-            }
+            ReturnUrl = "https://example.com/account"
         };
 
         // Act
@@ -354,13 +336,10 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
         customerSession.Should().NotBeNull();
         customerSession.Id.Should().NotBeNullOrEmpty();
         customerSession.CustomerId.Should().Be(customer.Id);
-        customerSession.CustomerAccessToken.Should().NotBeNullOrEmpty();
-        customerSession.CustomerAccessTokenExpiresAt.Should().BeAfter(DateTime.UtcNow);
-        customerSession.Metadata.Should().NotBeNull();
-        customerSession.Metadata.Should().ContainKey("source");
-        customerSession.Metadata.Should().ContainKey("version");
-        customerSession.CreatedAt.Should().BeBefore(DateTime.UtcNow);
-        customerSession.UpdatedAt.Should().BeOnOrAfter(customerSession.CreatedAt);
+        customerSession.Token.Should().NotBeNullOrEmpty();
+        customerSession.ExpiresAt.Should().BeAfter(DateTime.UtcNow);
+        customerSession.ReturnUrl.Should().Be("https://example.com/account");
+        customerSession.CreatedAt.Should().BeBefore(DateTime.UtcNow.AddMinutes(1));
         
         // Verify nested customer object if present
         if (customerSession.Customer != null)
@@ -397,15 +376,14 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
 
         var sessionCreateRequest = new CustomerSessionCreateRequest
         {
-            CustomerId = customer.Id,
-            CustomerAccessTokenExpiresAt = DateTime.UtcNow.AddHours(2)
+            CustomerId = customer.Id
         };
 
         var customerSession = await client.CustomerSessions.CreateAsync(sessionCreateRequest);
 
         var introspectRequest = new CustomerSessionIntrospectRequest
         {
-            CustomerAccessToken = customerSession.CustomerAccessToken
+            CustomerAccessToken = customerSession.Token
         };
 
         // Act
@@ -415,7 +393,7 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
         introspectResponse.Should().NotBeNull();
         introspectResponse.Valid.Should().BeTrue();
         introspectResponse.CustomerId.Should().Be(customer.Id);
-        introspectResponse.ExpiresAt.Should().BeCloseTo(customerSession.CustomerAccessTokenExpiresAt, TimeSpan.FromMinutes(1));
+        introspectResponse.ExpiresAt.Should().BeCloseTo(customerSession.ExpiresAt, TimeSpan.FromMinutes(1));
         
         // Verify nested customer object if present
         if (introspectResponse.Customer != null)

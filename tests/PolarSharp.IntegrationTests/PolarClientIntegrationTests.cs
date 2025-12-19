@@ -435,8 +435,8 @@ public class PolarClientIntegrationTests : IClassFixture<IntegrationTestFixture>
             session.Should().NotBeNull();
             session.Id.Should().NotBeNullOrEmpty();
             session.CustomerId.Should().Be(customer.Id);
-            session.CustomerAccessToken.Should().NotBeNullOrEmpty();
-            session.CustomerAccessTokenExpiresAt.Should().BeAfter(DateTime.UtcNow);
+            session.Token.Should().NotBeNullOrEmpty();
+            session.ExpiresAt.Should().BeAfter(DateTime.UtcNow);
 
             // Cleanup
             await client.Customers.DeleteAsync(customer.Id);
