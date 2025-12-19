@@ -67,26 +67,18 @@ internal static class ErrorHandlerExtensions
 
     /// <summary>
     /// Handles HTTP response for nullable return types.
-    /// Returns Success(null) for 404/422, Success(value) for success, or Failure for other errors.
+    /// Returns Failure for 404/422, Success(value) for success, or Failure for other errors.
     /// </summary>
     /// <typeparam name="T">The type of value expected on success.</typeparam>
     /// <param name="response">The HTTP response.</param>
     /// <param name="jsonOptions">JSON serializer options.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>A PolarResult containing the value, null for not found, or error details.</returns>
+    /// <returns>A PolarResult containing the value or error details.</returns>
     public static async Task<PolarResult<T?>> ToPolarResultWithNullableAsync<T>(
         this HttpResponseMessage response,
         JsonSerializerOptions jsonOptions,
         CancellationToken cancellationToken = default) where T : class
     {
-        // Return null for NotFound (404) and UnprocessableEntity (422) which is often used
-        // for resource ID validation errors (non-existent resource)
-        if (response.StatusCode == HttpStatusCode.NotFound ||
-            response.StatusCode == HttpStatusCode.UnprocessableEntity)
-        {
-            return PolarResult<T?>.Success(null);
-        }
-
         if (response.IsSuccessStatusCode)
         {
             var content = await response.Content.ReadAsStringAsync(cancellationToken);
