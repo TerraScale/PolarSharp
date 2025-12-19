@@ -4,10 +4,10 @@ using System.Text.Json;
 using Polly;
 using Polly.Retry;
 using Polly.RateLimit;
-using PolarSharp.Exceptions;
 using PolarSharp.Extensions;
 using PolarSharp.Models.Common;
 using PolarSharp.Models.Discounts;
+using PolarSharp.Results;
 
 namespace PolarSharp.Api;
 
@@ -40,7 +40,7 @@ public class DiscountsApi
     /// <param name="limit">Number of items per page (default: 10, max: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing discounts.</returns>
-    public async Task<PaginatedResponse<Discount>> ListAsync(
+    public async Task<PolarResult<PaginatedResponse<Discount>>> ListAsync(
         int page = 1,
         int limit = 10,
         CancellationToken cancellationToken = default)
@@ -55,11 +55,7 @@ public class DiscountsApi
             () => _httpClient.GetAsync($"v1/discounts?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<Discount>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<Discount>>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -68,7 +64,7 @@ public class DiscountsApi
     /// <param name="discountId">The discount ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The discount, or null if not found.</returns>
-    public async Task<Discount?> GetAsync(
+    public async Task<PolarResult<Discount?>> GetAsync(
         string discountId,
         CancellationToken cancellationToken = default)
     {
@@ -76,7 +72,7 @@ public class DiscountsApi
             () => _httpClient.GetAsync($"v1/discounts/{discountId}", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Discount>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultWithNullableAsync<Discount>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -85,7 +81,7 @@ public class DiscountsApi
     /// <param name="request">The discount creation request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The created discount.</returns>
-    public async Task<Discount> CreateAsync(
+    public async Task<PolarResult<Discount>> CreateAsync(
         DiscountCreateRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -93,11 +89,7 @@ public class DiscountsApi
             () => _httpClient.PostAsJsonAsync("v1/discounts", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Discount>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<Discount>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -107,7 +99,7 @@ public class DiscountsApi
     /// <param name="request">The discount update request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The updated discount, or null if not found.</returns>
-    public async Task<Discount?> UpdateAsync(
+    public async Task<PolarResult<Discount?>> UpdateAsync(
         string discountId,
         DiscountUpdateRequest request,
         CancellationToken cancellationToken = default)
@@ -116,7 +108,7 @@ public class DiscountsApi
             () => _httpClient.PatchAsJsonAsync($"v1/discounts/{discountId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Discount>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultWithNullableAsync<Discount>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -125,7 +117,7 @@ public class DiscountsApi
     /// <param name="discountId">The discount ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The deleted discount, or null if not found.</returns>
-    public async Task<Discount?> DeleteAsync(
+    public async Task<PolarResult<Discount?>> DeleteAsync(
         string discountId,
         CancellationToken cancellationToken = default)
     {
@@ -133,7 +125,7 @@ public class DiscountsApi
             () => _httpClient.DeleteAsync($"v1/discounts/{discountId}", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Discount>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultWithNullableAsync<Discount>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -141,21 +133,27 @@ public class DiscountsApi
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An async enumerable of all discounts.</returns>
-    public async IAsyncEnumerable<Discount> ListAllAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<PolarResult<Discount>> ListAllAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var page = 1;
         const int limit = 100; // Use maximum page size for efficiency
 
         while (true)
         {
-            var response = await ListAsync(page, limit, cancellationToken);
-            
-            foreach (var discount in response.Items)
+            var result = await ListAsync(page, limit, cancellationToken);
+
+            if (result.IsFailure)
             {
-                yield return discount;
+                yield return PolarResult<Discount>.Failure(result.Error!);
+                yield break;
             }
 
-            if (page >= response.Pagination.MaxPage)
+            foreach (var discount in result.Value.Items)
+            {
+                yield return PolarResult<Discount>.Success(discount);
+            }
+
+            if (page >= result.Value.Pagination.MaxPage)
                 break;
 
             page++;
@@ -184,7 +182,7 @@ public class DiscountsApi
     /// <param name="limit">Number of items per page (default: 10, max: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing filtered discounts.</returns>
-    public async Task<PaginatedResponse<Discount>> ListAsync(
+    public async Task<PolarResult<PaginatedResponse<Discount>>> ListAsync(
         DiscountsQueryBuilder builder,
         int page = 1,
         int limit = 10,
@@ -206,11 +204,7 @@ public class DiscountsApi
             () => _httpClient.GetAsync($"v1/discounts?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<Discount>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<Discount>>(_jsonOptions, cancellationToken);
     }
 
     private static string GetQueryString(Dictionary<string, string> parameters)

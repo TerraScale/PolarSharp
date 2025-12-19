@@ -4,10 +4,10 @@ using System.Text.Json;
 using Polly;
 using Polly.Retry;
 using Polly.RateLimit;
-using PolarSharp.Exceptions;
 using PolarSharp.Extensions;
 using PolarSharp.Models.Common;
 using PolarSharp.Models.CustomFields;
+using PolarSharp.Results;
 
 namespace PolarSharp.Api;
 
@@ -40,7 +40,7 @@ public class CustomFieldsApi
     /// <param name="limit">Number of items per page (default: 10, max: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing custom fields.</returns>
-    public async Task<PaginatedResponse<CustomField>> ListAsync(
+    public async Task<PolarResult<PaginatedResponse<CustomField>>> ListAsync(
         int page = 1,
         int limit = 10,
         CancellationToken cancellationToken = default)
@@ -55,11 +55,7 @@ public class CustomFieldsApi
             () => _httpClient.GetAsync($"v1/custom_fields?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<CustomField>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<CustomField>>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -68,7 +64,7 @@ public class CustomFieldsApi
     /// <param name="request">The custom field creation request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The created custom field.</returns>
-    public async Task<CustomField> CreateAsync(
+    public async Task<PolarResult<CustomField>> CreateAsync(
         CustomFieldCreateRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -76,11 +72,7 @@ public class CustomFieldsApi
             () => _httpClient.PostAsJsonAsync("v1/custom_fields", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        return await JsonSerializer.DeserializeAsync<CustomField>(stream, _jsonOptions, cancellationToken)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<CustomField>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -89,7 +81,7 @@ public class CustomFieldsApi
     /// <param name="customFieldId">The custom field ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The custom field, or null if not found.</returns>
-    public async Task<CustomField?> GetAsync(
+    public async Task<PolarResult<CustomField>> GetAsync(
         string customFieldId,
         CancellationToken cancellationToken = default)
     {
@@ -97,7 +89,7 @@ public class CustomFieldsApi
             () => _httpClient.GetAsync($"v1/custom_fields/{customFieldId}", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<CustomField>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultAsync<CustomField>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -107,7 +99,7 @@ public class CustomFieldsApi
     /// <param name="request">The custom field update request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The updated custom field, or null if not found.</returns>
-    public async Task<CustomField?> UpdateAsync(
+    public async Task<PolarResult<CustomField>> UpdateAsync(
         string customFieldId,
         CustomFieldUpdateRequest request,
         CancellationToken cancellationToken = default)
@@ -116,7 +108,7 @@ public class CustomFieldsApi
             () => _httpClient.PatchAsJsonAsync($"v1/custom_fields/{customFieldId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<CustomField>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultAsync<CustomField>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -125,7 +117,7 @@ public class CustomFieldsApi
     /// <param name="customFieldId">The custom field ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>True if deleted, or null if not found.</returns>
-    public async Task<bool?> DeleteAsync(
+    public async Task<PolarResult> DeleteAsync(
         string customFieldId,
         CancellationToken cancellationToken = default)
     {
@@ -133,7 +125,7 @@ public class CustomFieldsApi
             () => _httpClient.DeleteAsync($"v1/custom_fields/{customFieldId}", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultAsync(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -141,21 +133,27 @@ public class CustomFieldsApi
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An async enumerable of all custom fields.</returns>
-    public async IAsyncEnumerable<CustomField> ListAllAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<PolarResult<CustomField>> ListAllAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var page = 1;
         const int limit = 100; // Use maximum page size for efficiency
 
         while (true)
         {
-            var response = await ListAsync(page, limit, cancellationToken);
-            
-            foreach (var customField in response.Items)
+            var result = await ListAsync(page, limit, cancellationToken);
+
+            if (result.IsFailure)
             {
-                yield return customField;
+                yield return PolarResult<CustomField>.Failure(result.Error!);
+                yield break;
             }
 
-            if (page >= response.Pagination.MaxPage)
+            foreach (var customField in result.Value!.Items)
+            {
+                yield return PolarResult<CustomField>.Success(customField);
+            }
+
+            if (page >= result.Value!.Pagination.MaxPage)
                 break;
 
             page++;
@@ -184,7 +182,7 @@ public class CustomFieldsApi
     /// <param name="limit">Number of items per page (default: 10, max: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing filtered custom fields.</returns>
-    public async Task<PaginatedResponse<CustomField>> ListAsync(
+    public async Task<PolarResult<PaginatedResponse<CustomField>>> ListAsync(
         CustomFieldsQueryBuilder builder,
         int page = 1,
         int limit = 10,
@@ -206,11 +204,7 @@ public class CustomFieldsApi
             () => _httpClient.GetAsync($"v1/custom_fields?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<CustomField>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<CustomField>>(_jsonOptions, cancellationToken);
     }
 
     private static string GetQueryString(Dictionary<string, string> parameters)

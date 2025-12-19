@@ -4,10 +4,10 @@ using System.Text.Json;
 using Polly;
 using Polly.Retry;
 using Polly.RateLimit;
-using PolarSharp.Exceptions;
 using PolarSharp.Extensions;
 using PolarSharp.Models.Common;
 using PolarSharp.Models.Events;
+using PolarSharp.Results;
 
 namespace PolarSharp.Api;
 
@@ -40,7 +40,7 @@ public class EventsApi
     /// <param name="limit">Number of items per page (default: 10, max: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing events.</returns>
-    public async Task<PaginatedResponse<Event>> ListAsync(
+    public async Task<PolarResult<PaginatedResponse<Event>>> ListAsync(
         int page = 1,
         int limit = 10,
         CancellationToken cancellationToken = default)
@@ -55,11 +55,7 @@ public class EventsApi
             () => _httpClient.GetAsync($"v1/events?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<Event>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<Event>>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -67,17 +63,13 @@ public class EventsApi
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A list of event names.</returns>
-    public async Task<List<EventName>> ListNamesAsync(CancellationToken cancellationToken = default)
+    public async Task<PolarResult<List<EventName>>> ListNamesAsync(CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
             () => _httpClient.GetAsync("v1/events/names", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        return await JsonSerializer.DeserializeAsync<List<EventName>>(stream, _jsonOptions, cancellationToken)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<List<EventName>>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -86,7 +78,7 @@ public class EventsApi
     /// <param name="eventId">The event ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The event, or null if not found.</returns>
-    public async Task<Event?> GetAsync(
+    public async Task<PolarResult<Event?>> GetAsync(
         string eventId,
         CancellationToken cancellationToken = default)
     {
@@ -94,7 +86,7 @@ public class EventsApi
             () => _httpClient.GetAsync($"v1/events/{eventId}", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Event>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultWithNullableAsync<Event>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -103,7 +95,7 @@ public class EventsApi
     /// <param name="request">The event ingestion request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A response indicating success.</returns>
-    public async Task IngestAsync(
+    public async Task<PolarResult> IngestAsync(
         EventIngestRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -111,7 +103,7 @@ public class EventsApi
             () => _httpClient.PostAsJsonAsync("v1/events/ingest", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
+        return await response.ToPolarResultAsync(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -119,21 +111,27 @@ public class EventsApi
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An async enumerable of all events.</returns>
-    public async IAsyncEnumerable<Event> ListAllAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<PolarResult<Event>> ListAllAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var page = 1;
         const int limit = 100; // Use maximum page size for efficiency
 
         while (true)
         {
-            var response = await ListAsync(page, limit, cancellationToken);
-            
-            foreach (var @event in response.Items)
+            var result = await ListAsync(page, limit, cancellationToken);
+
+            if (result.IsFailure)
             {
-                yield return @event;
+                yield return PolarResult<Event>.Failure(result.Error!);
+                yield break;
             }
 
-            if (page >= response.Pagination.MaxPage)
+            foreach (var @event in result.Value.Items)
+            {
+                yield return PolarResult<Event>.Success(@event);
+            }
+
+            if (page >= result.Value.Pagination.MaxPage)
                 break;
 
             page++;
@@ -162,7 +160,7 @@ public class EventsApi
     /// <param name="limit">Number of items per page (default: 10, max: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing filtered events.</returns>
-    public async Task<PaginatedResponse<Event>> ListAsync(
+    public async Task<PolarResult<PaginatedResponse<Event>>> ListAsync(
         EventsQueryBuilder builder,
         int page = 1,
         int limit = 10,
@@ -184,11 +182,7 @@ public class EventsApi
             () => _httpClient.GetAsync($"v1/events?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<Event>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<Event>>(_jsonOptions, cancellationToken);
     }
 
     private static string GetQueryString(Dictionary<string, string> parameters)

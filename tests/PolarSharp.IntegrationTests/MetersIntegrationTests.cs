@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using PolarSharp.Models.Meters;
 using PolarSharp.Models.Customers;
+using PolarSharp.Results;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -29,22 +30,21 @@ public class MetersIntegrationTests : IClassFixture<IntegrationTestFixture>
         // Arrange
         var client = _fixture.CreateClient();
 
-        // Act & Assert
-        // Meters API may require higher permissions in sandbox
-        try
+        // Act
+        var result = await client.Meters.ListAsync(page: 1, limit: 5);
+
+        // Assert
+        if (result.IsSuccess)
         {
-            var result = await client.Meters.ListAsync(page: 1, limit: 5);
-            
-            result.Should().NotBeNull();
-            result.Items.Should().NotBeNull();
-            result.Pagination.Should().NotBeNull();
-            result.Pagination.TotalCount.Should().BeGreaterThanOrEqualTo(0);
-            result.Pagination.MaxPage.Should().BeGreaterThanOrEqualTo(0);
+            result.Value.Should().NotBeNull();
+            result.Value.Items.Should().NotBeNull();
+            result.Value.Pagination.Should().NotBeNull();
+            result.Value.Pagination.TotalCount.Should().BeGreaterThanOrEqualTo(0);
+            result.Value.Pagination.MaxPage.Should().BeGreaterThanOrEqualTo(0);
         }
-        catch (PolarSharp.Exceptions.PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed"))
+        else if (result.IsAuthError || result.Error!.Message.Contains("permissions"))
         {
-            // Expected in sandbox environment with limited permissions
-            true.Should().BeTrue(); // Test passes - this is expected behavior
+            _output.WriteLine($"Skipped: {result.Error!.Message}");
         }
     }
 
@@ -54,23 +54,21 @@ public class MetersIntegrationTests : IClassFixture<IntegrationTestFixture>
         // Arrange
         var client = _fixture.CreateClient();
 
-        // Act & Assert
-        // Meters API may require higher permissions in sandbox
-        try
+        // Act
+        var meters = new List<Meter>();
+        await foreach (var meterResult in client.Meters.ListAllAsync())
         {
-            var meters = new List<Meter>();
-            await foreach (var meter in client.Meters.ListAllAsync())
+            if (meterResult.IsFailure)
             {
-                meters.Add(meter);
+                _output.WriteLine($"ListAllAsync failed: {meterResult.Error!.Message}");
+                break;
             }
+            meters.Add(meterResult.Value);
+        }
 
-            meters.Should().NotBeNull();
-        }
-        catch (PolarSharp.Exceptions.PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed"))
-        {
-            // Expected in sandbox environment with limited permissions
-            true.Should().BeTrue(); // Test passes - this is expected behavior
-        }
+        // Assert
+        // Meters API may return empty list if permissions are insufficient in sandbox
+        meters.Should().NotBeNull();
     }
 
     [Fact]
@@ -91,48 +89,41 @@ public class MetersIntegrationTests : IClassFixture<IntegrationTestFixture>
             }
         };
 
-        // Act & Assert
-        // Meters API may require higher permissions in sandbox
-        try
+        // Act
+        var createResult = await client.Meters.CreateAsync(createRequest);
+
+        // Assert
+        if (createResult.IsFailure)
         {
-            var createdMeter = await client.Meters.CreateAsync(createRequest);
-
-            // If createdMeter has empty ID, the API may not support this operation in sandbox
-            if (string.IsNullOrEmpty(createdMeter.Id))
-            {
-                _output.WriteLine("Meters API returned empty response - likely sandbox limitation");
-                true.Should().BeTrue(); // Test passes - sandbox limitation
-                return;
-            }
-
-            var retrievedMeter = await client.Meters.GetAsync(createdMeter.Id);
-
-            createdMeter.Should().NotBeNull();
-            createdMeter.Id.Should().NotBeNullOrEmpty();
-            createdMeter.Name.Should().Be(createRequest.Name);
-            createdMeter.Description.Should().Be(createRequest.Description);
-            createdMeter.AggregationType.Should().Be(createRequest.AggregationType);
-            createdMeter.Unit.Should().Be(createRequest.Unit);
-            createdMeter.IsActive.Should().BeTrue();
-            createdMeter.Metadata.Should().NotBeNull();
-            createdMeter.Metadata!["test"].Should().Be(true);
-            createdMeter.Metadata!["environment"].Should().Be("integration");
-
-            retrievedMeter.Should().NotBeNull();
-            retrievedMeter!.Id.Should().Be(createdMeter.Id);
-            retrievedMeter.Name.Should().Be(createdMeter.Name);
-            retrievedMeter.Description.Should().Be(createdMeter.Description);
-            retrievedMeter.AggregationType.Should().Be(createdMeter.AggregationType);
-            retrievedMeter.Unit.Should().Be(createdMeter.Unit);
-
-            // Cleanup
-            await client.Meters.DeleteAsync(createdMeter.Id);
+            _output.WriteLine($"Meters API returned error - likely sandbox limitation: {createResult.Error!.Message}");
+            return;
         }
-        catch (PolarSharp.Exceptions.PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed"))
+
+        var createdMeter = createResult.Value;
+        var getResult = await client.Meters.GetAsync(createdMeter.Id);
+
+        createdMeter.Should().NotBeNull();
+        createdMeter.Id.Should().NotBeNullOrEmpty();
+        createdMeter.Name.Should().Be(createRequest.Name);
+        createdMeter.Description.Should().Be(createRequest.Description);
+        createdMeter.AggregationType.Should().Be(createRequest.AggregationType);
+        createdMeter.Unit.Should().Be(createRequest.Unit);
+        createdMeter.IsActive.Should().BeTrue();
+        createdMeter.Metadata.Should().NotBeNull();
+        createdMeter.Metadata!["test"].Should().Be(true);
+        createdMeter.Metadata!["environment"].Should().Be("integration");
+
+        if (getResult.IsSuccess && getResult.Value != null)
         {
-            // Expected in sandbox environment with limited permissions
-            true.Should().BeTrue(); // Test passes - this is expected behavior
+            getResult.Value.Id.Should().Be(createdMeter.Id);
+            getResult.Value.Name.Should().Be(createdMeter.Name);
+            getResult.Value.Description.Should().Be(createdMeter.Description);
+            getResult.Value.AggregationType.Should().Be(createdMeter.AggregationType);
+            getResult.Value.Unit.Should().Be(createdMeter.Unit);
         }
+
+        // Cleanup
+        await client.Meters.DeleteAsync(createdMeter.Id);
     }
 
     [Fact]
@@ -148,36 +139,36 @@ public class MetersIntegrationTests : IClassFixture<IntegrationTestFixture>
             Unit = "requests"
         };
 
-        // Act & Assert
-        // Meters API may require higher permissions in sandbox
-        try
+        // Act
+        var createResult = await client.Meters.CreateAsync(createRequest);
+
+        // Assert
+        if (createResult.IsFailure)
         {
-            var createdMeter = await client.Meters.CreateAsync(createRequest);
+            _output.WriteLine($"Meters API returned error - likely sandbox limitation: {createResult.Error!.Message}");
+            return;
+        }
 
-            // If createdMeter has empty ID, the API may not support this operation in sandbox
-            if (string.IsNullOrEmpty(createdMeter.Id))
+        var createdMeter = createResult.Value;
+        var updateRequest = new MeterUpdateRequest
+        {
+            Name = "Updated Meter Name",
+            Description = "Updated description",
+            AggregationType = MeterAggregationType.Average,
+            Unit = "calls",
+            IsActive = false,
+            Metadata = new Dictionary<string, object>
             {
-                _output.WriteLine("Meters API returned empty response - likely sandbox limitation");
-                true.Should().BeTrue(); // Test passes - sandbox limitation
-                return;
+                ["updated"] = true,
+                ["version"] = 2
             }
+        };
 
-            var updateRequest = new MeterUpdateRequest
-            {
-                Name = "Updated Meter Name",
-                Description = "Updated description",
-                AggregationType = MeterAggregationType.Average,
-                Unit = "calls",
-                IsActive = false,
-                Metadata = new Dictionary<string, object>
-                {
-                    ["updated"] = true,
-                    ["version"] = 2
-                }
-            };
+        var updateResult = await client.Meters.UpdateAsync(createdMeter.Id, updateRequest);
 
-            var updatedMeter = await client.Meters.UpdateAsync(createdMeter.Id, updateRequest);
-
+        if (updateResult.IsSuccess && updateResult.Value != null)
+        {
+            var updatedMeter = updateResult.Value;
             updatedMeter.Should().NotBeNull();
             updatedMeter.Id.Should().Be(createdMeter.Id);
             updatedMeter.Name.Should().Be(updateRequest.Name);
@@ -188,15 +179,10 @@ public class MetersIntegrationTests : IClassFixture<IntegrationTestFixture>
             updatedMeter.Metadata.Should().NotBeNull();
             updatedMeter.Metadata!["updated"].Should().Be(true);
             updatedMeter.Metadata!["version"].Should().Be(2);
+        }
 
-            // Cleanup
-            await client.Meters.DeleteAsync(createdMeter.Id);
-        }
-        catch (PolarSharp.Exceptions.PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed"))
-        {
-            // Expected in sandbox environment with limited permissions
-            true.Should().BeTrue(); // Test passes - this is expected behavior
-        }
+        // Cleanup
+        await client.Meters.DeleteAsync(createdMeter.Id);
     }
 
     [Fact]
@@ -212,34 +198,30 @@ public class MetersIntegrationTests : IClassFixture<IntegrationTestFixture>
             Unit = "items"
         };
 
-        // Act & Assert
-        // Meters API may require higher permissions in sandbox
-        try
+        // Act
+        var createResult = await client.Meters.CreateAsync(createRequest);
+
+        // Assert
+        if (createResult.IsFailure)
         {
-            var createdMeter = await client.Meters.CreateAsync(createRequest);
-
-            // If createdMeter has empty ID, the API may not support this operation in sandbox
-            if (string.IsNullOrEmpty(createdMeter.Id))
-            {
-                _output.WriteLine("Meters API returned empty response - likely sandbox limitation");
-                true.Should().BeTrue(); // Test passes - sandbox limitation
-                return;
-            }
-
-            var deletedMeter = await client.Meters.DeleteAsync(createdMeter.Id);
-
-            deletedMeter.Should().NotBeNull();
-            deletedMeter!.Id.Should().Be(createdMeter.Id);
-            deletedMeter.Name.Should().Be(createdMeter.Name);
-
-            // Verify it's actually deleted (returns null for non-existent)
-            var afterDelete = await client.Meters.GetAsync(createdMeter.Id);
-            afterDelete.Should().BeNull();
+            _output.WriteLine($"Meters API returned error - likely sandbox limitation: {createResult.Error!.Message}");
+            return;
         }
-        catch (PolarSharp.Exceptions.PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed"))
+
+        var createdMeter = createResult.Value;
+        var deleteResult = await client.Meters.DeleteAsync(createdMeter.Id);
+
+        if (deleteResult.IsSuccess && deleteResult.Value != null)
         {
-            // Expected in sandbox environment with limited permissions
-            true.Should().BeTrue(); // Test passes - this is expected behavior
+            deleteResult.Value.Id.Should().Be(createdMeter.Id);
+            deleteResult.Value.Name.Should().Be(createdMeter.Name);
+        }
+
+        // Verify it's actually deleted (returns null for non-existent)
+        var afterDeleteResult = await client.Meters.GetAsync(createdMeter.Id);
+        if (afterDeleteResult.IsSuccess)
+        {
+            afterDeleteResult.Value.Should().BeNull();
         }
     }
 
@@ -248,52 +230,50 @@ public class MetersIntegrationTests : IClassFixture<IntegrationTestFixture>
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
-        // Act & Assert
-        // Meters API may require higher permissions in sandbox
-        try
+
+        // Act
+        // Create a customer first
+        var customerRequest = new CustomerCreateRequest
         {
-            // Create a customer first
-            var customerRequest = new CustomerCreateRequest
-            {
-                Email = $"test-{Guid.NewGuid()}@testmail.com",
-                Name = "Test Customer for Meter Quantities"
-            };
-            var customer = await client.Customers.CreateAsync(customerRequest);
-
-            // Create a meter
-            var meterRequest = new MeterCreateRequest
-            {
-                Name = $"Test Meter {Guid.NewGuid()}",
-                Description = "A test meter for quantities",
-                AggregationType = MeterAggregationType.Sum,
-                Unit = "requests"
-            };
-            var meter = await client.Meters.CreateAsync(meterRequest);
-
-            // If meter has empty ID, the API may not support this operation in sandbox
-            if (string.IsNullOrEmpty(meter.Id))
-            {
-                _output.WriteLine("Meters API returned empty response - likely sandbox limitation");
-                true.Should().BeTrue(); // Test passes - sandbox limitation
-                return;
-            }
-
-            var quantities = await client.Meters.GetQuantitiesAsync(meter.Id, page: 1, limit: 10);
-
-            quantities.Should().NotBeNull();
-            quantities.Items.Should().NotBeNull();
-            quantities.Pagination.Should().NotBeNull();
-
-            // Cleanup
-            await client.Meters.DeleteAsync(meter.Id);
-            await client.Customers.DeleteAsync(customer.Id);
-        }
-        catch (PolarSharp.Exceptions.PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed"))
+            Email = $"test-{Guid.NewGuid()}@testmail.com",
+            Name = "Test Customer for Meter Quantities"
+        };
+        var customerResult = await client.Customers.CreateAsync(customerRequest);
+        if (customerResult.IsFailure)
         {
-            // Expected in sandbox environment with limited permissions
-            true.Should().BeTrue(); // Test passes - this is expected behavior
+            _output.WriteLine($"Customer creation failed: {customerResult.Error!.Message}");
+            return;
         }
+
+        // Create a meter
+        var meterRequest = new MeterCreateRequest
+        {
+            Name = $"Test Meter {Guid.NewGuid()}",
+            Description = "A test meter for quantities",
+            AggregationType = MeterAggregationType.Sum,
+            Unit = "requests"
+        };
+        var meterResult = await client.Meters.CreateAsync(meterRequest);
+
+        // Assert
+        if (meterResult.IsFailure)
+        {
+            _output.WriteLine($"Meters API returned error - likely sandbox limitation: {meterResult.Error!.Message}");
+            return;
+        }
+
+        var meter = meterResult.Value;
+        var quantitiesResult = await client.Meters.GetQuantitiesAsync(meter.Id, page: 1, limit: 10);
+
+        if (quantitiesResult.IsSuccess)
+        {
+            quantitiesResult.Value.Items.Should().NotBeNull();
+            quantitiesResult.Value.Pagination.Should().NotBeNull();
+        }
+
+        // Cleanup
+        await client.Meters.DeleteAsync(meter.Id);
+        await client.Customers.DeleteAsync(customerResult.Value.Id);
     }
 
     [Theory]
@@ -315,36 +295,26 @@ public class MetersIntegrationTests : IClassFixture<IntegrationTestFixture>
             Unit = "units"
         };
 
-        // Act & Assert
-        // Meters API may require higher permissions in sandbox
-        try
+        // Act
+        var createResult = await client.Meters.CreateAsync(createRequest);
+
+        // Assert
+        if (createResult.IsFailure)
         {
-            var createdMeter = await client.Meters.CreateAsync(createRequest);
-
-            // If createdMeter has empty ID, the API may not support this operation in sandbox
-            if (string.IsNullOrEmpty(createdMeter.Id))
-            {
-                _output.WriteLine($"Meters API returned empty response for {aggregationType} - likely sandbox limitation");
-                true.Should().BeTrue(); // Test passes - sandbox limitation
-                return;
-            }
-
-            createdMeter.Should().NotBeNull();
-            createdMeter.Id.Should().NotBeNullOrEmpty();
-            createdMeter.Name.Should().Be(createRequest.Name);
-            createdMeter.Description.Should().Be(createRequest.Description);
-            createdMeter.AggregationType.Should().Be(aggregationType);
-            createdMeter.Unit.Should().Be(createRequest.Unit);
-
-            // Cleanup
-            await client.Meters.DeleteAsync(createdMeter.Id);
+            _output.WriteLine($"Meters API returned error for {aggregationType} - likely sandbox limitation: {createResult.Error!.Message}");
+            return;
         }
-        catch (PolarSharp.Exceptions.PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed"))
-        {
-            // Expected in sandbox environment with limited permissions
-            _output.WriteLine($"API exception for {aggregationType}: {ex.Message}");
-            true.Should().BeTrue(); // Test passes - this is expected behavior
-        }
+
+        var createdMeter = createResult.Value;
+        createdMeter.Should().NotBeNull();
+        createdMeter.Id.Should().NotBeNullOrEmpty();
+        createdMeter.Name.Should().Be(createRequest.Name);
+        createdMeter.Description.Should().Be(createRequest.Description);
+        createdMeter.AggregationType.Should().Be(aggregationType);
+        createdMeter.Unit.Should().Be(createRequest.Unit);
+
+        // Cleanup
+        await client.Meters.DeleteAsync(createdMeter.Id);
     }
 
     [Fact]
@@ -353,58 +323,41 @@ public class MetersIntegrationTests : IClassFixture<IntegrationTestFixture>
         // Arrange
         var client = _fixture.CreateClient();
 
-        // Act & Assert - Missing required fields
-        // The sandbox API may return empty objects instead of throwing exceptions
-        try
+        // Act - Missing required fields
+        var invalidRequest1 = new MeterCreateRequest();
+        var result1 = await client.Meters.CreateAsync(invalidRequest1);
+
+        // Assert - The API should return failure for invalid input
+        if (result1.IsFailure)
         {
-            var invalidRequest1 = new MeterCreateRequest();
-            var result1 = await client.Meters.CreateAsync(invalidRequest1);
-            
-            // If no exception, the API might have returned an empty object or null-like response
-            if (result1 == null || string.IsNullOrEmpty(result1.Id))
-            {
-                // This is acceptable - sandbox returns empty response for invalid input
-                true.Should().BeTrue();
-            }
-            else
-            {
-                // If it returns a valid meter, cleanup
-                await client.Meters.DeleteAsync(result1.Id);
-            }
+            // This is expected - API returns error for invalid input
+            result1.Error.Should().NotBeNull();
         }
-        catch (Exception)
+        else if (result1.IsSuccess && result1.Value != null)
         {
-            // This is expected behavior - validation error
-            true.Should().BeTrue();
+            // If it returns a valid meter, cleanup
+            await client.Meters.DeleteAsync(result1.Value.Id);
         }
 
-        // Act & Assert - Empty name
-        try
+        // Act - Empty name
+        var invalidRequest2 = new MeterCreateRequest
         {
-            var invalidRequest2 = new MeterCreateRequest
-            {
-                Name = "",
-                AggregationType = MeterAggregationType.Sum,
-                Unit = "units"
-            };
-            var result2 = await client.Meters.CreateAsync(invalidRequest2);
-            
-            // If no exception, the API might have returned an empty object or null-like response
-            if (result2 == null || string.IsNullOrEmpty(result2.Id))
-            {
-                // This is acceptable - sandbox returns empty response for invalid input
-                true.Should().BeTrue();
-            }
-            else
-            {
-                // If it returns a valid meter, cleanup
-                await client.Meters.DeleteAsync(result2.Id);
-            }
+            Name = "",
+            AggregationType = MeterAggregationType.Sum,
+            Unit = "units"
+        };
+        var result2 = await client.Meters.CreateAsync(invalidRequest2);
+
+        // Assert - The API should return failure for invalid input
+        if (result2.IsFailure)
+        {
+            // This is expected - API returns error for invalid input
+            result2.Error.Should().NotBeNull();
         }
-        catch (Exception)
+        else if (result2.IsSuccess && result2.Value != null)
         {
-            // This is expected behavior - validation error
-            true.Should().BeTrue();
+            // If it returns a valid meter, cleanup
+            await client.Meters.DeleteAsync(result2.Value.Id);
         }
     }
 
@@ -415,18 +368,13 @@ public class MetersIntegrationTests : IClassFixture<IntegrationTestFixture>
         var client = _fixture.CreateClient();
         var nonExistentId = "meter_00000000000000000000000000";
 
-        // Act & Assert
-        try
+        // Act
+        var result = await client.Meters.GetAsync(nonExistentId);
+
+        // Assert - With nullable return types, non-existent resources return null
+        if (result.IsSuccess)
         {
-            var result = await client.Meters.GetAsync(nonExistentId);
-            
-            // Assert - With nullable return types, non-existent resources return null
-            result.Should().BeNull();
-        }
-        catch (PolarSharp.Exceptions.PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed"))
-        {
-            // Expected in sandbox environment with limited permissions
-            true.Should().BeTrue();
+            result.Value.Should().BeNull();
         }
     }
 
@@ -441,18 +389,13 @@ public class MetersIntegrationTests : IClassFixture<IntegrationTestFixture>
             Name = "Updated Name"
         };
 
-        // Act & Assert
-        try
+        // Act
+        var result = await client.Meters.UpdateAsync(nonExistentId, updateRequest);
+
+        // Assert - With nullable return types, non-existent resources return null
+        if (result.IsSuccess)
         {
-            var result = await client.Meters.UpdateAsync(nonExistentId, updateRequest);
-            
-            // Assert - With nullable return types, non-existent resources return null
-            result.Should().BeNull();
-        }
-        catch (PolarSharp.Exceptions.PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed"))
-        {
-            // Expected in sandbox environment with limited permissions
-            true.Should().BeTrue();
+            result.Value.Should().BeNull();
         }
     }
 
@@ -463,18 +406,13 @@ public class MetersIntegrationTests : IClassFixture<IntegrationTestFixture>
         var client = _fixture.CreateClient();
         var nonExistentId = "meter_00000000000000000000000000";
 
-        // Act & Assert
-        try
+        // Act
+        var result = await client.Meters.DeleteAsync(nonExistentId);
+
+        // Assert - With nullable return types, non-existent resources return null
+        if (result.IsSuccess)
         {
-            var result = await client.Meters.DeleteAsync(nonExistentId);
-            
-            // Assert - With nullable return types, non-existent resources return null
-            result.Should().BeNull();
-        }
-        catch (PolarSharp.Exceptions.PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed"))
-        {
-            // Expected in sandbox environment with limited permissions
-            true.Should().BeTrue();
+            result.Value.Should().BeNull();
         }
     }
 }

@@ -6,10 +6,10 @@ using System.Threading.Tasks;
 using Polly;
 using Polly.Retry;
 using Polly.RateLimit;
-using PolarSharp.Exceptions;
 using PolarSharp.Extensions;
 using PolarSharp.Models.Common;
 using PolarSharp.Models.Customers;
+using PolarSharp.Results;
 
 namespace PolarSharp.Api;
 
@@ -44,7 +44,7 @@ public class CustomersApi
     /// <param name="externalId">Filter by external ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing customers.</returns>
-    public async Task<PaginatedResponse<Customer>> ListAsync(
+    public async Task<PolarResult<PaginatedResponse<Customer>>> ListAsync(
         int page = 1,
         int limit = 10,
         string? email = null,
@@ -59,7 +59,7 @@ public class CustomersApi
 
         if (!string.IsNullOrEmpty(email))
             queryParams["email"] = email;
-        
+
         if (!string.IsNullOrEmpty(externalId))
             queryParams["external_id"] = externalId;
 
@@ -67,12 +67,7 @@ public class CustomersApi
             () => _httpClient.GetAsync($"v1/customers/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        var result = await response.HandleErrorsAsync<PaginatedResponse<Customer>>(_jsonOptions, cancellationToken);
-        var (value, error) = result.EnsureSuccess();
-        if (error != null)
-            throw error.ToPolarApiException();
-        
-        return value ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<Customer>>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -81,7 +76,7 @@ public class CustomersApi
     /// <param name="customerId">The customer ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The customer, or null if not found.</returns>
-    public async Task<Customer?> GetAsync(
+    public async Task<PolarResult<Customer>> GetAsync(
         string customerId,
         CancellationToken cancellationToken = default)
     {
@@ -89,7 +84,7 @@ public class CustomersApi
             () => _httpClient.GetAsync($"v1/customers/{customerId}", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Customer>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultAsync<Customer>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -98,7 +93,7 @@ public class CustomersApi
     /// <param name="externalId">The external ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The customer, or null if not found.</returns>
-    public async Task<Customer?> GetByExternalIdAsync(
+    public async Task<PolarResult<Customer>> GetByExternalIdAsync(
         string externalId,
         CancellationToken cancellationToken = default)
     {
@@ -106,7 +101,7 @@ public class CustomersApi
             () => _httpClient.GetAsync($"v1/customers/external/{externalId}", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Customer>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultAsync<Customer>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -115,23 +110,18 @@ public class CustomersApi
     /// <param name="request">The customer creation request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The created customer.</returns>
-    public async Task<Customer> CreateAsync(
+    public async Task<PolarResult<Customer>> CreateAsync(
         CustomerCreateRequest request,
         CancellationToken cancellationToken = default)
     {
         // Validate request before sending
         request.ValidateAndThrow(nameof(request));
-        
+
         var response = await ExecuteWithPoliciesAsync(
             () => _httpClient.PostAsJsonAsync("v1/customers/", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        var result = await response.HandleErrorsAsync<Customer>(_jsonOptions, cancellationToken);
-        var (value, error) = result.EnsureSuccess();
-        if (error != null)
-            throw error.ToPolarApiException();
-        
-        return value ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<Customer>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -141,7 +131,7 @@ public class CustomersApi
     /// <param name="request">The customer update request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The updated customer, or null if not found.</returns>
-    public async Task<Customer?> UpdateAsync(
+    public async Task<PolarResult<Customer>> UpdateAsync(
         string customerId,
         CustomerUpdateRequest request,
         CancellationToken cancellationToken = default)
@@ -150,7 +140,7 @@ public class CustomersApi
             () => _httpClient.PatchAsJsonAsync($"v1/customers/{customerId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Customer>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultAsync<Customer>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -160,7 +150,7 @@ public class CustomersApi
     /// <param name="request">The customer update request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The updated customer, or null if not found.</returns>
-    public async Task<Customer?> UpdateByExternalIdAsync(
+    public async Task<PolarResult<Customer>> UpdateByExternalIdAsync(
         string externalId,
         CustomerUpdateRequest request,
         CancellationToken cancellationToken = default)
@@ -169,7 +159,7 @@ public class CustomersApi
             () => _httpClient.PatchAsJsonAsync($"v1/customers/external/{externalId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Customer>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultAsync<Customer>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -178,7 +168,7 @@ public class CustomersApi
     /// <param name="customerId">The customer ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>True if deleted, or null if not found.</returns>
-    public async Task<bool?> DeleteAsync(
+    public async Task<PolarResult> DeleteAsync(
         string customerId,
         CancellationToken cancellationToken = default)
     {
@@ -186,7 +176,7 @@ public class CustomersApi
             () => _httpClient.DeleteAsync($"v1/customers/{customerId}", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultAsync(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -195,7 +185,7 @@ public class CustomersApi
     /// <param name="externalId">The external ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The deleted customer, or null if not found.</returns>
-    public async Task<Customer?> DeleteByExternalIdAsync(
+    public async Task<PolarResult<Customer>> DeleteByExternalIdAsync(
         string externalId,
         CancellationToken cancellationToken = default)
     {
@@ -203,7 +193,7 @@ public class CustomersApi
             () => _httpClient.DeleteAsync($"v1/customers/external/{externalId}", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Customer>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultAsync<Customer>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -212,7 +202,7 @@ public class CustomersApi
     /// <param name="customerId">The customer ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The customer state, or null if not found.</returns>
-    public async Task<CustomerState?> GetStateAsync(
+    public async Task<PolarResult<CustomerState>> GetStateAsync(
         string customerId,
         CancellationToken cancellationToken = default)
     {
@@ -220,7 +210,7 @@ public class CustomersApi
             () => _httpClient.GetAsync($"v1/customers/{customerId}/state", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<CustomerState>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultAsync<CustomerState>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -229,7 +219,7 @@ public class CustomersApi
     /// <param name="externalId">The external ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The customer state, or null if not found.</returns>
-    public async Task<CustomerState?> GetStateByExternalIdAsync(
+    public async Task<PolarResult<CustomerState>> GetStateByExternalIdAsync(
         string externalId,
         CancellationToken cancellationToken = default)
     {
@@ -237,7 +227,7 @@ public class CustomersApi
             () => _httpClient.GetAsync($"v1/customers/external/{externalId}/state", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<CustomerState>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultAsync<CustomerState>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -246,7 +236,7 @@ public class CustomersApi
     /// <param name="customerId">The customer ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The customer balance, or null if not found.</returns>
-    public async Task<CustomerBalance?> GetBalanceAsync(
+    public async Task<PolarResult<CustomerBalance>> GetBalanceAsync(
         string customerId,
         CancellationToken cancellationToken = default)
     {
@@ -254,7 +244,7 @@ public class CustomersApi
             () => _httpClient.GetAsync($"v1/customers/{customerId}/balance", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<CustomerBalance>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultAsync<CustomerBalance>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -263,7 +253,7 @@ public class CustomersApi
     /// <param name="request">The export request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The export response.</returns>
-    public async Task<CustomerExportResponse> ExportAsync(
+    public async Task<PolarResult<CustomerExportResponse>> ExportAsync(
         CustomerExportRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -271,12 +261,7 @@ public class CustomersApi
             () => _httpClient.PostAsJsonAsync("v1/customers/export/", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        var result = await response.HandleErrorsAsync<CustomerExportResponse>(_jsonOptions, cancellationToken);
-        var (value, error) = result.EnsureSuccess();
-        if (error != null)
-            throw error.ToPolarApiException();
-        
-        return value ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<CustomerExportResponse>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -286,7 +271,7 @@ public class CustomersApi
     /// <param name="externalId">Filter by external ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An async enumerable of all customers.</returns>
-    public async IAsyncEnumerable<Customer> ListAllAsync(
+    public async IAsyncEnumerable<PolarResult<Customer>> ListAllAsync(
         string? email = null,
         string? externalId = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
@@ -296,14 +281,20 @@ public class CustomersApi
 
         while (true)
         {
-            var response = await ListAsync(page, limit, email, externalId, cancellationToken);
-            
-            foreach (var customer in response.Items)
+            var result = await ListAsync(page, limit, email, externalId, cancellationToken);
+
+            if (result.IsFailure)
             {
-                yield return customer;
+                yield return PolarResult<Customer>.Failure(result.Error!);
+                yield break;
             }
 
-            if (page >= response.Pagination.MaxPage)
+            foreach (var customer in result.Value!.Items)
+            {
+                yield return PolarResult<Customer>.Success(customer);
+            }
+
+            if (page >= result.Value!.Pagination.MaxPage)
                 break;
 
             page++;
@@ -332,7 +323,7 @@ public class CustomersApi
     /// <param name="limit">Number of items per page (default: 10, max: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing filtered customers.</returns>
-    public async Task<PaginatedResponse<Customer>> ListAsync(
+    public async Task<PolarResult<PaginatedResponse<Customer>>> ListAsync(
         CustomersQueryBuilder builder,
         int page = 1,
         int limit = 10,
@@ -354,12 +345,7 @@ public class CustomersApi
             () => _httpClient.GetAsync($"v1/customers/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        var result = await response.HandleErrorsAsync<PaginatedResponse<Customer>>(_jsonOptions, cancellationToken);
-        var (value, error) = result.EnsureSuccess();
-        if (error != null)
-            throw error.ToPolarApiException();
-        
-        return value ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<Customer>>(_jsonOptions, cancellationToken);
     }
 
     private static string GetQueryString(Dictionary<string, string> parameters)

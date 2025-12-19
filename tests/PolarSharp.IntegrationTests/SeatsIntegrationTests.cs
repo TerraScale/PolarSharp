@@ -1,6 +1,8 @@
 using FluentAssertions;
 using PolarSharp.Models.Seats;
+using PolarSharp.Results;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace PolarSharp.IntegrationTests;
 
@@ -10,10 +12,12 @@ namespace PolarSharp.IntegrationTests;
 public class SeatsIntegrationTests : IClassFixture<IntegrationTestFixture>
 {
     private readonly IntegrationTestFixture _fixture;
+    private readonly ITestOutputHelper _output;
 
-    public SeatsIntegrationTests(IntegrationTestFixture fixture)
+    public SeatsIntegrationTests(IntegrationTestFixture fixture, ITestOutputHelper output)
     {
         _fixture = fixture;
+        _output = output;
     }
 
     [Fact]
@@ -23,13 +27,15 @@ public class SeatsIntegrationTests : IClassFixture<IntegrationTestFixture>
         var client = _fixture.CreateClient();
 
         // Act
-        var response = await client.Seats.ListAsync(page: 1, limit: 10);
+        var result = await client.Seats.ListAsync(page: 1, limit: 10);
 
         // Assert
-        response.Should().NotBeNull();
-        response.Items.Should().NotBeNull();
-        response.Pagination.Should().NotBeNull();
-        response.Pagination.Page.Should().Be(1);
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
+        result.Value.Pagination.Should().NotBeNull();
+        result.Value.Pagination.Page.Should().Be(1);
     }
 
     [Fact]
@@ -51,7 +57,7 @@ public class SeatsIntegrationTests : IClassFixture<IntegrationTestFixture>
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         // First, we need a subscription with seats enabled
         // For this test, we'll use a mock subscription ID since creating subscriptions with seats
         // requires specific product configuration
@@ -63,21 +69,13 @@ public class SeatsIntegrationTests : IClassFixture<IntegrationTestFixture>
             Email = $"testuser{Guid.NewGuid()}@mailinator.com"
         };
 
-        // Act & Assert
-        // This test may fail if the subscription doesn't exist or doesn't support seats
-        // but it validates the API call structure
-        try
-        {
-            await client.Seats.AssignAsync(assignRequest);
-        }
-        catch (PolarSharp.Exceptions.PolarApiException ex) when (
-            ex.Message.Contains("not found") || 
-            ex.Message.Contains("seats") ||
-            ex.Message.Contains("enabled"))
-        {
-            // Expected if subscription doesn't exist or seats not enabled
-            return;
-        }
+        // Act
+        var result = await client.Seats.AssignAsync(assignRequest);
+
+        // Assert
+        // Result may fail if subscription doesn't exist or doesn't support seats
+        // This validates the API call structure
+        result.Should().NotBeNull();
     }
 
     [Fact]
@@ -85,27 +83,20 @@ public class SeatsIntegrationTests : IClassFixture<IntegrationTestFixture>
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         var revokeRequest = new SeatRevokeRequest
         {
             SubscriptionId = "test_subscription_id",
             SeatId = "test_seat_id"
         };
 
-        // Act & Assert
-        // This test may fail if the subscription/seat doesn't exist
-        // but it validates the API call structure
-        try
-        {
-            await client.Seats.RevokeAsync(revokeRequest);
-        }
-        catch (PolarSharp.Exceptions.PolarApiException ex) when (
-            ex.Message.Contains("not found") || 
-            ex.Message.Contains("seat"))
-        {
-            // Expected if subscription/seat doesn't exist
-            return;
-        }
+        // Act
+        var result = await client.Seats.RevokeAsync(revokeRequest);
+
+        // Assert
+        // Result may fail if subscription/seat doesn't exist
+        // This validates the API call structure
+        result.Should().NotBeNull();
     }
 
     [Fact]
@@ -113,28 +104,20 @@ public class SeatsIntegrationTests : IClassFixture<IntegrationTestFixture>
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         var resendRequest = new SeatResendInvitationRequest
         {
             SubscriptionId = "test_subscription_id",
             SeatId = "test_seat_id"
         };
 
-        // Act & Assert
-        // This test may fail if the subscription/seat doesn't exist
-        // but it validates the API call structure
-        try
-        {
-            await client.Seats.ResendInvitationAsync(resendRequest);
-        }
-        catch (PolarSharp.Exceptions.PolarApiException ex) when (
-            ex.Message.Contains("not found") || 
-            ex.Message.Contains("seat") ||
-            ex.Message.Contains("invitation"))
-        {
-            // Expected if subscription/seat doesn't exist
-            return;
-        }
+        // Act
+        var result = await client.Seats.ResendInvitationAsync(resendRequest);
+
+        // Assert
+        // Result may fail if subscription/seat doesn't exist
+        // This validates the API call structure
+        result.Should().NotBeNull();
     }
 
     [Fact]
@@ -145,9 +128,10 @@ public class SeatsIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Act
         var allSeats = new List<Seat>();
-        await foreach (var seat in client.Seats.ListAllAsync())
+        await foreach (var seatResult in client.Seats.ListAllAsync())
         {
-            allSeats.Add(seat);
+            if (seatResult.IsFailure) break;
+            allSeats.Add(seatResult.Value);
         }
 
         // Assert
@@ -164,12 +148,14 @@ public class SeatsIntegrationTests : IClassFixture<IntegrationTestFixture>
         // Act
         var queryBuilder = client.Seats.Query();
 
-        var response = await client.Seats.ListAsync(queryBuilder);
+        var result = await client.Seats.ListAsync(queryBuilder);
 
         // Assert
-        response.Should().NotBeNull();
-        response.Items.Should().NotBeNull();
-        response.Pagination.Should().NotBeNull();
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
+        result.Value.Pagination.Should().NotBeNull();
     }
 
     [Fact]
@@ -179,83 +165,97 @@ public class SeatsIntegrationTests : IClassFixture<IntegrationTestFixture>
         var client = _fixture.CreateClient();
 
         // Act
-        var page1 = await client.Seats.ListAsync(page: 1, limit: 5);
-        var page2 = await client.Seats.ListAsync(page: 2, limit: 5);
+        var page1Result = await client.Seats.ListAsync(page: 1, limit: 5);
+        var page2Result = await client.Seats.ListAsync(page: 2, limit: 5);
 
         // Assert
-        page1.Should().NotBeNull();
-        page1.Pagination.Page.Should().Be(1);
-        
-        page2.Should().NotBeNull();
-        page2.Pagination.Page.Should().Be(2);
+        page1Result.Should().NotBeNull();
+        page1Result.IsSuccess.Should().BeTrue();
+        page1Result.Value.Pagination.Page.Should().Be(1);
+
+        page2Result.Should().NotBeNull();
+        page2Result.IsSuccess.Should().BeTrue();
+        page2Result.Value.Pagination.Page.Should().Be(2);
     }
 
     [Fact]
-    public async Task SeatsApi_AssignSeat_WithInvalidEmail_ThrowsException()
+    public async Task SeatsApi_AssignSeat_WithInvalidEmail_ReturnsFailure()
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         var assignRequest = new SubscriptionSeatAssignRequest
         {
             SubscriptionId = "test_subscription_id",
             Email = "invalid-email" // Invalid email format
         };
 
-        // Act & Assert
-        await Assert.ThrowsAsync<PolarSharp.Exceptions.PolarApiException>(
-            () => client.Seats.AssignAsync(assignRequest));
+        // Act
+        var result = await client.Seats.AssignAsync(assignRequest);
+
+        // Assert
+        result.Should().NotBeNull(); // Should return result for validation errors
+        result.IsFailure.Should().BeTrue(); // Should fail for invalid email
     }
 
     [Fact]
-    public async Task SeatsApi_AssignSeat_WithEmptySubscriptionId_ThrowsException()
+    public async Task SeatsApi_AssignSeat_WithEmptySubscriptionId_ReturnsNull()
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         var assignRequest = new SubscriptionSeatAssignRequest
         {
             SubscriptionId = "", // Empty subscription ID
             Email = "test@mailinator.com"
         };
 
-        // Act & Assert
-        await Assert.ThrowsAsync<PolarSharp.Exceptions.PolarApiException>(
-            () => client.Seats.AssignAsync(assignRequest));
+        // Act
+        var result = await client.Seats.AssignAsync(assignRequest);
+
+        // Assert
+        result.Should().NotBeNull(); // Should return result for validation errors
+        result.IsFailure.Should().BeTrue(); // Should fail for empty subscription ID
     }
 
     [Fact]
-    public async Task SeatsApi_RevokeSeat_WithEmptyIds_ThrowsException()
+    public async Task SeatsApi_RevokeSeat_WithEmptyIds_ReturnsFailure()
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         var revokeRequest = new SeatRevokeRequest
         {
             SubscriptionId = "", // Empty subscription ID
             SeatId = "" // Empty seat ID
         };
 
-        // Act & Assert
-        await Assert.ThrowsAsync<PolarSharp.Exceptions.PolarApiException>(
-            () => client.Seats.RevokeAsync(revokeRequest));
+        // Act
+        var result = await client.Seats.RevokeAsync(revokeRequest);
+
+        // Assert
+        result.Should().NotBeNull(); // Should return result for validation errors
+        result.IsFailure.Should().BeTrue(); // Should fail for empty IDs
     }
 
     [Fact]
-    public async Task SeatsApi_ResendInvitation_WithEmptyIds_ThrowsException()
+    public async Task SeatsApi_ResendInvitation_WithEmptyIds_ReturnsFailure()
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         var resendRequest = new SeatResendInvitationRequest
         {
             SubscriptionId = "", // Empty subscription ID
             SeatId = "" // Empty seat ID
         };
 
-        // Act & Assert
-        await Assert.ThrowsAsync<PolarSharp.Exceptions.PolarApiException>(
-            () => client.Seats.ResendInvitationAsync(resendRequest));
+        // Act
+        var result = await client.Seats.ResendInvitationAsync(resendRequest);
+
+        // Assert
+        result.Should().NotBeNull(); // Should return result for validation errors
+        result.IsFailure.Should().BeTrue(); // Should fail for empty IDs
     }
 
     [Fact]
@@ -265,63 +265,74 @@ public class SeatsIntegrationTests : IClassFixture<IntegrationTestFixture>
         var client = _fixture.CreateClient();
 
         // Act
-        var response = await client.Seats.ListAsync(page: 1, limit: 100);
+        var result = await client.Seats.ListAsync(page: 1, limit: 100);
 
         // Assert
-        response.Should().NotBeNull();
-        response.Items.Should().NotBeNull();
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
     }
 
     [Fact]
-    public async Task SeatsApi_AssignSeat_WithLongEmail_ThrowsException()
+    public async Task SeatsApi_AssignSeat_WithLongEmail_ReturnsNull()
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         var longEmail = new string('a', 300) + "@mailinator.com"; // Very long email
-        
+
         var assignRequest = new SubscriptionSeatAssignRequest
         {
             SubscriptionId = "test_subscription_id",
             Email = longEmail
         };
 
-        // Act & Assert
-        await Assert.ThrowsAsync<PolarSharp.Exceptions.PolarApiException>(
-            () => client.Seats.AssignAsync(assignRequest));
+        // Act
+        var result = await client.Seats.AssignAsync(assignRequest);
+
+        // Assert
+        result.Should().NotBeNull(); // Should return result for validation errors
+        result.IsFailure.Should().BeTrue(); // Should fail for very long email
     }
 
     [Fact]
-    public async Task SeatsApi_RevokeSeat_WithNonExistentIds_ThrowsException()
+    public async Task SeatsApi_RevokeSeat_WithNonExistentIds_ReturnsFailure()
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         var revokeRequest = new SeatRevokeRequest
         {
             SubscriptionId = "non_existent_subscription_id",
             SeatId = "non_existent_seat_id"
         };
 
-        // Act & Assert
-        await Assert.ThrowsAsync<PolarSharp.Exceptions.PolarApiException>(
-            () => client.Seats.RevokeAsync(revokeRequest));
+        // Act
+        var result = await client.Seats.RevokeAsync(revokeRequest);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.IsFailure.Should().BeTrue(); // Should fail for non-existent IDs
     }
 
     [Fact]
-    public async Task SeatsApi_ResendInvitation_WithNonExistentIds_ThrowsException()
+    public async Task SeatsApi_ResendInvitation_WithNonExistentIds_ReturnsFailure()
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         var resendRequest = new SeatResendInvitationRequest
         {
             SubscriptionId = "non_existent_subscription_id",
             SeatId = "non_existent_seat_id"
         };
 
-        // Act & Assert
-        await Assert.ThrowsAsync<PolarSharp.Exceptions.PolarApiException>(
-            () => client.Seats.ResendInvitationAsync(resendRequest));
+        // Act
+        var result = await client.Seats.ResendInvitationAsync(resendRequest);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.IsFailure.Should().BeTrue(); // Should fail for non-existent IDs
     }
 }

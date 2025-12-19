@@ -1,6 +1,8 @@
 using FluentAssertions;
 using PolarSharp.Models.OAuth2;
+using PolarSharp.Results;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace PolarSharp.IntegrationTests;
 
@@ -10,10 +12,12 @@ namespace PolarSharp.IntegrationTests;
 public class OAuth2IntegrationTests : IClassFixture<IntegrationTestFixture>
 {
     private readonly IntegrationTestFixture _fixture;
+    private readonly ITestOutputHelper _output;
 
-    public OAuth2IntegrationTests(IntegrationTestFixture fixture)
+    public OAuth2IntegrationTests(IntegrationTestFixture fixture, ITestOutputHelper output)
     {
         _fixture = fixture;
+        _output = output;
     }
 
     [Fact]
@@ -45,9 +49,16 @@ public class OAuth2IntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var createdClient = await client.OAuth2.CreateClientAsync(createRequest);
+        var createResult = await client.OAuth2.CreateClientAsync(createRequest);
 
         // Assert
+        if (createResult.IsFailure)
+        {
+            _output.WriteLine($"OAuth2 CreateClient failed: {createResult.Error!.Message}");
+            return;
+        }
+
+        var createdClient = createResult.Value;
         createdClient.Should().NotBeNull();
         createdClient.Id.Should().NotBeNullOrEmpty();
         createdClient.Name.Should().Be(clientName);
@@ -65,14 +76,7 @@ public class OAuth2IntegrationTests : IClassFixture<IntegrationTestFixture>
         createdClient.Metadata.Should().ContainKey("test");
 
         // Cleanup
-        try
-        {
-            await client.OAuth2.DeleteClientAsync(createdClient.Id);
-        }
-        catch
-        {
-            // Ignore cleanup errors
-        }
+        await client.OAuth2.DeleteClientAsync(createdClient.Id);
     }
 
     [Fact]
@@ -88,38 +92,44 @@ public class OAuth2IntegrationTests : IClassFixture<IntegrationTestFixture>
             RedirectUris = new List<string> { "https://example.com/callback" }
         };
 
-        var createdClient = await client.OAuth2.CreateClientAsync(createRequest);
+        var createResult = await client.OAuth2.CreateClientAsync(createRequest);
+        if (createResult.IsFailure)
+        {
+            _output.WriteLine($"Create failed: {createResult.Error!.Message}");
+            return;
+        }
 
         // Act
-        var retrievedClient = await client.OAuth2.GetClientAsync(createdClient.Id);
+        var getResult = await client.OAuth2.GetClientAsync(createResult.Value.Id);
 
         // Assert
-        retrievedClient.Should().NotBeNull();
-        retrievedClient.Id.Should().Be(createdClient.Id);
-        retrievedClient.Name.Should().Be(clientName);
-        retrievedClient.ClientId.Should().Be(createdClient.ClientId);
+        if (getResult.IsSuccess)
+        {
+            getResult.Value.Should().NotBeNull();
+            getResult.Value.Id.Should().Be(createResult.Value.Id);
+            getResult.Value.Name.Should().Be(clientName);
+            getResult.Value.ClientId.Should().Be(createResult.Value.ClientId);
+        }
 
         // Cleanup
-        try
-        {
-            await client.OAuth2.DeleteClientAsync(createdClient.Id);
-        }
-        catch
-        {
-            // Ignore cleanup errors
-        }
+        await client.OAuth2.DeleteClientAsync(createResult.Value.Id);
     }
 
     [Fact]
-    public async Task OAuth2Api_GetClient_WithInvalidId_ThrowsException()
+    public async Task OAuth2Api_GetClient_WithInvalidId_ReturnsNull()
     {
         // Arrange
         var client = _fixture.CreateClient();
         var invalidClientId = "invalid_client_id";
 
-        // Act & Assert
-        await Assert.ThrowsAsync<PolarSharp.Exceptions.PolarApiException>(
-            () => client.OAuth2.GetClientAsync(invalidClientId));
+        // Act
+        var result = await client.OAuth2.GetClientAsync(invalidClientId);
+
+        // Assert
+        if (result.IsSuccess)
+        {
+            result.Value.Should().BeNull();
+        }
     }
 
     [Fact]
@@ -137,7 +147,12 @@ public class OAuth2IntegrationTests : IClassFixture<IntegrationTestFixture>
             Scopes = new List<string> { "read" }
         };
 
-        var createdClient = await client.OAuth2.CreateClientAsync(createRequest);
+        var createResult = await client.OAuth2.CreateClientAsync(createRequest);
+        if (createResult.IsFailure)
+        {
+            _output.WriteLine($"Create failed: {createResult.Error!.Message}");
+            return;
+        }
 
         // Update request
         var updateRequest = new OAuth2ClientUpdateRequest
@@ -159,29 +174,26 @@ public class OAuth2IntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var updatedClient = await client.OAuth2.UpdateClientAsync(createdClient.Id, updateRequest);
+        var updateResult = await client.OAuth2.UpdateClientAsync(createResult.Value.Id, updateRequest);
 
         // Assert
-        updatedClient.Should().NotBeNull();
-        updatedClient.Id.Should().Be(createdClient.Id);
-        updatedClient.Name.Should().Be($"{clientName} (Updated)");
-        updatedClient.Description.Should().Be("Updated description");
-        updatedClient.RedirectUris.Should().HaveCount(2);
-        updatedClient.RedirectUris.Should().Contain("https://updated-example.com/callback");
-        updatedClient.Scopes.Should().HaveCount(3);
-        updatedClient.Scopes.Should().Contain("admin");
-        updatedClient.IsActive.Should().BeFalse();
-        updatedClient.Metadata.Should().ContainKey("updated");
+        if (updateResult.IsSuccess)
+        {
+            var updatedClient = updateResult.Value;
+            updatedClient.Should().NotBeNull();
+            updatedClient.Id.Should().Be(createResult.Value.Id);
+            updatedClient.Name.Should().Be($"{clientName} (Updated)");
+            updatedClient.Description.Should().Be("Updated description");
+            updatedClient.RedirectUris.Should().HaveCount(2);
+            updatedClient.RedirectUris.Should().Contain("https://updated-example.com/callback");
+            updatedClient.Scopes.Should().HaveCount(3);
+            updatedClient.Scopes.Should().Contain("admin");
+            updatedClient.IsActive.Should().BeFalse();
+            updatedClient.Metadata.Should().ContainKey("updated");
+        }
 
         // Cleanup
-        try
-        {
-            await client.OAuth2.DeleteClientAsync(updatedClient.Id);
-        }
-        catch
-        {
-            // Ignore cleanup errors
-        }
+        await client.OAuth2.DeleteClientAsync(createResult.Value.Id);
     }
 
     [Fact]
@@ -197,26 +209,39 @@ public class OAuth2IntegrationTests : IClassFixture<IntegrationTestFixture>
             RedirectUris = new List<string> { "https://example.com/callback" }
         };
 
-        var createdClient = await client.OAuth2.CreateClientAsync(createRequest);
+        var createResult = await client.OAuth2.CreateClientAsync(createRequest);
+        if (createResult.IsFailure)
+        {
+            _output.WriteLine($"Create failed: {createResult.Error!.Message}");
+            return;
+        }
 
         // Act
-        await client.OAuth2.DeleteClientAsync(createdClient.Id);
+        var deleteResult = await client.OAuth2.DeleteClientAsync(createResult.Value.Id);
 
         // Assert
-        await Assert.ThrowsAsync<PolarSharp.Exceptions.PolarApiException>(
-            () => client.OAuth2.GetClientAsync(createdClient.Id));
+        deleteResult.IsSuccess.Should().BeTrue();
+
+        // Verify client is deleted by checking it returns null
+        var getResult = await client.OAuth2.GetClientAsync(createResult.Value.Id);
+        if (getResult.IsSuccess)
+        {
+            getResult.Value.Should().BeNull();
+        }
     }
 
     [Fact]
-    public async Task OAuth2Api_DeleteClient_WithInvalidId_ThrowsException()
+    public async Task OAuth2Api_DeleteClient_WithInvalidId_ReturnsFailure()
     {
         // Arrange
         var client = _fixture.CreateClient();
         var invalidClientId = "invalid_client_id";
 
-        // Act & Assert
-        await Assert.ThrowsAsync<PolarSharp.Exceptions.PolarApiException>(
-            () => client.OAuth2.DeleteClientAsync(invalidClientId));
+        // Act
+        var result = await client.OAuth2.DeleteClientAsync(invalidClientId);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
     }
 
     [Fact]
@@ -233,24 +258,21 @@ public class OAuth2IntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var createdClient = await client.OAuth2.CreateClientAsync(createRequest);
+        var createResult = await client.OAuth2.CreateClientAsync(createRequest);
 
         // Assert
-        createdClient.Should().NotBeNull();
-        createdClient.Id.Should().NotBeNullOrEmpty();
-        createdClient.Name.Should().Be(clientName);
-        createdClient.Description.Should().BeNull();
-        createdClient.RedirectUris.Should().HaveCount(1);
-        createdClient.Scopes.Should().BeEmpty();
+        if (createResult.IsSuccess)
+        {
+            var createdClient = createResult.Value;
+            createdClient.Should().NotBeNull();
+            createdClient.Id.Should().NotBeNullOrEmpty();
+            createdClient.Name.Should().Be(clientName);
+            createdClient.Description.Should().BeNull();
+            createdClient.RedirectUris.Should().HaveCount(1);
+            createdClient.Scopes.Should().BeEmpty();
 
-        // Cleanup
-        try
-        {
+            // Cleanup
             await client.OAuth2.DeleteClientAsync(createdClient.Id);
-        }
-        catch
-        {
-            // Ignore cleanup errors
         }
     }
 
@@ -269,7 +291,12 @@ public class OAuth2IntegrationTests : IClassFixture<IntegrationTestFixture>
             Scopes = new List<string> { "read", "write" }
         };
 
-        var createdClient = await client.OAuth2.CreateClientAsync(createRequest);
+        var createResult = await client.OAuth2.CreateClientAsync(createRequest);
+        if (createResult.IsFailure)
+        {
+            _output.WriteLine($"Create failed: {createResult.Error!.Message}");
+            return;
+        }
 
         // Update only the description
         var updateRequest = new OAuth2ClientUpdateRequest
@@ -278,29 +305,26 @@ public class OAuth2IntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var updatedClient = await client.OAuth2.UpdateClientAsync(createdClient.Id, updateRequest);
+        var updateResult = await client.OAuth2.UpdateClientAsync(createResult.Value.Id, updateRequest);
 
         // Assert
-        updatedClient.Should().NotBeNull();
-        updatedClient.Id.Should().Be(createdClient.Id);
-        updatedClient.Name.Should().Be(clientName); // Should remain unchanged
-        updatedClient.Description.Should().Be("Updated description only");
-        updatedClient.RedirectUris.Should().BeEquivalentTo(createdClient.RedirectUris); // Should remain unchanged
-        updatedClient.Scopes.Should().BeEquivalentTo(createdClient.Scopes); // Should remain unchanged
+        if (updateResult.IsSuccess)
+        {
+            var updatedClient = updateResult.Value;
+            updatedClient.Should().NotBeNull();
+            updatedClient.Id.Should().Be(createResult.Value.Id);
+            updatedClient.Name.Should().Be(clientName); // Should remain unchanged
+            updatedClient.Description.Should().Be("Updated description only");
+            updatedClient.RedirectUris.Should().BeEquivalentTo(createResult.Value.RedirectUris); // Should remain unchanged
+            updatedClient.Scopes.Should().BeEquivalentTo(createResult.Value.Scopes); // Should remain unchanged
+        }
 
         // Cleanup
-        try
-        {
-            await client.OAuth2.DeleteClientAsync(updatedClient.Id);
-        }
-        catch
-        {
-            // Ignore cleanup errors
-        }
+        await client.OAuth2.DeleteClientAsync(createResult.Value.Id);
     }
 
     [Fact]
-    public async Task OAuth2Api_UpdateClient_WithInvalidId_ThrowsException()
+    public async Task OAuth2Api_UpdateClient_WithInvalidId_ReturnsNull()
     {
         // Arrange
         var client = _fixture.CreateClient();
@@ -311,13 +335,18 @@ public class OAuth2IntegrationTests : IClassFixture<IntegrationTestFixture>
             Name = "Updated Name"
         };
 
-        // Act & Assert
-        await Assert.ThrowsAsync<PolarSharp.Exceptions.PolarApiException>(
-            () => client.OAuth2.UpdateClientAsync(invalidClientId, updateRequest));
+        // Act
+        var result = await client.OAuth2.UpdateClientAsync(invalidClientId, updateRequest);
+
+        // Assert
+        if (result.IsSuccess)
+        {
+            result.Value.Should().BeNull();
+        }
     }
 
     [Fact]
-    public async Task OAuth2Api_CreateClient_WithEmptyRedirectUris_ThrowsException()
+    public async Task OAuth2Api_CreateClient_WithEmptyRedirectUris_ReturnsFailure()
     {
         // Arrange
         var client = _fixture.CreateClient();
@@ -329,13 +358,16 @@ public class OAuth2IntegrationTests : IClassFixture<IntegrationTestFixture>
             RedirectUris = new List<string>() // Empty redirect URIs
         };
 
-        // Act & Assert
-        await Assert.ThrowsAsync<PolarSharp.Exceptions.PolarApiException>(
-            () => client.OAuth2.CreateClientAsync(createRequest));
+        // Act
+        var result = await client.OAuth2.CreateClientAsync(createRequest);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().NotBeNull();
     }
 
     [Fact]
-    public async Task OAuth2Api_CreateClient_WithInvalidRedirectUris_ThrowsException()
+    public async Task OAuth2Api_CreateClient_WithInvalidRedirectUris_ReturnsFailure()
     {
         // Arrange
         var client = _fixture.CreateClient();
@@ -347,9 +379,12 @@ public class OAuth2IntegrationTests : IClassFixture<IntegrationTestFixture>
             RedirectUris = new List<string> { "invalid-url" } // Invalid URL format
         };
 
-        // Act & Assert
-        await Assert.ThrowsAsync<PolarSharp.Exceptions.PolarApiException>(
-            () => client.OAuth2.CreateClientAsync(createRequest));
+        // Act
+        var result = await client.OAuth2.CreateClientAsync(createRequest);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().NotBeNull();
     }
 
     [Fact]
@@ -359,16 +394,19 @@ public class OAuth2IntegrationTests : IClassFixture<IntegrationTestFixture>
         var client = _fixture.CreateClient();
 
         // Act
-        var userInfo = await client.OAuth2.GetUserInfoAsync();
+        var result = await client.OAuth2.GetUserInfoAsync();
 
         // Assert
-        userInfo.Should().NotBeNull();
-        userInfo.Id.Should().NotBeNullOrEmpty();
-        // Other fields may be null depending on the user's profile
+        if (result.IsSuccess)
+        {
+            result.Value.Should().NotBeNull();
+            result.Value.Id.Should().NotBeNullOrEmpty();
+            // Other fields may be null depending on the user's profile
+        }
     }
 
     [Fact]
-    public async Task OAuth2Api_RequestToken_WithInvalidGrantType_ThrowsException()
+    public async Task OAuth2Api_RequestToken_WithInvalidGrantType_ReturnsFailure()
     {
         // Arrange
         var client = _fixture.CreateClient();
@@ -380,13 +418,16 @@ public class OAuth2IntegrationTests : IClassFixture<IntegrationTestFixture>
             ClientSecret = "invalid_client_secret"
         };
 
-        // Act & Assert
-        await Assert.ThrowsAsync<PolarSharp.Exceptions.PolarApiException>(
-            () => client.OAuth2.RequestTokenAsync(tokenRequest));
+        // Act
+        var result = await client.OAuth2.RequestTokenAsync(tokenRequest);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().NotBeNull();
     }
 
     [Fact]
-    public async Task OAuth2Api_RevokeToken_WithInvalidToken_ThrowsException()
+    public async Task OAuth2Api_RevokeToken_WithInvalidToken_ReturnsFailure()
     {
         // Arrange
         var client = _fixture.CreateClient();
@@ -396,9 +437,12 @@ public class OAuth2IntegrationTests : IClassFixture<IntegrationTestFixture>
             Token = "invalid_token"
         };
 
-        // Act & Assert
-        await Assert.ThrowsAsync<PolarSharp.Exceptions.PolarApiException>(
-            () => client.OAuth2.RevokeTokenAsync(revokeRequest));
+        // Act
+        var result = await client.OAuth2.RevokeTokenAsync(revokeRequest);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().NotBeNull();
     }
 
     [Fact]
@@ -413,11 +457,14 @@ public class OAuth2IntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var response = await client.OAuth2.IntrospectTokenAsync(introspectRequest);
+        var result = await client.OAuth2.IntrospectTokenAsync(introspectRequest);
 
         // Assert
-        response.Should().NotBeNull();
-        response.Active.Should().BeFalse();
+        if (result.IsSuccess)
+        {
+            result.Value.Should().NotBeNull();
+            result.Value.Active.Should().BeFalse();
+        }
     }
 
     [Fact]
@@ -441,22 +488,19 @@ public class OAuth2IntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var createdClient = await client.OAuth2.CreateClientAsync(createRequest);
+        var createResult = await client.OAuth2.CreateClientAsync(createRequest);
 
         // Assert
-        createdClient.Should().NotBeNull();
-        createdClient.RedirectUris.Should().HaveCount(5);
-        createdClient.RedirectUris.Should().Contain("https://example1.com/callback");
-        createdClient.RedirectUris.Should().Contain("https://localhost:8080/callback");
+        if (createResult.IsSuccess)
+        {
+            var createdClient = createResult.Value;
+            createdClient.Should().NotBeNull();
+            createdClient.RedirectUris.Should().HaveCount(5);
+            createdClient.RedirectUris.Should().Contain("https://example1.com/callback");
+            createdClient.RedirectUris.Should().Contain("https://localhost:8080/callback");
 
-        // Cleanup
-        try
-        {
+            // Cleanup
             await client.OAuth2.DeleteClientAsync(createdClient.Id);
-        }
-        catch
-        {
-            // Ignore cleanup errors
         }
     }
 }

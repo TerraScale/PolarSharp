@@ -4,10 +4,10 @@ using System.Text.Json;
 using Polly;
 using Polly.Retry;
 using Polly.RateLimit;
-using PolarSharp.Exceptions;
 using PolarSharp.Extensions;
 using PolarSharp.Models.Common;
 using PolarSharp.Models.Payments;
+using PolarSharp.Results;
 
 namespace PolarSharp.Api;
 
@@ -40,7 +40,7 @@ public class PaymentsApi
     /// <param name="limit">Number of items per page (default: 10, max: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing payments.</returns>
-    public async Task<PaginatedResponse<Payment>> ListAsync(
+    public async Task<PolarResult<PaginatedResponse<Payment>>> ListAsync(
         int page = 1,
         int limit = 10,
         CancellationToken cancellationToken = default)
@@ -55,11 +55,7 @@ public class PaymentsApi
             () => _httpClient.GetAsync($"v1/payments?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<Payment>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<Payment>>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -68,7 +64,7 @@ public class PaymentsApi
     /// <param name="paymentId">The payment ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The payment, or null if not found.</returns>
-    public async Task<Payment?> GetAsync(
+    public async Task<PolarResult<Payment>> GetAsync(
         string paymentId,
         CancellationToken cancellationToken = default)
     {
@@ -76,7 +72,7 @@ public class PaymentsApi
             () => _httpClient.GetAsync($"v1/payments/{paymentId}", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Payment>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultAsync<Payment>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -84,21 +80,27 @@ public class PaymentsApi
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An async enumerable of all payments.</returns>
-    public async IAsyncEnumerable<Payment> ListAllAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<PolarResult<Payment>> ListAllAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var page = 1;
         const int limit = 100; // Use maximum page size for efficiency
 
         while (true)
         {
-            var response = await ListAsync(page, limit, cancellationToken);
-            
-            foreach (var payment in response.Items)
+            var result = await ListAsync(page, limit, cancellationToken);
+
+            if (result.IsFailure)
             {
-                yield return payment;
+                yield return PolarResult<Payment>.Failure(result.Error!);
+                yield break;
             }
 
-            if (page >= response.Pagination.MaxPage)
+            foreach (var payment in result.Value!.Items)
+            {
+                yield return PolarResult<Payment>.Success(payment);
+            }
+
+            if (page >= result.Value!.Pagination.MaxPage)
                 break;
 
             page++;
@@ -127,7 +129,7 @@ public class PaymentsApi
     /// <param name="limit">Number of items per page (default: 10, max: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing filtered payments.</returns>
-    public async Task<PaginatedResponse<Payment>> ListAsync(
+    public async Task<PolarResult<PaginatedResponse<Payment>>> ListAsync(
         PaymentsQueryBuilder builder,
         int page = 1,
         int limit = 10,
@@ -149,11 +151,7 @@ public class PaymentsApi
             () => _httpClient.GetAsync($"v1/payments?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<Payment>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<Payment>>(_jsonOptions, cancellationToken);
     }
 
     private static string GetQueryString(Dictionary<string, string> parameters)

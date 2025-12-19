@@ -5,9 +5,9 @@ using Polly;
 using Polly.Retry;
 using Polly.RateLimit;
 using PolarSharp.Extensions;
-using PolarSharp.Exceptions;
 using PolarSharp.Models.Common;
 using PolarSharp.Models.Organizations;
+using PolarSharp.Results;
 
 namespace PolarSharp.Api;
 
@@ -40,7 +40,7 @@ public class OrganizationsApi
     /// <param name="limit">Number of items per page (default: 10, max: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing organizations.</returns>
-    public async Task<PaginatedResponse<Organization>> ListAsync(
+    public async Task<PolarResult<PaginatedResponse<Organization>>> ListAsync(
         int page = 1,
         int limit = 10,
         CancellationToken cancellationToken = default)
@@ -55,11 +55,7 @@ public class OrganizationsApi
             () => _httpClient.GetAsync($"v1/organizations?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<Organization>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<Organization>>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -68,7 +64,7 @@ public class OrganizationsApi
     /// <param name="organizationId">The organization ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The organization, or null if not found.</returns>
-    public async Task<Organization?> GetAsync(
+    public async Task<PolarResult<Organization>> GetAsync(
         string organizationId,
         CancellationToken cancellationToken = default)
     {
@@ -76,7 +72,7 @@ public class OrganizationsApi
             () => _httpClient.GetAsync($"v1/organizations/{organizationId}", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Organization>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultAsync<Organization>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -85,7 +81,7 @@ public class OrganizationsApi
     /// <param name="request">The organization creation request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The created organization.</returns>
-    public async Task<Organization> CreateAsync(
+    public async Task<PolarResult<Organization>> CreateAsync(
         OrganizationCreateRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -93,11 +89,7 @@ public class OrganizationsApi
             () => _httpClient.PostAsJsonAsync("v1/organizations", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Organization>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<Organization>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -107,7 +99,7 @@ public class OrganizationsApi
     /// <param name="request">The organization update request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The updated organization, or null if not found.</returns>
-    public async Task<Organization?> UpdateAsync(
+    public async Task<PolarResult<Organization>> UpdateAsync(
         string organizationId,
         OrganizationUpdateRequest request,
         CancellationToken cancellationToken = default)
@@ -116,7 +108,7 @@ public class OrganizationsApi
             () => _httpClient.PatchAsJsonAsync($"v1/organizations/{organizationId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Organization>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultAsync<Organization>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -125,7 +117,7 @@ public class OrganizationsApi
     /// <param name="organizationId">The organization ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The deleted organization.</returns>
-    public async Task<Organization> DeleteAsync(
+    public async Task<PolarResult<Organization>> DeleteAsync(
         string organizationId,
         CancellationToken cancellationToken = default)
     {
@@ -133,11 +125,7 @@ public class OrganizationsApi
             () => _httpClient.DeleteAsync($"v1/organizations/{organizationId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Organization>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<Organization>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -145,21 +133,27 @@ public class OrganizationsApi
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An async enumerable of all organizations.</returns>
-    public async IAsyncEnumerable<Organization> ListAllAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<PolarResult<Organization>> ListAllAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var page = 1;
         const int limit = 100; // Use maximum page size for efficiency
 
         while (true)
         {
-            var response = await ListAsync(page, limit, cancellationToken);
-            
-            foreach (var organization in response.Items)
+            var result = await ListAsync(page, limit, cancellationToken);
+
+            if (result.IsFailure)
             {
-                yield return organization;
+                yield return PolarResult<Organization>.Failure(result.Error!);
+                yield break;
             }
 
-            if (page >= response.Pagination.MaxPage)
+            foreach (var organization in result.Value!.Items)
+            {
+                yield return PolarResult<Organization>.Success(organization);
+            }
+
+            if (page >= result.Value!.Pagination.MaxPage)
                 break;
 
             page++;

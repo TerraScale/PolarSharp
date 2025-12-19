@@ -9,6 +9,7 @@ using Polly.RateLimit;
 using PolarSharp.Extensions;
 using PolarSharp.Models.Common;
 using PolarSharp.Models.LicenseKeys;
+using PolarSharp.Results;
 
 namespace PolarSharp.Api;
 
@@ -44,7 +45,7 @@ public class LicenseKeysApi
     /// <param name="status">Filter by license key status.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing license keys.</returns>
-    public async Task<PaginatedResponse<LicenseKey>> ListAsync(
+    public async Task<PolarResult<PaginatedResponse<LicenseKey>>> ListAsync(
         int page = 1,
         int limit = 10,
         string? customerId = null,
@@ -60,10 +61,10 @@ public class LicenseKeysApi
 
         if (!string.IsNullOrEmpty(customerId))
             queryParams["customer_id"] = customerId;
-        
+
         if (!string.IsNullOrEmpty(benefitId))
             queryParams["benefit_id"] = benefitId;
-        
+
         if (status.HasValue)
             queryParams["status"] = status.Value.ToString().ToLowerInvariant();
 
@@ -71,11 +72,7 @@ public class LicenseKeysApi
             () => _httpClient.GetAsync($"v1/license-keys/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<LicenseKey>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<LicenseKey>>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -84,7 +81,7 @@ public class LicenseKeysApi
     /// <param name="licenseKeyId">The license key ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The license key, or null if not found.</returns>
-    public async Task<LicenseKey?> GetAsync(
+    public async Task<PolarResult<LicenseKey?>> GetAsync(
         string licenseKeyId,
         CancellationToken cancellationToken = default)
     {
@@ -92,7 +89,7 @@ public class LicenseKeysApi
             () => _httpClient.GetAsync($"v1/license-keys/{licenseKeyId}", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<LicenseKey>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultWithNullableAsync<LicenseKey>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -102,7 +99,7 @@ public class LicenseKeysApi
     /// <param name="request">The license key update request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The updated license key, or null if not found.</returns>
-    public async Task<LicenseKey?> UpdateAsync(
+    public async Task<PolarResult<LicenseKey?>> UpdateAsync(
         string licenseKeyId,
         LicenseKeyUpdateRequest request,
         CancellationToken cancellationToken = default)
@@ -111,7 +108,7 @@ public class LicenseKeysApi
             () => _httpClient.PatchAsJsonAsync($"v1/license-keys/{licenseKeyId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<LicenseKey>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultWithNullableAsync<LicenseKey>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -120,7 +117,7 @@ public class LicenseKeysApi
     /// <param name="licenseKeyId">The license key ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The activation information, or null if not found.</returns>
-    public async Task<LicenseKeyActivation?> GetActivationAsync(
+    public async Task<PolarResult<LicenseKeyActivation?>> GetActivationAsync(
         string licenseKeyId,
         CancellationToken cancellationToken = default)
     {
@@ -128,7 +125,7 @@ public class LicenseKeysApi
             () => _httpClient.GetAsync($"v1/license-keys/{licenseKeyId}/activation", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<LicenseKeyActivation>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultWithNullableAsync<LicenseKeyActivation>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -137,7 +134,7 @@ public class LicenseKeysApi
     /// <param name="request">The license key validation request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The validation response.</returns>
-    public async Task<LicenseKeyValidateResponse> ValidateAsync(
+    public async Task<PolarResult<LicenseKeyValidateResponse>> ValidateAsync(
         LicenseKeyValidateRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -145,11 +142,7 @@ public class LicenseKeysApi
             () => _httpClient.PostAsJsonAsync("license-keys/validate", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<LicenseKeyValidateResponse>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<LicenseKeyValidateResponse>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -159,7 +152,7 @@ public class LicenseKeysApi
     /// <param name="request">The license key activation request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The activation response.</returns>
-    public async Task<LicenseKeyActivateResponse> ActivateAsync(
+    public async Task<PolarResult<LicenseKeyActivateResponse>> ActivateAsync(
         string licenseKeyId,
         LicenseKeyActivateRequest request,
         CancellationToken cancellationToken = default)
@@ -168,11 +161,7 @@ public class LicenseKeysApi
             () => _httpClient.PostAsJsonAsync($"v1/license-keys/{licenseKeyId}/activate", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<LicenseKeyActivateResponse>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<LicenseKeyActivateResponse>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -182,7 +171,7 @@ public class LicenseKeysApi
     /// <param name="request">The license key deactivation request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The deactivation response.</returns>
-    public async Task<LicenseKeyDeactivateResponse> DeactivateAsync(
+    public async Task<PolarResult<LicenseKeyDeactivateResponse>> DeactivateAsync(
         string licenseKeyId,
         LicenseKeyDeactivateRequest request,
         CancellationToken cancellationToken = default)
@@ -191,11 +180,7 @@ public class LicenseKeysApi
             () => _httpClient.PostAsJsonAsync($"v1/license-keys/{licenseKeyId}/deactivate", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<LicenseKeyDeactivateResponse>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<LicenseKeyDeactivateResponse>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -206,7 +191,7 @@ public class LicenseKeysApi
     /// <param name="status">Filter by license key status.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An async enumerable of all license keys.</returns>
-    public async IAsyncEnumerable<LicenseKey> ListAllAsync(
+    public async IAsyncEnumerable<PolarResult<LicenseKey>> ListAllAsync(
         string? customerId = null,
         string? benefitId = null,
         LicenseKeyStatus? status = null,
@@ -217,14 +202,20 @@ public class LicenseKeysApi
 
         while (true)
         {
-            var response = await ListAsync(page, limit, customerId, benefitId, status, cancellationToken);
-            
-            foreach (var licenseKey in response.Items)
+            var result = await ListAsync(page, limit, customerId, benefitId, status, cancellationToken);
+
+            if (result.IsFailure)
             {
-                yield return licenseKey;
+                yield return PolarResult<LicenseKey>.Failure(result.Error!);
+                yield break;
             }
 
-            if (page >= response.Pagination.MaxPage)
+            foreach (var licenseKey in result.Value.Items)
+            {
+                yield return PolarResult<LicenseKey>.Success(licenseKey);
+            }
+
+            if (page >= result.Value.Pagination.MaxPage)
                 break;
 
             page++;
@@ -253,7 +244,7 @@ public class LicenseKeysApi
     /// <param name="limit">Number of items per page (default: 10, max: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing filtered license keys.</returns>
-    public async Task<PaginatedResponse<LicenseKey>> ListAsync(
+    public async Task<PolarResult<PaginatedResponse<LicenseKey>>> ListAsync(
         LicenseKeysQueryBuilder builder,
         int page = 1,
         int limit = 10,
@@ -275,11 +266,7 @@ public class LicenseKeysApi
             () => _httpClient.GetAsync($"v1/license-keys/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<LicenseKey>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<LicenseKey>>(_jsonOptions, cancellationToken);
     }
 
     private static string GetQueryString(Dictionary<string, string> parameters)

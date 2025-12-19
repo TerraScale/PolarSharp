@@ -9,6 +9,7 @@ using Polly.RateLimit;
 using PolarSharp.Extensions;
 using PolarSharp.Models.Benefits;
 using PolarSharp.Models.Common;
+using PolarSharp.Results;
 
 namespace PolarSharp.Api;
 
@@ -43,7 +44,7 @@ public class BenefitsApi
     /// <param name="active">Filter by active status.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing benefits/.</returns>
-    public async Task<PaginatedResponse<Benefit>> ListAsync(
+    public async Task<PolarResult<PaginatedResponse<Benefit>>> ListAsync(
         int page = 1,
         int limit = 10,
         BenefitType? type = null,
@@ -58,7 +59,7 @@ public class BenefitsApi
 
         if (type.HasValue)
             queryParams["type"] = type.Value.ToString().ToLowerInvariant();
-        
+
         if (active.HasValue)
             queryParams["active"] = active.Value.ToString().ToLowerInvariant();
 
@@ -66,11 +67,7 @@ public class BenefitsApi
             () => _httpClient.GetAsync($"v1/benefits/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<Benefit>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<Benefit>>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -87,7 +84,7 @@ public class BenefitsApi
     /// <param name="limit">Number of items per page (default: 10, max: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing filtered benefits/.</returns>
-    public async Task<PaginatedResponse<Benefit>> ListAsync(
+    public async Task<PolarResult<PaginatedResponse<Benefit>>> ListAsync(
         BenefitsQueryBuilder builder,
         int page = 1,
         int limit = 10,
@@ -109,11 +106,7 @@ public class BenefitsApi
             () => _httpClient.GetAsync($"v1/benefits/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<Benefit>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<Benefit>>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -122,7 +115,7 @@ public class BenefitsApi
     /// <param name="benefitId">The benefit ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The benefit, or null if not found.</returns>
-    public async Task<Benefit?> GetAsync(
+    public async Task<PolarResult<Benefit?>> GetAsync(
         string benefitId,
         CancellationToken cancellationToken = default)
     {
@@ -130,7 +123,7 @@ public class BenefitsApi
             () => _httpClient.GetAsync($"v1/benefits/{benefitId}/", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Benefit>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultWithNullableAsync<Benefit>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -139,7 +132,7 @@ public class BenefitsApi
     /// <param name="request">The benefit creation request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The created benefit.</returns>
-    public async Task<Benefit> CreateAsync(
+    public async Task<PolarResult<Benefit>> CreateAsync(
         BenefitCreateRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -147,11 +140,7 @@ public class BenefitsApi
             () => _httpClient.PostAsJsonAsync("v1/benefits/", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Benefit>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<Benefit>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -161,7 +150,7 @@ public class BenefitsApi
     /// <param name="request">The benefit update request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The updated benefit, or null if not found.</returns>
-    public async Task<Benefit?> UpdateAsync(
+    public async Task<PolarResult<Benefit?>> UpdateAsync(
         string benefitId,
         BenefitUpdateRequest request,
         CancellationToken cancellationToken = default)
@@ -170,7 +159,7 @@ public class BenefitsApi
             () => _httpClient.PatchAsJsonAsync($"v1/benefits/{benefitId}/", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Benefit>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultWithNullableAsync<Benefit>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -179,7 +168,7 @@ public class BenefitsApi
     /// <param name="benefitId">The benefit ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The deleted benefit, or null if not found.</returns>
-    public async Task<Benefit?> DeleteAsync(
+    public async Task<PolarResult<Benefit?>> DeleteAsync(
         string benefitId,
         CancellationToken cancellationToken = default)
     {
@@ -187,7 +176,7 @@ public class BenefitsApi
             () => _httpClient.DeleteAsync($"v1/benefits/{benefitId}/", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Benefit>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultWithNullableAsync<Benefit>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -200,7 +189,7 @@ public class BenefitsApi
     /// <param name="status">Filter by grant status.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing benefit grants.</returns>
-    public async Task<PaginatedResponse<BenefitGrant>> ListGrantsAsync(
+    public async Task<PolarResult<PaginatedResponse<BenefitGrant>>> ListGrantsAsync(
         string benefitId,
         int page = 1,
         int limit = 10,
@@ -216,7 +205,7 @@ public class BenefitsApi
 
         if (!string.IsNullOrEmpty(customerId))
             queryParams["customer_id"] = customerId;
-        
+
         if (status.HasValue)
             queryParams["status"] = status.Value.ToString().ToLowerInvariant();
 
@@ -224,11 +213,7 @@ public class BenefitsApi
             () => _httpClient.GetAsync($"v1/benefits/{benefitId}/grants/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<BenefitGrant>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<BenefitGrant>>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -238,7 +223,7 @@ public class BenefitsApi
     /// <param name="active">Filter by active status.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An async enumerable of all benefits/.</returns>
-    public async IAsyncEnumerable<Benefit> ListAllAsync(
+    public async IAsyncEnumerable<PolarResult<Benefit>> ListAllAsync(
         BenefitType? type = null,
         bool? active = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
@@ -248,14 +233,20 @@ public class BenefitsApi
 
         while (true)
         {
-            var response = await ListAsync(page, limit, type, active, cancellationToken);
-            
-            foreach (var benefit in response.Items)
+            var result = await ListAsync(page, limit, type, active, cancellationToken);
+
+            if (result.IsFailure)
             {
-                yield return benefit;
+                yield return PolarResult<Benefit>.Failure(result.Error!);
+                yield break;
             }
 
-            if (page >= response.Pagination.MaxPage)
+            foreach (var benefit in result.Value.Items)
+            {
+                yield return PolarResult<Benefit>.Success(benefit);
+            }
+
+            if (page >= result.Value.Pagination.MaxPage)
                 break;
 
             page++;
@@ -270,7 +261,7 @@ public class BenefitsApi
     /// <param name="status">Filter by grant status.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An async enumerable of all benefit grants.</returns>
-    public async IAsyncEnumerable<BenefitGrant> ListAllGrantsAsync(
+    public async IAsyncEnumerable<PolarResult<BenefitGrant>> ListAllGrantsAsync(
         string benefitId,
         string? customerId = null,
         BenefitGrantStatus? status = null,
@@ -281,14 +272,20 @@ public class BenefitsApi
 
         while (true)
         {
-            var response = await ListGrantsAsync(benefitId, page, limit, customerId, status, cancellationToken);
-            
-            foreach (var grant in response.Items)
+            var result = await ListGrantsAsync(benefitId, page, limit, customerId, status, cancellationToken);
+
+            if (result.IsFailure)
             {
-                yield return grant;
+                yield return PolarResult<BenefitGrant>.Failure(result.Error!);
+                yield break;
             }
 
-            if (page >= response.Pagination.MaxPage)
+            foreach (var grant in result.Value.Items)
+            {
+                yield return PolarResult<BenefitGrant>.Success(grant);
+            }
+
+            if (page >= result.Value.Pagination.MaxPage)
                 break;
 
             page++;
@@ -311,7 +308,7 @@ public class BenefitsApi
     /// <param name="active">Filter by active status.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The export response.</returns>
-    public async Task<BenefitExportResponse> ExportAsync(
+    public async Task<PolarResult<BenefitExportResponse>> ExportAsync(
         ExportFormat format = ExportFormat.Csv,
         BenefitType? type = null,
         bool? active = null,
@@ -324,7 +321,7 @@ public class BenefitsApi
 
         if (type.HasValue)
             queryParams["type"] = type.Value.ToString().ToLowerInvariant();
-        
+
         if (active.HasValue)
             queryParams["active"] = active.Value.ToString().ToLowerInvariant();
 
@@ -332,11 +329,7 @@ public class BenefitsApi
             () => _httpClient.GetAsync($"v1/benefits/export/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<BenefitExportResponse>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<BenefitExportResponse>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -348,7 +341,7 @@ public class BenefitsApi
     /// <param name="status">Filter by grant status.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The export response.</returns>
-    public async Task<BenefitGrantExportResponse> ExportGrantsAsync(
+    public async Task<PolarResult<BenefitGrantExportResponse>> ExportGrantsAsync(
         string benefitId,
         ExportFormat format = ExportFormat.Csv,
         string? customerId = null,
@@ -362,7 +355,7 @@ public class BenefitsApi
 
         if (!string.IsNullOrEmpty(customerId))
             queryParams["customer_id"] = customerId;
-        
+
         if (status.HasValue)
             queryParams["status"] = status.Value.ToString().ToLowerInvariant();
 
@@ -370,11 +363,7 @@ public class BenefitsApi
             () => _httpClient.GetAsync($"v1/benefits/{benefitId}/grants/export/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<BenefitGrantExportResponse>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<BenefitGrantExportResponse>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -384,7 +373,7 @@ public class BenefitsApi
     /// <param name="request">The benefit grant request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The created benefit grant.</returns>
-    public async Task<BenefitGrant> GrantAsync(
+    public async Task<PolarResult<BenefitGrant>> GrantAsync(
         string benefitId,
         BenefitGrantRequest request,
         CancellationToken cancellationToken = default)
@@ -393,11 +382,7 @@ public class BenefitsApi
             () => _httpClient.PostAsJsonAsync($"v1/benefits/{benefitId}/grant/", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<BenefitGrant>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<BenefitGrant>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -407,7 +392,7 @@ public class BenefitsApi
     /// <param name="grantId">The grant ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The revoked benefit grant.</returns>
-    public async Task<BenefitGrant> RevokeGrantAsync(
+    public async Task<PolarResult<BenefitGrant>> RevokeGrantAsync(
         string benefitId,
         string grantId,
         CancellationToken cancellationToken = default)
@@ -416,11 +401,7 @@ public class BenefitsApi
             () => _httpClient.DeleteAsync($"v1/benefits/{benefitId}/grants/{grantId}/", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<BenefitGrant>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<BenefitGrant>(_jsonOptions, cancellationToken);
     }
 
     private static string GetQueryString(Dictionary<string, string> parameters)

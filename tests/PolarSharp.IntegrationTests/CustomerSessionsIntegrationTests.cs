@@ -1,5 +1,6 @@
 using FluentAssertions;
 using PolarSharp.Models.CustomerSessions;
+using PolarSharp.Results;
 using Xunit;
 
 namespace PolarSharp.IntegrationTests;
@@ -21,7 +22,7 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         // First, create a customer to get a valid customer ID
         var customerRequest = new PolarSharp.Models.Customers.CustomerCreateRequest
         {
@@ -33,7 +34,7 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
 
         var createRequest = new CustomerSessionCreateRequest
         {
-            CustomerId = customer.Id,
+            CustomerId = customer.Value.Id,
             ReturnUrl = "https://example.com/account"
         };
 
@@ -42,22 +43,16 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
 
         // Assert
         customerSession.Should().NotBeNull();
-        customerSession.Id.Should().NotBeNullOrEmpty();
-        customerSession.CustomerId.Should().Be(customer.Id);
-        customerSession.Token.Should().NotBeNullOrEmpty();
-        customerSession.ExpiresAt.Should().BeAfter(DateTime.UtcNow);
-        customerSession.ReturnUrl.Should().Be("https://example.com/account");
-        customerSession.CreatedAt.Should().BeBefore(DateTime.UtcNow.AddMinutes(1));
+        customerSession.IsSuccess.Should().BeTrue();
+        customerSession.Value.Id.Should().NotBeNullOrEmpty();
+        customerSession.Value.CustomerId.Should().Be(customer.Value.Id);
+        customerSession.Value.Token.Should().NotBeNullOrEmpty();
+        customerSession.Value.ExpiresAt.Should().BeAfter(DateTime.UtcNow);
+        customerSession.Value.ReturnUrl.Should().Be("https://example.com/account");
+        customerSession.Value.CreatedAt.Should().BeBefore(DateTime.UtcNow.AddMinutes(1));
 
         // Cleanup
-        try
-        {
-            await client.Customers.DeleteAsync(customer.Id);
-        }
-        catch
-        {
-            // Ignore cleanup errors
-        }
+        var deleteResult = await client.Customers.DeleteAsync(customer.Value.Id);
     }
 
     [Fact]
@@ -65,7 +60,7 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         // First, create a customer to get a valid customer ID
         var customerRequest = new PolarSharp.Models.Customers.CustomerCreateRequest
         {
@@ -77,7 +72,7 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
 
         var createRequest = new CustomerSessionCreateRequest
         {
-            CustomerId = customer.Id
+            CustomerId = customer.Value.Id
         };
 
         // Act
@@ -85,24 +80,18 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
 
         // Assert
         customerSession.Should().NotBeNull();
-        customerSession.Id.Should().NotBeNullOrEmpty();
-        customerSession.CustomerId.Should().Be(customer.Id);
-        customerSession.Token.Should().NotBeNullOrEmpty();
-        customerSession.CreatedAt.Should().BeBefore(DateTime.UtcNow.AddMinutes(1));
+        customerSession.IsSuccess.Should().BeTrue();
+        customerSession.Value.Id.Should().NotBeNullOrEmpty();
+        customerSession.Value.CustomerId.Should().Be(customer.Value.Id);
+        customerSession.Value.Token.Should().NotBeNullOrEmpty();
+        customerSession.Value.CreatedAt.Should().BeBefore(DateTime.UtcNow.AddMinutes(1));
 
         // Cleanup
-        try
-        {
-            await client.Customers.DeleteAsync(customer.Id);
-        }
-        catch
-        {
-            // Ignore cleanup errors
-        }
+        var deleteResult = await client.Customers.DeleteAsync(customer.Value.Id);
     }
 
     [Fact]
-    public async Task CustomerSessionsApi_CreateCustomerSession_WithInvalidCustomerId_ThrowsException()
+    public async Task CustomerSessionsApi_CreateCustomerSession_WithInvalidCustomerId_ReturnsFailure()
     {
         // Arrange
         var client = _fixture.CreateClient();
@@ -112,13 +101,17 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
             CustomerId = "invalid_customer_id"
         };
 
-        // Act & Assert
-        await Assert.ThrowsAsync<PolarSharp.Exceptions.PolarApiException>(
-            () => client.CustomerSessions.CreateAsync(createRequest));
+        // Act
+        var result = await client.CustomerSessions.CreateAsync(createRequest);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.IsFailure.Should().BeTrue();
+        (result.IsValidationError || result.IsClientError).Should().BeTrue();
     }
 
     [Fact]
-    public async Task CustomerSessionsApi_CreateCustomerSession_WithEmptyCustomerId_ThrowsException()
+    public async Task CustomerSessionsApi_CreateCustomerSession_WithEmptyCustomerId_ReturnsFailure()
     {
         // Arrange
         var client = _fixture.CreateClient();
@@ -128,9 +121,13 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
             CustomerId = "" // Empty customer ID
         };
 
-        // Act & Assert
-        await Assert.ThrowsAsync<PolarSharp.Exceptions.PolarApiException>(
-            () => client.CustomerSessions.CreateAsync(createRequest));
+        // Act
+        var result = await client.CustomerSessions.CreateAsync(createRequest);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.IsFailure.Should().BeTrue();
+        (result.IsValidationError || result.IsClientError).Should().BeTrue();
     }
 
     [Fact]
@@ -138,7 +135,7 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         // First, create a customer and session
         var customerRequest = new PolarSharp.Models.Customers.CustomerCreateRequest
         {
@@ -150,14 +147,14 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
 
         var sessionCreateRequest = new CustomerSessionCreateRequest
         {
-            CustomerId = customer.Id
+            CustomerId = customer.Value.Id
         };
 
         var customerSession = await client.CustomerSessions.CreateAsync(sessionCreateRequest);
 
         var introspectRequest = new CustomerSessionIntrospectRequest
         {
-            CustomerAccessToken = customerSession.Token
+            CustomerAccessToken = customerSession.Value.Token
         };
 
         // Act
@@ -165,19 +162,13 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
 
         // Assert
         introspectResponse.Should().NotBeNull();
-        introspectResponse.Valid.Should().BeTrue();
-        introspectResponse.CustomerId.Should().Be(customer.Id);
-        introspectResponse.ExpiresAt.Should().BeCloseTo(customerSession.ExpiresAt, TimeSpan.FromMinutes(1));
+        introspectResponse.IsSuccess.Should().BeTrue();
+        introspectResponse.Value.Valid.Should().BeTrue();
+        introspectResponse.Value.CustomerId.Should().Be(customer.Value.Id);
+        introspectResponse.Value.ExpiresAt.Should().BeCloseTo(customerSession.Value.ExpiresAt, TimeSpan.FromMinutes(1));
 
         // Cleanup
-        try
-        {
-            await client.Customers.DeleteAsync(customer.Id);
-        }
-        catch
-        {
-            // Ignore cleanup errors
-        }
+        var deleteResult = await client.Customers.DeleteAsync(customer.Value.Id);
     }
 
     [Fact]
@@ -196,9 +187,10 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
 
         // Assert
         introspectResponse.Should().NotBeNull();
-        introspectResponse.Valid.Should().BeFalse();
-        introspectResponse.CustomerId.Should().BeNull();
-        introspectResponse.ExpiresAt.Should().BeNull();
+        introspectResponse.IsSuccess.Should().BeTrue();
+        introspectResponse.Value.Valid.Should().BeFalse();
+        introspectResponse.Value.CustomerId.Should().BeNull();
+        introspectResponse.Value.ExpiresAt.Should().BeNull();
     }
 
     [Fact]
@@ -217,9 +209,10 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
 
         // Assert
         introspectResponse.Should().NotBeNull();
-        introspectResponse.Valid.Should().BeFalse();
-        introspectResponse.CustomerId.Should().BeNull();
-        introspectResponse.ExpiresAt.Should().BeNull();
+        introspectResponse.IsSuccess.Should().BeTrue();
+        introspectResponse.Value.Valid.Should().BeFalse();
+        introspectResponse.Value.CustomerId.Should().BeNull();
+        introspectResponse.Value.ExpiresAt.Should().BeNull();
     }
 
     [Fact]
@@ -227,7 +220,7 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         // First, create a customer and session with short expiration
         var customerRequest = new PolarSharp.Models.Customers.CustomerCreateRequest
         {
@@ -239,14 +232,14 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
 
         var sessionCreateRequest = new CustomerSessionCreateRequest
         {
-            CustomerId = customer.Id
+            CustomerId = customer.Value.Id
         };
 
         var customerSession = await client.CustomerSessions.CreateAsync(sessionCreateRequest);
 
         var introspectRequest = new CustomerSessionIntrospectRequest
         {
-            CustomerAccessToken = customerSession.Token
+            CustomerAccessToken = customerSession.Value.Token
         };
 
         // Act
@@ -254,19 +247,13 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
 
         // Assert
         introspectResponse.Should().NotBeNull();
-        introspectResponse.Valid.Should().BeFalse();
-        introspectResponse.CustomerId.Should().BeNull();
-        introspectResponse.ExpiresAt.Should().BeNull();
+        introspectResponse.IsSuccess.Should().BeTrue();
+        introspectResponse.Value.Valid.Should().BeFalse();
+        introspectResponse.Value.CustomerId.Should().BeNull();
+        introspectResponse.Value.ExpiresAt.Should().BeNull();
 
         // Cleanup
-        try
-        {
-            await client.Customers.DeleteAsync(customer.Id);
-        }
-        catch
-        {
-            // Ignore cleanup errors
-        }
+        var deleteResult = await client.Customers.DeleteAsync(customer.Value.Id);
     }
 
     [Fact]
@@ -274,7 +261,7 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         // First, create a customer to get a valid customer ID
         var customerRequest = new PolarSharp.Models.Customers.CustomerCreateRequest
         {
@@ -286,7 +273,7 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
 
         var createRequest = new CustomerSessionCreateRequest
         {
-            CustomerId = customer.Id,
+            CustomerId = customer.Value.Id,
             ReturnUrl = "https://example.com/return"
         };
 
@@ -295,17 +282,11 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
 
         // Assert
         customerSession.Should().NotBeNull();
-        customerSession.ExpiresAt.Should().BeAfter(DateTime.UtcNow);
+        customerSession.IsSuccess.Should().BeTrue();
+        customerSession.Value.ExpiresAt.Should().BeAfter(DateTime.UtcNow);
 
         // Cleanup
-        try
-        {
-            await client.Customers.DeleteAsync(customer.Id);
-        }
-        catch
-        {
-            // Ignore cleanup errors
-        }
+        var deleteResult = await client.Customers.DeleteAsync(customer.Value.Id);
     }
 
     [Fact]
@@ -313,7 +294,7 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         // First, create a customer to get a valid customer ID
         var customerRequest = new PolarSharp.Models.Customers.CustomerCreateRequest
         {
@@ -325,7 +306,7 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
 
         var createRequest = new CustomerSessionCreateRequest
         {
-            CustomerId = customer.Id,
+            CustomerId = customer.Value.Id,
             ReturnUrl = "https://example.com/account"
         };
 
@@ -334,29 +315,23 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
 
         // Assert
         customerSession.Should().NotBeNull();
-        customerSession.Id.Should().NotBeNullOrEmpty();
-        customerSession.CustomerId.Should().Be(customer.Id);
-        customerSession.Token.Should().NotBeNullOrEmpty();
-        customerSession.ExpiresAt.Should().BeAfter(DateTime.UtcNow);
-        customerSession.ReturnUrl.Should().Be("https://example.com/account");
-        customerSession.CreatedAt.Should().BeBefore(DateTime.UtcNow.AddMinutes(1));
-        
+        customerSession.IsSuccess.Should().BeTrue();
+        customerSession.Value.Id.Should().NotBeNullOrEmpty();
+        customerSession.Value.CustomerId.Should().Be(customer.Value.Id);
+        customerSession.Value.Token.Should().NotBeNullOrEmpty();
+        customerSession.Value.ExpiresAt.Should().BeAfter(DateTime.UtcNow);
+        customerSession.Value.ReturnUrl.Should().Be("https://example.com/account");
+        customerSession.Value.CreatedAt.Should().BeBefore(DateTime.UtcNow.AddMinutes(1));
+
         // Verify nested customer object if present
-        if (customerSession.Customer != null)
+        if (customerSession.Value.Customer != null)
         {
-            customerSession.Customer.Id.Should().Be(customer.Id);
-            customerSession.Customer.Email.Should().Be(customer.Email);
+            customerSession.Value.Customer.Id.Should().Be(customer.Value.Id);
+            customerSession.Value.Customer.Email.Should().Be(customer.Value.Email);
         }
 
         // Cleanup
-        try
-        {
-            await client.Customers.DeleteAsync(customer.Id);
-        }
-        catch
-        {
-            // Ignore cleanup errors
-        }
+        var deleteResult = await client.Customers.DeleteAsync(customer.Value.Id);
     }
 
     [Fact]
@@ -364,7 +339,7 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         // First, create a customer and session
         var customerRequest = new PolarSharp.Models.Customers.CustomerCreateRequest
         {
@@ -376,14 +351,14 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
 
         var sessionCreateRequest = new CustomerSessionCreateRequest
         {
-            CustomerId = customer.Id
+            CustomerId = customer.Value.Id
         };
 
         var customerSession = await client.CustomerSessions.CreateAsync(sessionCreateRequest);
 
         var introspectRequest = new CustomerSessionIntrospectRequest
         {
-            CustomerAccessToken = customerSession.Token
+            CustomerAccessToken = customerSession.Value.Token
         };
 
         // Act
@@ -391,25 +366,19 @@ public class CustomerSessionsIntegrationTests : IClassFixture<IntegrationTestFix
 
         // Assert
         introspectResponse.Should().NotBeNull();
-        introspectResponse.Valid.Should().BeTrue();
-        introspectResponse.CustomerId.Should().Be(customer.Id);
-        introspectResponse.ExpiresAt.Should().BeCloseTo(customerSession.ExpiresAt, TimeSpan.FromMinutes(1));
-        
+        introspectResponse.IsSuccess.Should().BeTrue();
+        introspectResponse.Value.Valid.Should().BeTrue();
+        introspectResponse.Value.CustomerId.Should().Be(customer.Value.Id);
+        introspectResponse.Value.ExpiresAt.Should().BeCloseTo(customerSession.Value.ExpiresAt, TimeSpan.FromMinutes(1));
+
         // Verify nested customer object if present
-        if (introspectResponse.Customer != null)
+        if (introspectResponse.Value.Customer != null)
         {
-            introspectResponse.Customer.Id.Should().Be(customer.Id);
-            introspectResponse.Customer.Email.Should().Be(customer.Email);
+            introspectResponse.Value.Customer.Id.Should().Be(customer.Value.Id);
+            introspectResponse.Value.Customer.Email.Should().Be(customer.Value.Email);
         }
 
         // Cleanup
-        try
-        {
-            await client.Customers.DeleteAsync(customer.Id);
-        }
-        catch
-        {
-            // Ignore cleanup errors
-        }
+        var deleteResult = await client.Customers.DeleteAsync(customer.Value.Id);
     }
 }

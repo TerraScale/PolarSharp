@@ -4,10 +4,10 @@ using System.Text.Json;
 using Polly;
 using Polly.Retry;
 using Polly.RateLimit;
-using PolarSharp.Exceptions;
 using PolarSharp.Extensions;
 using PolarSharp.Models.Common;
 using PolarSharp.Models.Orders;
+using PolarSharp.Results;
 
 namespace PolarSharp.Api;
 
@@ -43,7 +43,7 @@ public class OrdersApi
     /// <param name="status">Filter by order status.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing orders.</returns>
-    public async Task<PaginatedResponse<Order>> ListAsync(
+    public async Task<PolarResult<PaginatedResponse<Order>>> ListAsync(
         int page = 1,
         int limit = 10,
         string? customerId = null,
@@ -59,10 +59,10 @@ public class OrdersApi
 
         if (!string.IsNullOrEmpty(customerId))
             queryParams["customer_id"] = customerId;
-        
+
         if (!string.IsNullOrEmpty(productId))
             queryParams["product_id"] = productId;
-        
+
         if (status.HasValue)
             queryParams["status"] = status.Value.ToString().ToLowerInvariant();
 
@@ -70,11 +70,7 @@ public class OrdersApi
             () => _httpClient.GetAsync($"v1/orders/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<Order>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<Order>>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -83,7 +79,7 @@ public class OrdersApi
     /// <param name="orderId">The order ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The order, or null if not found.</returns>
-    public async Task<Order?> GetAsync(
+    public async Task<PolarResult<Order>> GetAsync(
         string orderId,
         CancellationToken cancellationToken = default)
     {
@@ -91,7 +87,7 @@ public class OrdersApi
             () => _httpClient.GetAsync($"v1/orders/{orderId}", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Order>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultAsync<Order>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -100,7 +96,7 @@ public class OrdersApi
     /// <param name="request">The order creation request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The created order.</returns>
-    public async Task<Order> CreateAsync(
+    public async Task<PolarResult<Order>> CreateAsync(
         OrderCreateRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -108,11 +104,7 @@ public class OrdersApi
             () => _httpClient.PostAsJsonAsync("orders", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Order>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<Order>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -122,7 +114,7 @@ public class OrdersApi
     /// <param name="request">The order update request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The updated order, or null if not found.</returns>
-    public async Task<Order?> UpdateAsync(
+    public async Task<PolarResult<Order>> UpdateAsync(
         string orderId,
         OrderUpdateRequest request,
         CancellationToken cancellationToken = default)
@@ -131,7 +123,7 @@ public class OrdersApi
             () => _httpClient.PatchAsJsonAsync($"v1/orders/{orderId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Order>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultAsync<Order>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -140,7 +132,7 @@ public class OrdersApi
     /// <param name="orderId">The order ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The deleted order, or null if not found.</returns>
-    public async Task<Order?> DeleteAsync(
+    public async Task<PolarResult<Order>> DeleteAsync(
         string orderId,
         CancellationToken cancellationToken = default)
     {
@@ -148,7 +140,7 @@ public class OrdersApi
             () => _httpClient.DeleteAsync($"v1/orders/{orderId}", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Order>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultAsync<Order>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -157,7 +149,7 @@ public class OrdersApi
     /// <param name="orderId">The order ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The generated invoice, or null if not found.</returns>
-    public async Task<OrderInvoice?> GenerateInvoiceAsync(
+    public async Task<PolarResult<OrderInvoice>> GenerateInvoiceAsync(
         string orderId,
         CancellationToken cancellationToken = default)
     {
@@ -165,7 +157,7 @@ public class OrdersApi
             () => _httpClient.PostAsync($"v1/orders/{orderId}/generate_invoice", null, cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<OrderInvoice>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultAsync<OrderInvoice>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -174,7 +166,7 @@ public class OrdersApi
     /// <param name="orderId">The order ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The order invoice, or null if not found.</returns>
-    public async Task<OrderInvoice?> GetInvoiceAsync(
+    public async Task<PolarResult<OrderInvoice>> GetInvoiceAsync(
         string orderId,
         CancellationToken cancellationToken = default)
     {
@@ -182,7 +174,7 @@ public class OrdersApi
             () => _httpClient.GetAsync($"v1/orders/{orderId}/invoice", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<OrderInvoice>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultAsync<OrderInvoice>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -194,7 +186,7 @@ public class OrdersApi
     /// <param name="status">Filter by order status.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The export response.</returns>
-    public async Task<OrderExportResponse> ExportAsync(
+    public async Task<PolarResult<OrderExportResponse>> ExportAsync(
         ExportFormat format = ExportFormat.Csv,
         string? customerId = null,
         string? productId = null,
@@ -208,10 +200,10 @@ public class OrdersApi
 
         if (!string.IsNullOrEmpty(customerId))
             queryParams["customer_id"] = customerId;
-        
+
         if (!string.IsNullOrEmpty(productId))
             queryParams["product_id"] = productId;
-        
+
         if (status.HasValue)
             queryParams["status"] = status.Value.ToString().ToLowerInvariant();
 
@@ -219,11 +211,7 @@ public class OrdersApi
             () => _httpClient.GetAsync($"v1/orders/export/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<OrderExportResponse>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<OrderExportResponse>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -234,7 +222,7 @@ public class OrdersApi
     /// <param name="status">Filter by order status.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An async enumerable of all orders.</returns>
-    public async IAsyncEnumerable<Order> ListAllAsync(
+    public async IAsyncEnumerable<PolarResult<Order>> ListAllAsync(
         string? customerId = null,
         string? productId = null,
         OrderStatus? status = null,
@@ -245,14 +233,20 @@ public class OrdersApi
 
         while (true)
         {
-            var response = await ListAsync(page, limit, customerId, productId, status, cancellationToken);
-            
-            foreach (var order in response.Items)
+            var result = await ListAsync(page, limit, customerId, productId, status, cancellationToken);
+
+            if (result.IsFailure)
             {
-                yield return order;
+                yield return PolarResult<Order>.Failure(result.Error!);
+                yield break;
             }
 
-            if (page >= response.Pagination.MaxPage)
+            foreach (var order in result.Value!.Items)
+            {
+                yield return PolarResult<Order>.Success(order);
+            }
+
+            if (page >= result.Value!.Pagination.MaxPage)
                 break;
 
             page++;
@@ -273,7 +267,7 @@ public class OrdersApi
     /// <param name="limit">Number of items per page (default: 10, max: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing filtered orders.</returns>
-    public async Task<PaginatedResponse<Order>> ListAsync(
+    public async Task<PolarResult<PaginatedResponse<Order>>> ListAsync(
         OrdersQueryBuilder builder,
         int page = 1,
         int limit = 10,
@@ -295,11 +289,7 @@ public class OrdersApi
             () => _httpClient.GetAsync($"v1/orders/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<Order>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<Order>>(_jsonOptions, cancellationToken);
     }
 
     private async Task<HttpResponseMessage> ExecuteWithPoliciesAsync(

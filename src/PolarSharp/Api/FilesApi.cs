@@ -4,10 +4,10 @@ using System.Text.Json;
 using Polly;
 using Polly.Retry;
 using Polly.RateLimit;
-using PolarSharp.Exceptions;
 using PolarSharp.Extensions;
 using PolarSharp.Models.Common;
 using PolarSharp.Models.Files;
+using PolarSharp.Results;
 using File = PolarSharp.Models.Files.File;
 using Files_File = PolarSharp.Models.Files.File;
 
@@ -42,7 +42,7 @@ public class FilesApi
     /// <param name="limit">Number of items per page (default: 10, max: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing files.</returns>
-    public async Task<PaginatedResponse<Files_File>> ListAsync(
+    public async Task<PolarResult<PaginatedResponse<Files_File>>> ListAsync(
         int page = 1,
         int limit = 10,
         CancellationToken cancellationToken = default)
@@ -57,11 +57,7 @@ public class FilesApi
             () => _httpClient.GetAsync($"v1/files?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<Files_File>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<Files_File>>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -70,7 +66,7 @@ public class FilesApi
     /// <param name="fileId">The file ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The file, or null if not found.</returns>
-    public async Task<Files_File?> GetAsync(
+    public async Task<PolarResult<Files_File?>> GetAsync(
         string fileId,
         CancellationToken cancellationToken = default)
     {
@@ -78,7 +74,7 @@ public class FilesApi
             () => _httpClient.GetAsync($"v1/files/{fileId}", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Files_File>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultWithNullableAsync<Files_File>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -87,7 +83,7 @@ public class FilesApi
     /// <param name="request">The file creation request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The created file.</returns>
-    public async Task<Files_File> CreateAsync(
+    public async Task<PolarResult<Files_File>> CreateAsync(
         FileCreateRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -95,11 +91,7 @@ public class FilesApi
             () => _httpClient.PostAsJsonAsync("v1/files", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Files_File>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<Files_File>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -109,7 +101,7 @@ public class FilesApi
     /// <param name="request">The file update request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The updated file, or null if not found.</returns>
-    public async Task<Files_File?> UpdateAsync(
+    public async Task<PolarResult<Files_File?>> UpdateAsync(
         string fileId,
         FileUpdateRequest request,
         CancellationToken cancellationToken = default)
@@ -118,7 +110,7 @@ public class FilesApi
             () => _httpClient.PatchAsJsonAsync($"v1/files/{fileId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Files_File>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultWithNullableAsync<Files_File>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -127,7 +119,7 @@ public class FilesApi
     /// <param name="fileId">The file ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The deleted file, or null if not found.</returns>
-    public async Task<Files_File?> DeleteAsync(
+    public async Task<PolarResult<Files_File?>> DeleteAsync(
         string fileId,
         CancellationToken cancellationToken = default)
     {
@@ -135,7 +127,7 @@ public class FilesApi
             () => _httpClient.DeleteAsync($"v1/files/{fileId}", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Files_File>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultWithNullableAsync<Files_File>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -145,7 +137,7 @@ public class FilesApi
     /// <param name="request">The upload completion request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The updated file.</returns>
-    public async Task<Files_File> CompleteUploadAsync(
+    public async Task<PolarResult<Files_File>> CompleteUploadAsync(
         string fileId,
         FileUploadCompleteRequest request,
         CancellationToken cancellationToken = default)
@@ -154,11 +146,7 @@ public class FilesApi
             () => _httpClient.PostAsJsonAsync($"v1/files/{fileId}/uploaded", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Files_File>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<Files_File>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -166,21 +154,27 @@ public class FilesApi
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An async enumerable of all files.</returns>
-    public async IAsyncEnumerable<Files_File> ListAllAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<PolarResult<Files_File>> ListAllAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var page = 1;
         const int limit = 100; // Use maximum page size for efficiency
 
         while (true)
         {
-            var response = await ListAsync(page, limit, cancellationToken);
-            
-            foreach (var file in response.Items)
+            var result = await ListAsync(page, limit, cancellationToken);
+
+            if (result.IsFailure)
             {
-                yield return file;
+                yield return PolarResult<Files_File>.Failure(result.Error!);
+                yield break;
             }
 
-            if (page >= response.Pagination.MaxPage)
+            foreach (var file in result.Value.Items)
+            {
+                yield return PolarResult<Files_File>.Success(file);
+            }
+
+            if (page >= result.Value.Pagination.MaxPage)
                 break;
 
             page++;
@@ -209,7 +203,7 @@ public class FilesApi
     /// <param name="limit">Number of items per page (default: 10, max: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing filtered files.</returns>
-    public async Task<PaginatedResponse<Files_File>> ListAsync(
+    public async Task<PolarResult<PaginatedResponse<Files_File>>> ListAsync(
         FilesQueryBuilder builder,
         int page = 1,
         int limit = 10,
@@ -231,11 +225,7 @@ public class FilesApi
             () => _httpClient.GetAsync($"v1/files?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<Files_File>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<Files_File>>(_jsonOptions, cancellationToken);
     }
 
     private static string GetQueryString(Dictionary<string, string> parameters)

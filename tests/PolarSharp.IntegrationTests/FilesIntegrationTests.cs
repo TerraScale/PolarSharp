@@ -1,7 +1,7 @@
 using System.Net;
 using FluentAssertions;
 using PolarSharp.Extensions;
-using PolarSharp.Exceptions;
+using PolarSharp.Results;
 using PolarSharp.Models.Files;
 using File = PolarSharp.Models.Files.File;
 using Xunit;
@@ -27,9 +27,12 @@ public class FilesIntegrationTests : IClassFixture<IntegrationTestFixture>
         var client = _fixture.CreateClient();
 
         // Act
-        var response = await client.Files.ListAsync();
+        var result = await client.Files.ListAsync();
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var response = result.Value;
         response.Should().NotBeNull();
         response.Items.Should().NotBeNull();
         response.Pagination.Should().NotBeNull();
@@ -42,9 +45,12 @@ public class FilesIntegrationTests : IClassFixture<IntegrationTestFixture>
         var client = _fixture.CreateClient();
 
         // Act
-        var response = await client.Files.ListAsync(page: 1, limit: 5);
+        var result = await client.Files.ListAsync(page: 1, limit: 5);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var response = result.Value;
         response.Should().NotBeNull();
         response.Items.Should().NotBeNull();
         response.Pagination.Should().NotBeNull();
@@ -59,8 +65,11 @@ public class FilesIntegrationTests : IClassFixture<IntegrationTestFixture>
         var fileCount = 0;
 
         // Act
-        await foreach (var file in client.Files.ListAllAsync())
+        await foreach (var fileResult in client.Files.ListAllAsync())
         {
+            if (fileResult.IsFailure) break;
+
+            var file = fileResult.Value;
             fileCount++;
             file.Should().NotBeNull();
             file.Id.Should().NotBeNullOrEmpty();
@@ -92,9 +101,12 @@ public class FilesIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var file = await client.Files.CreateAsync(request);
+        var result = await client.Files.CreateAsync(request);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var file = result.Value;
         file.Should().NotBeNull();
         file.Id.Should().NotBeNullOrEmpty();
         file.Name.Should().Be(request.Name);
@@ -117,9 +129,12 @@ public class FilesIntegrationTests : IClassFixture<IntegrationTestFixture>
         var createdFile = await CreateTestFileAsync(client);
 
         // Act
-        var retrievedFile = await client.Files.GetAsync(createdFile.Id);
+        var result = await client.Files.GetAsync(createdFile.Id);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var retrievedFile = result.Value;
         retrievedFile.Should().NotBeNull();
         retrievedFile.Id.Should().Be(createdFile.Id);
         retrievedFile.Name.Should().Be(createdFile.Name);
@@ -146,9 +161,12 @@ public class FilesIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var updatedFile = await client.Files.UpdateAsync(createdFile.Id, updateRequest);
+        var result = await client.Files.UpdateAsync(createdFile.Id, updateRequest);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var updatedFile = result.Value;
         updatedFile.Should().NotBeNull();
         updatedFile.Id.Should().Be(createdFile.Id);
         updatedFile.Name.Should().Be(updateRequest.Name);
@@ -176,9 +194,12 @@ public class FilesIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var completedFile = await client.Files.CompleteUploadAsync(createdFile.Id, completeRequest);
+        var result = await client.Files.CompleteUploadAsync(createdFile.Id, completeRequest);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var completedFile = result.Value;
         completedFile.Should().NotBeNull();
         completedFile.Id.Should().Be(createdFile.Id);
         completedFile.Status.Should().Be(FileStatus.Uploaded);
@@ -196,16 +217,18 @@ public class FilesIntegrationTests : IClassFixture<IntegrationTestFixture>
         var createdFile = await CreateTestFileAsync(client);
 
         // Act
-        var deletedFile = await client.Files.DeleteAsync(createdFile.Id);
+        var result = await client.Files.DeleteAsync(createdFile.Id);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var deletedFile = result.Value;
         deletedFile.Should().NotBeNull();
         deletedFile.Id.Should().Be(createdFile.Id);
-        
-        // Verify file is deleted by trying to get it (should fail)
-        var exception = await Assert.ThrowsAsync<PolarApiException>(
-            () => client.Files.GetAsync(createdFile.Id));
-        exception.StatusCode.Should().Be(404);
+
+        // Verify file is deleted by trying to get it
+        var getResult = await client.Files.GetAsync(createdFile.Id);
+        getResult.IsSuccess.Should().BeFalse();
     }
 
     [Fact]
@@ -218,13 +241,16 @@ public class FilesIntegrationTests : IClassFixture<IntegrationTestFixture>
             .WithMimeType("text/plain");
 
         // Act
-        var response = await client.Files.ListAsync(builder);
+        var result = await client.Files.ListAsync(builder);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var response = result.Value;
         response.Should().NotBeNull();
         response.Items.Should().NotBeNull();
         response.Pagination.Should().NotBeNull();
-        
+
         // Verify filtering (if any files exist)
         foreach (var file in response.Items)
         {
@@ -244,13 +270,16 @@ public class FilesIntegrationTests : IClassFixture<IntegrationTestFixture>
             .CreatedBefore(tomorrow);
 
         // Act
-        var response = await client.Files.ListAsync(builder);
+        var result = await client.Files.ListAsync(builder);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var response = result.Value;
         response.Should().NotBeNull();
         response.Items.Should().NotBeNull();
         response.Pagination.Should().NotBeNull();
-        
+
         // Verify date filtering (if any files exist)
         foreach (var file in response.Items)
         {
@@ -275,9 +304,12 @@ public class FilesIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var file = await client.Files.CreateAsync(request);
+        var result = await client.Files.CreateAsync(request);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var file = result.Value;
         file.Should().NotBeNull();
         file.Id.Should().NotBeNullOrEmpty();
         file.Name.Should().Be(request.Name);
@@ -300,9 +332,12 @@ public class FilesIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var file = await client.Files.CreateAsync(request);
+        var result = await client.Files.CreateAsync(request);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var file = result.Value;
         file.Should().NotBeNull();
         file.Id.Should().NotBeNullOrEmpty();
         file.Checksum.Should().Be(checksum);
@@ -318,9 +353,12 @@ public class FilesIntegrationTests : IClassFixture<IntegrationTestFixture>
             .WithOrganizationId(organizationId);
 
         // Act
-        var response = await client.Files.ListAsync(builder);
+        var result = await client.Files.ListAsync(builder);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var response = result.Value;
         response.Should().NotBeNull();
         response.Items.Should().NotBeNull();
         response.Pagination.Should().NotBeNull();
@@ -335,13 +373,16 @@ public class FilesIntegrationTests : IClassFixture<IntegrationTestFixture>
             .WithName("test");
 
         // Act
-        var response = await client.Files.ListAsync(builder);
+        var result = await client.Files.ListAsync(builder);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var response = result.Value;
         response.Should().NotBeNull();
         response.Items.Should().NotBeNull();
         response.Pagination.Should().NotBeNull();
-        
+
         // Verify name filtering (if any files exist)
         foreach (var file in response.Items)
         {
@@ -362,9 +403,12 @@ public class FilesIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var file = await client.Files.CreateAsync(request);
+        var result = await client.Files.CreateAsync(request);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var file = result.Value;
         file.Should().NotBeNull();
         file.Id.Should().NotBeNullOrEmpty();
         file.Name.Should().Be(request.Name);
@@ -388,9 +432,12 @@ public class FilesIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var updatedFile = await client.Files.UpdateAsync(createdFile.Id, updateRequest);
+        var result = await client.Files.UpdateAsync(createdFile.Id, updateRequest);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var updatedFile = result.Value;
         updatedFile.Should().NotBeNull();
         updatedFile.Id.Should().Be(createdFile.Id);
         updatedFile.Name.Should().Be(originalName); // Should remain unchanged
@@ -413,6 +460,7 @@ public class FilesIntegrationTests : IClassFixture<IntegrationTestFixture>
             }
         };
 
-        return await client.Files.CreateAsync(request);
+        var result = await client.Files.CreateAsync(request);
+        return result.Value;
     }
 }

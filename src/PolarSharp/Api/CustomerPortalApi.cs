@@ -10,6 +10,7 @@ using Polly.Retry;
 using Polly.RateLimit;
 using PolarSharp.Extensions;
 using PolarSharp.Models.Common;
+using PolarSharp.Results;
 
 namespace PolarSharp.Api;
 
@@ -82,14 +83,14 @@ public class CustomerPortalApi
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The customer information, or null if not found.</returns>
-    public async Task<Models.Customers.Customer?> GetCustomerAsync(
+    public async Task<PolarResult<Models.Customers.Customer>> GetCustomerAsync(
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
             () => _httpClient.GetAsync("v1/customer-portal/customers", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Models.Customers.Customer>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultAsync<Models.Customers.Customer>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -98,7 +99,7 @@ public class CustomerPortalApi
     /// <param name="request">The customer update request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The updated customer information.</returns>
-    public async Task<Models.Customers.Customer> UpdateCustomerAsync(
+    public async Task<PolarResult<Models.Customers.Customer>> UpdateCustomerAsync(
         Models.Customers.CustomerUpdateRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -106,11 +107,7 @@ public class CustomerPortalApi
             () => _httpClient.PatchAsJsonAsync("v1/customer-portal/customers", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Models.Customers.Customer>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<Models.Customers.Customer>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -118,18 +115,14 @@ public class CustomerPortalApi
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A list of payment methods.</returns>
-    public async Task<List<Models.Payments.PaymentMethod>> ListPaymentMethodsAsync(
+    public async Task<PolarResult<List<Models.Payments.PaymentMethod>>> ListPaymentMethodsAsync(
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
             () => _httpClient.GetAsync("v1/customer-portal/customers/payment-methods", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<List<Models.Payments.PaymentMethod>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<List<Models.Payments.PaymentMethod>>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -138,7 +131,7 @@ public class CustomerPortalApi
     /// <param name="request">The payment method creation request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The created payment method.</returns>
-    public async Task<Models.Payments.PaymentMethod> AddPaymentMethodAsync(
+    public async Task<PolarResult<Models.Payments.PaymentMethod>> AddPaymentMethodAsync(
         Models.Payments.PaymentMethodCreateRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -146,11 +139,7 @@ public class CustomerPortalApi
             () => _httpClient.PostAsJsonAsync("v1/customer-portal/customers/payment-methods", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Models.Payments.PaymentMethod>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<Models.Payments.PaymentMethod>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -159,7 +148,7 @@ public class CustomerPortalApi
     /// <param name="paymentMethodId">The payment method ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The confirmed payment method.</returns>
-    public async Task<Models.Payments.PaymentMethod> ConfirmPaymentMethodAsync(
+    public async Task<PolarResult<Models.Payments.PaymentMethod>> ConfirmPaymentMethodAsync(
         string paymentMethodId,
         CancellationToken cancellationToken = default)
     {
@@ -167,11 +156,7 @@ public class CustomerPortalApi
             () => _httpClient.PostAsync($"v1/customer-portal/customers/payment-methods/{paymentMethodId}/confirm", null, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Models.Payments.PaymentMethod>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<Models.Payments.PaymentMethod>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -180,7 +165,7 @@ public class CustomerPortalApi
     /// <param name="paymentMethodId">The payment method ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The deleted payment method.</returns>
-    public async Task<Models.Payments.PaymentMethod> DeletePaymentMethodAsync(
+    public async Task<PolarResult<Models.Payments.PaymentMethod>> DeletePaymentMethodAsync(
         string paymentMethodId,
         CancellationToken cancellationToken = default)
     {
@@ -188,11 +173,7 @@ public class CustomerPortalApi
             () => _httpClient.DeleteAsync($"v1/customer-portal/customers/payment-methods/{paymentMethodId}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Models.Payments.PaymentMethod>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<Models.Payments.PaymentMethod>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -203,7 +184,7 @@ public class CustomerPortalApi
     /// <param name="status">Filter by order status.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing orders.</returns>
-    public async Task<PaginatedResponse<Models.Orders.Order>> ListOrdersAsync(
+    public async Task<PolarResult<PaginatedResponse<Models.Orders.Order>>> ListOrdersAsync(
         int page = 1,
         int limit = 10,
         Models.Orders.OrderStatus? status = null,
@@ -222,11 +203,7 @@ public class CustomerPortalApi
             () => _httpClient.GetAsync($"v1/customer-portal/orders?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<Models.Orders.Order>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<Models.Orders.Order>>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -235,7 +212,7 @@ public class CustomerPortalApi
     /// <param name="status">Filter by order status.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An async enumerable of all orders.</returns>
-    public async IAsyncEnumerable<Models.Orders.Order> ListAllOrdersAsync(
+    public async IAsyncEnumerable<PolarResult<Models.Orders.Order>> ListAllOrdersAsync(
         Models.Orders.OrderStatus? status = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
@@ -244,14 +221,20 @@ public class CustomerPortalApi
 
         while (true)
         {
-            var response = await ListOrdersAsync(page, limit, status, cancellationToken);
-            
-            foreach (var order in response.Items)
+            var result = await ListOrdersAsync(page, limit, status, cancellationToken);
+
+            if (result.IsFailure)
             {
-                yield return order;
+                yield return PolarResult<Models.Orders.Order>.Failure(result.Error!);
+                yield break;
             }
 
-            if (page >= response.Pagination.MaxPage)
+            foreach (var order in result.Value!.Items)
+            {
+                yield return PolarResult<Models.Orders.Order>.Success(order);
+            }
+
+            if (page >= result.Value!.Pagination.MaxPage)
                 break;
 
             page++;
@@ -264,7 +247,7 @@ public class CustomerPortalApi
     /// <param name="orderId">The order ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The order, or null if not found.</returns>
-    public async Task<Models.Orders.Order?> GetOrderAsync(
+    public async Task<PolarResult<Models.Orders.Order>> GetOrderAsync(
         string orderId,
         CancellationToken cancellationToken = default)
     {
@@ -272,7 +255,7 @@ public class CustomerPortalApi
             () => _httpClient.GetAsync($"v1/customer-portal/orders/{orderId}", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Models.Orders.Order>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultAsync<Models.Orders.Order>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -283,7 +266,7 @@ public class CustomerPortalApi
     /// <param name="status">Filter by subscription status.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing subscriptions.</returns>
-    public async Task<PaginatedResponse<Models.Subscriptions.Subscription>> ListSubscriptionsAsync(
+    public async Task<PolarResult<PaginatedResponse<Models.Subscriptions.Subscription>>> ListSubscriptionsAsync(
         int page = 1,
         int limit = 10,
         Models.Subscriptions.SubscriptionStatus? status = null,
@@ -302,11 +285,7 @@ public class CustomerPortalApi
             () => _httpClient.GetAsync($"v1/customer-portal/subscriptions?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<Models.Subscriptions.Subscription>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<Models.Subscriptions.Subscription>>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -315,7 +294,7 @@ public class CustomerPortalApi
     /// <param name="status">Filter by subscription status.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An async enumerable of all subscriptions.</returns>
-    public async IAsyncEnumerable<Models.Subscriptions.Subscription> ListAllSubscriptionsAsync(
+    public async IAsyncEnumerable<PolarResult<Models.Subscriptions.Subscription>> ListAllSubscriptionsAsync(
         Models.Subscriptions.SubscriptionStatus? status = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
@@ -324,14 +303,20 @@ public class CustomerPortalApi
 
         while (true)
         {
-            var response = await ListSubscriptionsAsync(page, limit, status, cancellationToken);
-            
-            foreach (var subscription in response.Items)
+            var result = await ListSubscriptionsAsync(page, limit, status, cancellationToken);
+
+            if (result.IsFailure)
             {
-                yield return subscription;
+                yield return PolarResult<Models.Subscriptions.Subscription>.Failure(result.Error!);
+                yield break;
             }
 
-            if (page >= response.Pagination.MaxPage)
+            foreach (var subscription in result.Value!.Items)
+            {
+                yield return PolarResult<Models.Subscriptions.Subscription>.Success(subscription);
+            }
+
+            if (page >= result.Value!.Pagination.MaxPage)
                 break;
 
             page++;
@@ -344,7 +329,7 @@ public class CustomerPortalApi
     /// <param name="subscriptionId">The subscription ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The subscription, or null if not found.</returns>
-    public async Task<Models.Subscriptions.Subscription?> GetSubscriptionAsync(
+    public async Task<PolarResult<Models.Subscriptions.Subscription>> GetSubscriptionAsync(
         string subscriptionId,
         CancellationToken cancellationToken = default)
     {
@@ -352,7 +337,7 @@ public class CustomerPortalApi
             () => _httpClient.GetAsync($"v1/customer-portal/subscriptions/{subscriptionId}", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Models.Subscriptions.Subscription>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultAsync<Models.Subscriptions.Subscription>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -361,7 +346,7 @@ public class CustomerPortalApi
     /// <param name="subscriptionId">The subscription ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The canceled subscription.</returns>
-    public async Task<Models.Subscriptions.Subscription> CancelSubscriptionAsync(
+    public async Task<PolarResult<Models.Subscriptions.Subscription>> CancelSubscriptionAsync(
         string subscriptionId,
         CancellationToken cancellationToken = default)
     {
@@ -369,11 +354,7 @@ public class CustomerPortalApi
             () => _httpClient.PostAsync($"v1/customer-portal/subscriptions/{subscriptionId}/cancel", null, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Models.Subscriptions.Subscription>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<Models.Subscriptions.Subscription>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -384,7 +365,7 @@ public class CustomerPortalApi
     /// <param name="status">Filter by benefit grant status.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing benefit grants.</returns>
-    public async Task<PaginatedResponse<Models.Benefits.BenefitGrant>> ListBenefitGrantsAsync(
+    public async Task<PolarResult<PaginatedResponse<Models.Benefits.BenefitGrant>>> ListBenefitGrantsAsync(
         int page = 1,
         int limit = 10,
         Models.Benefits.BenefitGrantStatus? status = null,
@@ -403,11 +384,7 @@ public class CustomerPortalApi
             () => _httpClient.GetAsync($"v1/customer-portal/benefit-grants?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<Models.Benefits.BenefitGrant>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<Models.Benefits.BenefitGrant>>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -416,7 +393,7 @@ public class CustomerPortalApi
     /// <param name="status">Filter by benefit grant status.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An async enumerable of all benefit grants.</returns>
-    public async IAsyncEnumerable<Models.Benefits.BenefitGrant> ListAllBenefitGrantsAsync(
+    public async IAsyncEnumerable<PolarResult<Models.Benefits.BenefitGrant>> ListAllBenefitGrantsAsync(
         Models.Benefits.BenefitGrantStatus? status = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
@@ -425,14 +402,20 @@ public class CustomerPortalApi
 
         while (true)
         {
-            var response = await ListBenefitGrantsAsync(page, limit, status, cancellationToken);
-            
-            foreach (var benefitGrant in response.Items)
+            var result = await ListBenefitGrantsAsync(page, limit, status, cancellationToken);
+
+            if (result.IsFailure)
             {
-                yield return benefitGrant;
+                yield return PolarResult<Models.Benefits.BenefitGrant>.Failure(result.Error!);
+                yield break;
             }
 
-            if (page >= response.Pagination.MaxPage)
+            foreach (var benefitGrant in result.Value!.Items)
+            {
+                yield return PolarResult<Models.Benefits.BenefitGrant>.Success(benefitGrant);
+            }
+
+            if (page >= result.Value!.Pagination.MaxPage)
                 break;
 
             page++;
@@ -445,7 +428,7 @@ public class CustomerPortalApi
     /// <param name="benefitGrantId">The benefit grant ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The benefit grant, or null if not found.</returns>
-    public async Task<Models.Benefits.BenefitGrant?> GetBenefitGrantAsync(
+    public async Task<PolarResult<Models.Benefits.BenefitGrant>> GetBenefitGrantAsync(
         string benefitGrantId,
         CancellationToken cancellationToken = default)
     {
@@ -453,7 +436,7 @@ public class CustomerPortalApi
             () => _httpClient.GetAsync($"v1/customer-portal/benefit-grants/{benefitGrantId}", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Models.Benefits.BenefitGrant>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultAsync<Models.Benefits.BenefitGrant>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -464,7 +447,7 @@ public class CustomerPortalApi
     /// <param name="status">Filter by license key status.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing license keys.</returns>
-    public async Task<PaginatedResponse<Models.LicenseKeys.LicenseKey>> ListLicenseKeysAsync(
+    public async Task<PolarResult<PaginatedResponse<Models.LicenseKeys.LicenseKey>>> ListLicenseKeysAsync(
         int page = 1,
         int limit = 10,
         Models.LicenseKeys.LicenseKeyStatus? status = null,
@@ -483,11 +466,7 @@ public class CustomerPortalApi
             () => _httpClient.GetAsync($"v1/customer-portal/license-keys?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<Models.LicenseKeys.LicenseKey>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<Models.LicenseKeys.LicenseKey>>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -496,7 +475,7 @@ public class CustomerPortalApi
     /// <param name="status">Filter by license key status.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An async enumerable of all license keys.</returns>
-    public async IAsyncEnumerable<Models.LicenseKeys.LicenseKey> ListAllLicenseKeysAsync(
+    public async IAsyncEnumerable<PolarResult<Models.LicenseKeys.LicenseKey>> ListAllLicenseKeysAsync(
         Models.LicenseKeys.LicenseKeyStatus? status = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
@@ -505,14 +484,20 @@ public class CustomerPortalApi
 
         while (true)
         {
-            var response = await ListLicenseKeysAsync(page, limit, status, cancellationToken);
-            
-            foreach (var licenseKey in response.Items)
+            var result = await ListLicenseKeysAsync(page, limit, status, cancellationToken);
+
+            if (result.IsFailure)
             {
-                yield return licenseKey;
+                yield return PolarResult<Models.LicenseKeys.LicenseKey>.Failure(result.Error!);
+                yield break;
             }
 
-            if (page >= response.Pagination.MaxPage)
+            foreach (var licenseKey in result.Value!.Items)
+            {
+                yield return PolarResult<Models.LicenseKeys.LicenseKey>.Success(licenseKey);
+            }
+
+            if (page >= result.Value!.Pagination.MaxPage)
                 break;
 
             page++;
@@ -525,7 +510,7 @@ public class CustomerPortalApi
     /// <param name="licenseKeyId">The license key ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The license key, or null if not found.</returns>
-    public async Task<Models.LicenseKeys.LicenseKey?> GetLicenseKeyAsync(
+    public async Task<PolarResult<Models.LicenseKeys.LicenseKey>> GetLicenseKeyAsync(
         string licenseKeyId,
         CancellationToken cancellationToken = default)
     {
@@ -533,7 +518,7 @@ public class CustomerPortalApi
             () => _httpClient.GetAsync($"v1/customer-portal/license-keys/{licenseKeyId}", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Models.LicenseKeys.LicenseKey>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultAsync<Models.LicenseKeys.LicenseKey>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -542,7 +527,7 @@ public class CustomerPortalApi
     /// <param name="request">The license key validation request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The validation response.</returns>
-    public async Task<Models.LicenseKeys.LicenseKeyValidateResponse> ValidateLicenseKeyAsync(
+    public async Task<PolarResult<Models.LicenseKeys.LicenseKeyValidateResponse>> ValidateLicenseKeyAsync(
         Models.LicenseKeys.LicenseKeyValidateRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -550,11 +535,7 @@ public class CustomerPortalApi
             () => _httpClient.PostAsJsonAsync("v1/customer-portal/license-keys/validate", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Models.LicenseKeys.LicenseKeyValidateResponse>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<Models.LicenseKeys.LicenseKeyValidateResponse>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -564,7 +545,7 @@ public class CustomerPortalApi
     /// <param name="request">The license key activation request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The activation response.</returns>
-    public async Task<Models.LicenseKeys.LicenseKeyActivateResponse> ActivateLicenseKeyAsync(
+    public async Task<PolarResult<Models.LicenseKeys.LicenseKeyActivateResponse>> ActivateLicenseKeyAsync(
         string licenseKeyId,
         Models.LicenseKeys.LicenseKeyActivateRequest request,
         CancellationToken cancellationToken = default)
@@ -573,11 +554,7 @@ public class CustomerPortalApi
             () => _httpClient.PostAsJsonAsync($"v1/customer-portal/license-keys/{licenseKeyId}/activate", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Models.LicenseKeys.LicenseKeyActivateResponse>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<Models.LicenseKeys.LicenseKeyActivateResponse>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -587,7 +564,7 @@ public class CustomerPortalApi
     /// <param name="request">The license key deactivation request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The deactivation response.</returns>
-    public async Task<Models.LicenseKeys.LicenseKeyDeactivateResponse> DeactivateLicenseKeyAsync(
+    public async Task<PolarResult<Models.LicenseKeys.LicenseKeyDeactivateResponse>> DeactivateLicenseKeyAsync(
         string licenseKeyId,
         Models.LicenseKeys.LicenseKeyDeactivateRequest request,
         CancellationToken cancellationToken = default)
@@ -596,11 +573,7 @@ public class CustomerPortalApi
             () => _httpClient.PostAsJsonAsync($"v1/customer-portal/license-keys/{licenseKeyId}/deactivate", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<Models.LicenseKeys.LicenseKeyDeactivateResponse>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<Models.LicenseKeys.LicenseKeyDeactivateResponse>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -608,18 +581,14 @@ public class CustomerPortalApi
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A list of downloadable files.</returns>
-    public async Task<List<Models.Files.File>> ListDownloadablesAsync(
+    public async Task<PolarResult<List<Models.Files.File>>> ListDownloadablesAsync(
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
             () => _httpClient.GetAsync("v1/customer-portal/downloadables", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<List<Models.Files.File>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<List<Models.Files.File>>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -627,14 +596,14 @@ public class CustomerPortalApi
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The organization information, or null if not found.</returns>
-    public async Task<Models.Organizations.Organization?> GetOrganizationAsync(
+    public async Task<PolarResult<Models.Organizations.Organization>> GetOrganizationAsync(
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
             () => _httpClient.GetAsync("v1/customer-portal/organizations", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Models.Organizations.Organization>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultAsync<Models.Organizations.Organization>(_jsonOptions, cancellationToken);
     }
 
     private async Task<HttpResponseMessage> ExecuteWithPoliciesAsync(

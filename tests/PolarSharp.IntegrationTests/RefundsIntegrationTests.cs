@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
 using PolarSharp.Models.Refunds;
+using PolarSharp.Results;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -33,10 +34,12 @@ public class RefundsIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Assert
         result.Should().NotBeNull();
-        result.Items.Should().NotBeNull();
-        result.Pagination.Should().NotBeNull();
-        result.Pagination.TotalCount.Should().BeGreaterThanOrEqualTo(0);
-        result.Pagination.MaxPage.Should().BeGreaterThanOrEqualTo(0);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
+        result.Value.Pagination.Should().NotBeNull();
+        result.Value.Pagination.TotalCount.Should().BeGreaterThanOrEqualTo(0);
+        result.Value.Pagination.MaxPage.Should().BeGreaterThanOrEqualTo(0);
     }
 
     [Fact]
@@ -47,9 +50,10 @@ public class RefundsIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Act
         var refunds = new List<Refund>();
-        await foreach (var refund in client.Refunds.ListAllAsync())
+        await foreach (var refundResult in client.Refunds.ListAllAsync())
         {
-            refunds.Add(refund);
+            if (refundResult.IsFailure) break;
+            refunds.Add(refundResult.Value);
         }
 
         // Assert
@@ -64,15 +68,15 @@ public class RefundsIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Act & Assert
         // First, try to list refunds to get a real refund ID
-        try
+        var listResult = await client.Refunds.ListAsync(limit: 1);
+        if (listResult.IsSuccess && listResult.Value.Items.Count > 0)
         {
-            var listResult = await client.Refunds.ListAsync(limit: 1);
-            if (listResult.Items.Count > 0)
-            {
-                var refundId = listResult.Items[0].Id;
-                var refund = await client.Refunds.GetAsync(refundId);
+            var refundId = listResult.Value.Items[0].Id;
+            var refundResult = await client.Refunds.GetAsync(refundId);
 
-                refund.Should().NotBeNull();
+            if (refundResult.IsSuccess && refundResult.Value != null)
+            {
+                var refund = refundResult.Value;
                 refund.Id.Should().Be(refundId);
                 refund.Amount.Should().BeGreaterThan(0);
                 refund.Currency.Should().NotBeNullOrEmpty();
@@ -81,16 +85,6 @@ public class RefundsIntegrationTests : IClassFixture<IntegrationTestFixture>
                 refund.CreatedAt.Should().BeBefore(DateTime.UtcNow);
                 refund.UpdatedAt.Should().BeBefore(DateTime.UtcNow);
             }
-            else
-            {
-                // No refunds found, skip test
-                true.Should().BeTrue();
-            }
-        }
-        catch (PolarSharp.Exceptions.PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed"))
-        {
-            // Expected in sandbox environment with limited permissions
-            true.Should().BeTrue();
         }
     }
 
@@ -102,22 +96,23 @@ public class RefundsIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Act & Assert
         // Creating refunds requires a valid payment ID, which we may not have in sandbox
-        try
+        var refundRequest = new RefundCreateRequest
         {
-            var refundRequest = new RefundCreateRequest
+            PaymentId = "payment_test_123456789",
+            Amount = 1000, // $10.00
+            Reason = "Integration test refund",
+            Metadata = new Dictionary<string, object>
             {
-                PaymentId = "payment_test_123456789",
-                Amount = 1000, // $10.00
-                Reason = "Integration test refund",
-                Metadata = new Dictionary<string, object>
-                {
-                    ["test"] = true,
-                    ["integration"] = true
-                }
-            };
+                ["test"] = true,
+                ["integration"] = true
+            }
+        };
 
-            var createdRefund = await client.Refunds.CreateAsync(refundRequest);
+        var result = await client.Refunds.CreateAsync(refundRequest);
 
+        if (result.IsSuccess && result.Value != null)
+        {
+            var createdRefund = result.Value;
             createdRefund.Should().NotBeNull();
             createdRefund.Id.Should().NotBeNullOrEmpty();
             createdRefund.PaymentId.Should().Be(refundRequest.PaymentId);
@@ -127,10 +122,10 @@ public class RefundsIntegrationTests : IClassFixture<IntegrationTestFixture>
             createdRefund.Metadata!["test"].Should().Be(true);
             createdRefund.Metadata!["integration"].Should().Be(true);
         }
-        catch (PolarSharp.Exceptions.PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed") || ex.Message.Contains("RequestValidationError") || ex.Message.Contains("Not Found"))
+        else
         {
             // Expected in sandbox environment with limited permissions or invalid payment ID
-            true.Should().BeTrue();
+            _output.WriteLine("Refund creation returned null or failed - expected in sandbox or with invalid payment ID");
         }
     }
 
@@ -141,19 +136,13 @@ public class RefundsIntegrationTests : IClassFixture<IntegrationTestFixture>
         var client = _fixture.CreateClient();
         var nonExistentId = "refund_00000000000000000000000000";
 
-        // Act & Assert
-        try
-        {
-            var result = await client.Refunds.GetAsync(nonExistentId);
-            
-            // Assert - With nullable return types, non-existent resources return null
-            result.Should().BeNull();
-        }
-        catch (PolarSharp.Exceptions.PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed"))
-        {
-            // Expected in sandbox environment with limited permissions
-            true.Should().BeTrue();
-        }
+        // Act
+        var result = await client.Refunds.GetAsync(nonExistentId);
+
+        // Assert - With nullable return types, non-existent resources return success with null value
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().BeNull();
     }
 
     [Fact]
@@ -164,16 +153,9 @@ public class RefundsIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Act & Assert - Missing required fields
         var invalidRequest1 = new RefundCreateRequest();
-        try
-        {
-            var action1 = async () => await client.Refunds.CreateAsync(invalidRequest1);
-            await action1.Should().ThrowAsync<Exception>();
-        }
-        catch (PolarSharp.Exceptions.PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed"))
-        {
-            // Expected in sandbox environment with limited permissions
-            true.Should().BeTrue();
-        }
+        var result1 = await client.Refunds.CreateAsync(invalidRequest1);
+        result1.IsSuccess.Should().BeTrue();
+        result1.Value.Should().BeNull(); // Should return null for validation errors
 
         // Act & Assert - Empty payment ID
         var invalidRequest2 = new RefundCreateRequest
@@ -181,16 +163,9 @@ public class RefundsIntegrationTests : IClassFixture<IntegrationTestFixture>
             PaymentId = "",
             Amount = 1000
         };
-        try
-        {
-            var action2 = async () => await client.Refunds.CreateAsync(invalidRequest2);
-            await action2.Should().ThrowAsync<Exception>();
-        }
-        catch (PolarSharp.Exceptions.PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed"))
-        {
-            // Expected in sandbox environment with limited permissions
-            true.Should().BeTrue();
-        }
+        var result2 = await client.Refunds.CreateAsync(invalidRequest2);
+        result2.IsSuccess.Should().BeTrue();
+        result2.Value.Should().BeNull(); // Should return null for validation errors
 
         // Act & Assert - Zero amount
         var invalidRequest3 = new RefundCreateRequest
@@ -198,16 +173,9 @@ public class RefundsIntegrationTests : IClassFixture<IntegrationTestFixture>
             PaymentId = "payment_test_123",
             Amount = 0
         };
-        try
-        {
-            var action3 = async () => await client.Refunds.CreateAsync(invalidRequest3);
-            await action3.Should().ThrowAsync<Exception>();
-        }
-        catch (PolarSharp.Exceptions.PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed"))
-        {
-            // Expected in sandbox environment with limited permissions
-            true.Should().BeTrue();
-        }
+        var result3 = await client.Refunds.CreateAsync(invalidRequest3);
+        result3.IsSuccess.Should().BeTrue();
+        result3.Value.Should().BeNull(); // Should return null for validation errors
     }
 
     [Fact]
@@ -216,21 +184,16 @@ public class RefundsIntegrationTests : IClassFixture<IntegrationTestFixture>
         // Arrange
         var client = _fixture.CreateClient();
 
-        // Act & Assert
-        try
-        {
-            var builder = client.Refunds.Query();
-            var result = await client.Refunds.ListAsync(builder, page: 1, limit: 5);
+        // Act
+        var builder = client.Refunds.Query();
+        var result = await client.Refunds.ListAsync(builder, page: 1, limit: 5);
 
-            result.Should().NotBeNull();
-            result.Items.Should().NotBeNull();
-            result.Pagination.Should().NotBeNull();
-        }
-        catch (PolarSharp.Exceptions.PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed"))
-        {
-            // Expected in sandbox environment with limited permissions
-            true.Should().BeTrue();
-        }
+        // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
+        result.Value.Pagination.Should().NotBeNull();
     }
 
     [Fact]
@@ -240,34 +203,35 @@ public class RefundsIntegrationTests : IClassFixture<IntegrationTestFixture>
         var client = _fixture.CreateClient();
 
         // Act & Assert
-        try
+        var refundRequest = new RefundCreateRequest
         {
-            var refundRequest = new RefundCreateRequest
+            PaymentId = "payment_test_123456789",
+            Amount = 1500, // $15.00
+            Reason = "Customer requested refund",
+            Metadata = new Dictionary<string, object>
             {
-                PaymentId = "payment_test_123456789",
-                Amount = 1500, // $15.00
-                Reason = "Customer requested refund",
-                Metadata = new Dictionary<string, object>
-                {
-                    ["customer_request"] = true,
-                    ["refund_type"] = "partial",
-                    ["processed_by"] = "integration_test",
-                    ["timestamp"] = DateTime.UtcNow.ToString("O")
-                }
-            };
+                ["customer_request"] = true,
+                ["refund_type"] = "partial",
+                ["processed_by"] = "integration_test",
+                ["timestamp"] = DateTime.UtcNow.ToString("O")
+            }
+        };
 
-            var createdRefund = await client.Refunds.CreateAsync(refundRequest);
+        var result = await client.Refunds.CreateAsync(refundRequest);
 
+        if (result.IsSuccess && result.Value != null)
+        {
+            var createdRefund = result.Value;
             createdRefund.Should().NotBeNull();
             createdRefund.Metadata.Should().NotBeNull();
             createdRefund.Metadata!["customer_request"].Should().Be(true);
             createdRefund.Metadata!["refund_type"].Should().Be("partial");
             createdRefund.Metadata!["processed_by"].Should().Be("integration_test");
         }
-        catch (PolarSharp.Exceptions.PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed") || ex.Message.Contains("RequestValidationError") || ex.Message.Contains("Not Found"))
+        else
         {
             // Expected in sandbox environment with limited permissions or invalid payment ID
-            true.Should().BeTrue();
+            _output.WriteLine("Refund creation returned null or failed - expected in sandbox or with invalid payment ID");
         }
     }
 
@@ -277,34 +241,31 @@ public class RefundsIntegrationTests : IClassFixture<IntegrationTestFixture>
         // Arrange
         var client = _fixture.CreateClient();
 
-        // Act & Assert
-        try
-        {
-            // Test first page
-            var firstPage = await client.Refunds.ListAsync(page: 1, limit: 2);
-            firstPage.Should().NotBeNull();
-            firstPage.Items.Should().NotBeNull();
-            firstPage.Pagination.Should().NotBeNull();
+        // Act
+        // Test first page
+        var firstPageResult = await client.Refunds.ListAsync(page: 1, limit: 2);
 
-            if (firstPage.Items.Count > 0 && firstPage.Pagination.MaxPage > 1)
-            {
-                // Test second page if it exists
-                var secondPage = await client.Refunds.ListAsync(page: 2, limit: 2);
-                secondPage.Should().NotBeNull();
-                secondPage.Items.Should().NotBeNull();
-                secondPage.Pagination.Should().NotBeNull();
+        // Assert
+        firstPageResult.Should().NotBeNull();
+        firstPageResult.IsSuccess.Should().BeTrue();
+        firstPageResult.Value.Should().NotBeNull();
+        firstPageResult.Value.Items.Should().NotBeNull();
+        firstPageResult.Value.Pagination.Should().NotBeNull();
 
-                // Ensure no duplicate items between pages
-                var firstPageIds = firstPage.Items.Select(r => r.Id).ToHashSet();
-                var secondPageIds = secondPage.Items.Select(r => r.Id).ToHashSet();
-                firstPageIds.IntersectWith(secondPageIds);
-                firstPageIds.Should().BeEmpty();
-            }
-        }
-        catch (PolarSharp.Exceptions.PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed"))
+        if (firstPageResult.Value.Items.Count > 0 && firstPageResult.Value.Pagination.MaxPage > 1)
         {
-            // Expected in sandbox environment with limited permissions
-            true.Should().BeTrue();
+            // Test second page if it exists
+            var secondPageResult = await client.Refunds.ListAsync(page: 2, limit: 2);
+            secondPageResult.Should().NotBeNull();
+            secondPageResult.IsSuccess.Should().BeTrue();
+            secondPageResult.Value.Items.Should().NotBeNull();
+            secondPageResult.Value.Pagination.Should().NotBeNull();
+
+            // Ensure no duplicate items between pages
+            var firstPageIds = firstPageResult.Value.Items.Select(r => r.Id).ToHashSet();
+            var secondPageIds = secondPageResult.Value.Items.Select(r => r.Id).ToHashSet();
+            firstPageIds.IntersectWith(secondPageIds);
+            firstPageIds.Should().BeEmpty();
         }
     }
 
@@ -314,39 +275,28 @@ public class RefundsIntegrationTests : IClassFixture<IntegrationTestFixture>
         // Arrange
         var client = _fixture.CreateClient();
 
-        // Act & Assert
-        try
-        {
-            var listResult = await client.Refunds.ListAsync(limit: 1);
-            if (listResult.Items.Count > 0)
-            {
-                var refund = listResult.Items[0];
+        // Act
+        var listResult = await client.Refunds.ListAsync(limit: 1);
 
-                // Test all required properties
-                refund.Id.Should().NotBeNullOrEmpty();
-                refund.Amount.Should().BeGreaterThan(0);
-                refund.Currency.Should().NotBeNullOrEmpty();
-                refund.PaymentId.Should().NotBeNullOrEmpty();
-                refund.Status.Should().BeOneOf(RefundStatus.Pending, RefundStatus.Succeeded, RefundStatus.Failed, RefundStatus.Canceled);
-                refund.CreatedAt.Should().BeBefore(DateTime.UtcNow);
-                refund.UpdatedAt.Should().BeBefore(DateTime.UtcNow);
-
-                // Test optional properties
-                refund.OrderId.Should().NotBeNull(); // Can be null or have value
-                refund.Reason.Should().NotBeNull(); // Can be null or have value
-                refund.Metadata.Should().NotBeNull(); // Can be null or have value
-                refund.ReceiptUrl.Should().NotBeNull(); // Can be null or have value
-            }
-            else
-            {
-                // No refunds found, skip test
-                true.Should().BeTrue();
-            }
-        }
-        catch (PolarSharp.Exceptions.PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed"))
+        // Assert
+        if (listResult.IsSuccess && listResult.Value.Items.Count > 0)
         {
-            // Expected in sandbox environment with limited permissions
-            true.Should().BeTrue();
+            var refund = listResult.Value.Items[0];
+
+            // Test all required properties
+            refund.Id.Should().NotBeNullOrEmpty();
+            refund.Amount.Should().BeGreaterThan(0);
+            refund.Currency.Should().NotBeNullOrEmpty();
+            refund.PaymentId.Should().NotBeNullOrEmpty();
+            refund.Status.Should().BeOneOf(RefundStatus.Pending, RefundStatus.Succeeded, RefundStatus.Failed, RefundStatus.Canceled);
+            refund.CreatedAt.Should().BeBefore(DateTime.UtcNow);
+            refund.UpdatedAt.Should().BeBefore(DateTime.UtcNow);
+
+            // Test optional properties
+            refund.OrderId.Should().NotBeNull(); // Can be null or have value
+            refund.Reason.Should().NotBeNull(); // Can be null or have value
+            refund.Metadata.Should().NotBeNull(); // Can be null or have value
+            refund.ReceiptUrl.Should().NotBeNull(); // Can be null or have value
         }
     }
 }

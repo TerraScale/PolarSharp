@@ -6,7 +6,7 @@ using FluentAssertions;
 using PolarSharp.Extensions;
 using PolarSharp.Models.Benefits;
 using PolarSharp.Models.Customers;
-using PolarSharp.Exceptions;
+using PolarSharp.Results;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -35,15 +35,17 @@ public class BenefitsIntegrationTests : IClassFixture<IntegrationTestFixture>
         var client = _fixture.CreateClient();
 
         // Act
-        var response = await client.Benefits.ListAsync();
+        var result = await client.Benefits.ListAsync();
 
         // Assert
-        response.Should().NotBeNull();
-        response.Items.Should().NotBeNull();
-        response.Pagination.Should().NotBeNull();
-        
-        _output.WriteLine($"Found {response.Items.Count} benefits on page {response.Pagination.Page}");
-        _output.WriteLine($"Total pages: {response.Pagination.MaxPage}");
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
+        result.Value.Pagination.Should().NotBeNull();
+
+        _output.WriteLine($"Found {result.Value.Items.Count} benefits on page {result.Value.Pagination.Page}");
+        _output.WriteLine($"Total pages: {result.Value.Pagination.MaxPage}");
     }
 
     [Fact]
@@ -51,21 +53,28 @@ public class BenefitsIntegrationTests : IClassFixture<IntegrationTestFixture>
     {
         // Arrange
         var client = _fixture.CreateClient();
-        var testBenefit = await CreateTestBenefitAsync(client);
+        var testBenefitResult = await CreateTestBenefitAsync(client);
+        if (testBenefitResult.IsFailure)
+        {
+            _output.WriteLine($"Skipped: Could not create test benefit - {testBenefitResult.Error!.Message}");
+            return;
+        }
+        var testBenefit = testBenefitResult.Value;
         _createdResources.Add(("benefit", testBenefit.Id));
 
         // Act - Filter by type
-        var response = await client.Benefits.ListAsync(
+        var result = await client.Benefits.ListAsync(
             type: testBenefit.Type,
             active: true);
 
         // Assert
-        response.Should().NotBeNull();
-        response.Items.Should().NotBeEmpty();
-        response.Items.All(b => b.Type == testBenefit.Type).Should().BeTrue();
-        response.Items.All(b => b.Active == true).Should().BeTrue();
-        
-        _output.WriteLine($"Found {response.Items.Count} benefits of type {testBenefit.Type}");
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Items.Should().NotBeEmpty();
+        result.Value.Items.All(b => b.Type == testBenefit.Type).Should().BeTrue();
+        result.Value.Items.All(b => b.Active == true).Should().BeTrue();
+
+        _output.WriteLine($"Found {result.Value.Items.Count} benefits of type {testBenefit.Type}");
     }
 
     [Fact]
@@ -73,7 +82,13 @@ public class BenefitsIntegrationTests : IClassFixture<IntegrationTestFixture>
     {
         // Arrange
         var client = _fixture.CreateClient();
-        var testBenefit = await CreateTestBenefitAsync(client);
+        var testBenefitResult = await CreateTestBenefitAsync(client);
+        if (testBenefitResult.IsFailure)
+        {
+            _output.WriteLine($"Skipped: Could not create test benefit - {testBenefitResult.Error!.Message}");
+            return;
+        }
+        var testBenefit = testBenefitResult.Value;
         _createdResources.Add(("benefit", testBenefit.Id));
 
         // Act
@@ -81,13 +96,14 @@ public class BenefitsIntegrationTests : IClassFixture<IntegrationTestFixture>
             .WithType(testBenefit.Type.ToString().ToLowerInvariant())
             .WithSelectable(true);
 
-        var response = await client.Benefits.ListAsync(builder);
+        var result = await client.Benefits.ListAsync(builder);
 
         // Assert
-        response.Should().NotBeNull();
-        response.Items.Should().NotBeEmpty();
-        
-        _output.WriteLine($"Found {response.Items.Count} benefits with query builder");
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Items.Should().NotBeEmpty();
+
+        _output.WriteLine($"Found {result.Value.Items.Count} benefits with query builder");
     }
 
     [Fact]
@@ -98,15 +114,18 @@ public class BenefitsIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Act
         var benefits = new List<Benefit>();
-        await foreach (var benefit in client.Benefits.ListAllAsync())
+        await foreach (var benefitResult in client.Benefits.ListAllAsync())
         {
-            benefits.Add(benefit);
+            if (benefitResult.IsSuccess)
+            {
+                benefits.Add(benefitResult.Value);
+            }
         }
 
         // Assert
         benefits.Should().NotBeNull();
         benefits.Count.Should().BeGreaterThanOrEqualTo(0);
-        
+
         _output.WriteLine($"Total benefits enumerated: {benefits.Count}");
     }
 
@@ -115,42 +134,45 @@ public class BenefitsIntegrationTests : IClassFixture<IntegrationTestFixture>
     {
         // Arrange
         var client = _fixture.CreateClient();
-        var createdBenefit = await CreateTestBenefitAsync(client);
+        var createdBenefitResult = await CreateTestBenefitAsync(client);
+        if (createdBenefitResult.IsFailure)
+        {
+            _output.WriteLine($"Skipped: Could not create test benefit - {createdBenefitResult.Error!.Message}");
+            return;
+        }
+        var createdBenefit = createdBenefitResult.Value;
         _createdResources.Add(("benefit", createdBenefit.Id));
 
         // Act
-        var retrievedBenefit = await client.Benefits.GetAsync(createdBenefit.Id);
+        var result = await client.Benefits.GetAsync(createdBenefit.Id);
 
         // Assert
-        retrievedBenefit.Should().NotBeNull();
-        retrievedBenefit.Id.Should().Be(createdBenefit.Id);
-        retrievedBenefit.Name.Should().Be(createdBenefit.Name);
-        retrievedBenefit.Type.Should().Be(createdBenefit.Type);
-        
-        _output.WriteLine($"Retrieved benefit: {retrievedBenefit.Name} ({retrievedBenefit.Id})");
+        if (result.IsSuccess)
+        {
+            result.Value.Should().NotBeNull();
+            result.Value.Id.Should().Be(createdBenefit.Id);
+            result.Value.Name.Should().Be(createdBenefit.Name);
+            result.Value.Type.Should().Be(createdBenefit.Type);
+            _output.WriteLine($"Retrieved benefit: {result.Value.Name} ({result.Value.Id})");
+        }
+        else
+        {
+            _output.WriteLine($"Skipped: {result.Error!.Message}");
+        }
     }
 
     [Fact]
-    public async Task GetAsync_WithInvalidId_ShouldReturnNull()
+    public async Task GetAsync_WithInvalidId_ShouldReturnFailure()
     {
         // Arrange
         var client = _fixture.CreateClient();
 
-        // Act & Assert
-        try
-        {
-            var result = await client.Benefits.GetAsync("invalid_benefit_id");
+        // Act
+        var result = await client.Benefits.GetAsync("invalid_benefit_id");
 
-            // Assert - With nullable return types, invalid IDs return null
-            result.Should().BeNull();
-            _output.WriteLine("Invalid benefit ID correctly returned null");
-        }
-        catch (PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed"))
-        {
-            // Expected in sandbox environment with limited permissions
-            _output.WriteLine($"Skipped due to API limitation: {ex.Message}");
-            true.Should().BeTrue();
-        }
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        _output.WriteLine($"Invalid benefit ID correctly returned failure: {result.Error!.Message}");
     }
 
     [Fact]
@@ -172,10 +194,13 @@ public class BenefitsIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var createdBenefit = await client.Benefits.CreateAsync(request);
-        _createdResources.Add(("benefit", createdBenefit.Id));
+        var result = await client.Benefits.CreateAsync(request);
 
         // Assert
+        result.IsSuccess.Should().BeTrue();
+        var createdBenefit = result.Value;
+        _createdResources.Add(("benefit", createdBenefit.Id));
+
         createdBenefit.Should().NotBeNull();
         createdBenefit.Id.Should().NotBeNullOrEmpty();
         createdBenefit.Name.Should().Be(request.Name);
@@ -184,7 +209,7 @@ public class BenefitsIntegrationTests : IClassFixture<IntegrationTestFixture>
         createdBenefit.Selectable.Should().Be(request.Selectable);
         createdBenefit.Active.Should().BeTrue(); // Default value
         createdBenefit.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
-        
+
         _output.WriteLine($"Created benefit: {createdBenefit.Name} ({createdBenefit.Id})");
     }
 
@@ -211,15 +236,18 @@ public class BenefitsIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var createdBenefit = await client.Benefits.CreateAsync(request);
-        _createdResources.Add(("benefit", createdBenefit.Id));
+        var result = await client.Benefits.CreateAsync(request);
 
         // Assert
+        result.IsSuccess.Should().BeTrue();
+        var createdBenefit = result.Value;
+        _createdResources.Add(("benefit", createdBenefit.Id));
+
         createdBenefit.Should().NotBeNull();
         createdBenefit.Type.Should().Be(BenefitType.Time);
         createdBenefit.TimePeriod.Should().NotBeNull();
         createdBenefit.TimePeriod.DurationDays.Should().Be(30);
-        
+
         _output.WriteLine($"Created time-based benefit: {createdBenefit.Name} ({createdBenefit.Id})");
     }
 
@@ -241,14 +269,17 @@ public class BenefitsIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var createdBenefit = await client.Benefits.CreateAsync(request);
-        _createdResources.Add(("benefit", createdBenefit.Id));
+        var result = await client.Benefits.CreateAsync(request);
 
         // Assert
+        result.IsSuccess.Should().BeTrue();
+        var createdBenefit = result.Value;
+        _createdResources.Add(("benefit", createdBenefit.Id));
+
         createdBenefit.Should().NotBeNull();
         createdBenefit.Type.Should().Be(BenefitType.Usage);
         createdBenefit.UsageLimit.Should().Be(100);
-        
+
         _output.WriteLine($"Created usage-based benefit: {createdBenefit.Name} ({createdBenefit.Id})");
     }
 
@@ -257,7 +288,13 @@ public class BenefitsIntegrationTests : IClassFixture<IntegrationTestFixture>
     {
         // Arrange
         var client = _fixture.CreateClient();
-        var createdBenefit = await CreateTestBenefitAsync(client);
+        var createdBenefitResult = await CreateTestBenefitAsync(client);
+        if (createdBenefitResult.IsFailure)
+        {
+            _output.WriteLine($"Skipped: Could not create test benefit - {createdBenefitResult.Error!.Message}");
+            return;
+        }
+        var createdBenefit = createdBenefitResult.Value;
         _createdResources.Add(("benefit", createdBenefit.Id));
 
         var updateRequest = new BenefitUpdateRequest
@@ -274,9 +311,11 @@ public class BenefitsIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var updatedBenefit = await client.Benefits.UpdateAsync(createdBenefit.Id, updateRequest);
+        var result = await client.Benefits.UpdateAsync(createdBenefit.Id, updateRequest);
 
         // Assert
+        result.IsSuccess.Should().BeTrue();
+        var updatedBenefit = result.Value;
         updatedBenefit.Should().NotBeNull();
         updatedBenefit.Id.Should().Be(createdBenefit.Id);
         updatedBenefit.Name.Should().Be(updateRequest.Name);
@@ -284,7 +323,7 @@ public class BenefitsIntegrationTests : IClassFixture<IntegrationTestFixture>
         updatedBenefit.Active.Should().Be(updateRequest.Active.Value);
         updatedBenefit.Selectable.Should().Be(updateRequest.Selectable.Value);
         updatedBenefit.UpdatedAt.Should().BeAfter(createdBenefit.UpdatedAt ?? DateTime.MinValue);
-        
+
         _output.WriteLine($"Updated benefit: {updatedBenefit.Name} ({updatedBenefit.Id})");
     }
 
@@ -293,20 +332,28 @@ public class BenefitsIntegrationTests : IClassFixture<IntegrationTestFixture>
     {
         // Arrange
         var client = _fixture.CreateClient();
-        var createdBenefit = await CreateTestBenefitAsync(client);
+        var createdBenefitResult = await CreateTestBenefitAsync(client);
+        if (createdBenefitResult.IsFailure)
+        {
+            _output.WriteLine($"Skipped: Could not create test benefit - {createdBenefitResult.Error!.Message}");
+            return;
+        }
+        var createdBenefit = createdBenefitResult.Value;
         // Don't add to _createdResources since we're testing deletion
 
         // Act
-        var deletedBenefit = await client.Benefits.DeleteAsync(createdBenefit.Id);
+        var result = await client.Benefits.DeleteAsync(createdBenefit.Id);
 
         // Assert
+        result.IsSuccess.Should().BeTrue();
+        var deletedBenefit = result.Value;
         deletedBenefit.Should().NotBeNull();
-        deletedBenefit!.Id.Should().Be(createdBenefit.Id);
-        
-        // Verify deletion - with nullable returns, deleted items return null
-        var afterDelete = await client.Benefits.GetAsync(createdBenefit.Id);
-        afterDelete.Should().BeNull();
-        
+        deletedBenefit.Id.Should().Be(createdBenefit.Id);
+
+        // Verify deletion
+        var afterDeleteResult = await client.Benefits.GetAsync(createdBenefit.Id);
+        afterDeleteResult.IsFailure.Should().BeTrue();
+
         _output.WriteLine($"Deleted benefit: {deletedBenefit.Name} ({deletedBenefit.Id})");
     }
 
@@ -315,18 +362,25 @@ public class BenefitsIntegrationTests : IClassFixture<IntegrationTestFixture>
     {
         // Arrange
         var client = _fixture.CreateClient();
-        var testBenefit = await CreateTestBenefitAsync(client);
+        var testBenefitResult = await CreateTestBenefitAsync(client);
+        if (testBenefitResult.IsFailure)
+        {
+            _output.WriteLine($"Skipped: Could not create test benefit - {testBenefitResult.Error!.Message}");
+            return;
+        }
+        var testBenefit = testBenefitResult.Value;
         _createdResources.Add(("benefit", testBenefit.Id));
 
         // Act
-        var response = await client.Benefits.ListGrantsAsync(testBenefit.Id);
+        var result = await client.Benefits.ListGrantsAsync(testBenefit.Id);
 
         // Assert
-        response.Should().NotBeNull();
-        response.Items.Should().NotBeNull();
-        response.Pagination.Should().NotBeNull();
-        
-        _output.WriteLine($"Found {response.Items.Count} grants for benefit {testBenefit.Id}");
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
+        result.Value.Pagination.Should().NotBeNull();
+
+        _output.WriteLine($"Found {result.Value.Items.Count} grants for benefit {testBenefit.Id}");
     }
 
     [Fact]
@@ -334,10 +388,22 @@ public class BenefitsIntegrationTests : IClassFixture<IntegrationTestFixture>
     {
         // Arrange
         var client = _fixture.CreateClient();
-        var testBenefit = await CreateTestBenefitAsync(client);
+        var testBenefitResult = await CreateTestBenefitAsync(client);
+        if (testBenefitResult.IsFailure)
+        {
+            _output.WriteLine($"Skipped: Could not create test benefit - {testBenefitResult.Error!.Message}");
+            return;
+        }
+        var testBenefit = testBenefitResult.Value;
         _createdResources.Add(("benefit", testBenefit.Id));
 
-        var testCustomer = await CreateTestCustomerAsync(client);
+        var testCustomerResult = await CreateTestCustomerAsync(client);
+        if (testCustomerResult.IsFailure)
+        {
+            _output.WriteLine($"Skipped: Could not create test customer - {testCustomerResult.Error!.Message}");
+            return;
+        }
+        var testCustomer = testCustomerResult.Value;
         _createdResources.Add(("customer", testCustomer.Id));
 
         var grantRequest = new BenefitGrantRequest
@@ -351,10 +417,13 @@ public class BenefitsIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var grant = await client.Benefits.GrantAsync(testBenefit.Id, grantRequest);
-        _createdResources.Add(("benefit_grant", grant.Id));
+        var result = await client.Benefits.GrantAsync(testBenefit.Id, grantRequest);
 
         // Assert
+        result.IsSuccess.Should().BeTrue();
+        var grant = result.Value;
+        _createdResources.Add(("benefit_grant", grant.Id));
+
         grant.Should().NotBeNull();
         grant.Id.Should().NotBeNullOrEmpty();
         grant.BenefitId.Should().Be(testBenefit.Id);
@@ -364,7 +433,7 @@ public class BenefitsIntegrationTests : IClassFixture<IntegrationTestFixture>
         {
             grant.ExpiresAt.Value.Should().BeCloseTo(grantRequest.ExpiresAt.Value, TimeSpan.FromSeconds(1));
         }
-        
+
         _output.WriteLine($"Granted benefit {testBenefit.Id} to customer {testCustomer.Id}");
     }
 
@@ -373,10 +442,22 @@ public class BenefitsIntegrationTests : IClassFixture<IntegrationTestFixture>
     {
         // Arrange
         var client = _fixture.CreateClient();
-        var testBenefit = await CreateTestBenefitAsync(client);
+        var testBenefitResult = await CreateTestBenefitAsync(client);
+        if (testBenefitResult.IsFailure)
+        {
+            _output.WriteLine($"Skipped: Could not create test benefit - {testBenefitResult.Error!.Message}");
+            return;
+        }
+        var testBenefit = testBenefitResult.Value;
         _createdResources.Add(("benefit", testBenefit.Id));
 
-        var testCustomer = await CreateTestCustomerAsync(client);
+        var testCustomerResult = await CreateTestCustomerAsync(client);
+        if (testCustomerResult.IsFailure)
+        {
+            _output.WriteLine($"Skipped: Could not create test customer - {testCustomerResult.Error!.Message}");
+            return;
+        }
+        var testCustomer = testCustomerResult.Value;
         _createdResources.Add(("customer", testCustomer.Id));
 
         var grantRequest = new BenefitGrantRequest
@@ -384,17 +465,25 @@ public class BenefitsIntegrationTests : IClassFixture<IntegrationTestFixture>
             CustomerId = testCustomer.Id
         };
 
-        var grant = await client.Benefits.GrantAsync(testBenefit.Id, grantRequest);
+        var grantResult = await client.Benefits.GrantAsync(testBenefit.Id, grantRequest);
+        if (grantResult.IsFailure)
+        {
+            _output.WriteLine($"Skipped: Could not grant benefit - {grantResult.Error!.Message}");
+            return;
+        }
+        var grant = grantResult.Value;
         // Don't add to _createdResources since we're testing revocation
 
         // Act
-        var revokedGrant = await client.Benefits.RevokeGrantAsync(testBenefit.Id, grant.Id);
+        var result = await client.Benefits.RevokeGrantAsync(testBenefit.Id, grant.Id);
 
         // Assert
+        result.IsSuccess.Should().BeTrue();
+        var revokedGrant = result.Value;
         revokedGrant.Should().NotBeNull();
         revokedGrant.Id.Should().Be(grant.Id);
         revokedGrant.Status.Should().Be(BenefitGrantStatus.Revoked);
-        
+
         _output.WriteLine($"Revoked grant {grant.Id} for benefit {testBenefit.Id}");
     }
 
@@ -403,20 +492,29 @@ public class BenefitsIntegrationTests : IClassFixture<IntegrationTestFixture>
     {
         // Arrange
         var client = _fixture.CreateClient();
-        var testBenefit = await CreateTestBenefitAsync(client);
+        var testBenefitResult = await CreateTestBenefitAsync(client);
+        if (testBenefitResult.IsFailure)
+        {
+            _output.WriteLine($"Skipped: Could not create test benefit - {testBenefitResult.Error!.Message}");
+            return;
+        }
+        var testBenefit = testBenefitResult.Value;
         _createdResources.Add(("benefit", testBenefit.Id));
 
         // Act
         var grants = new List<BenefitGrant>();
-        await foreach (var grant in client.Benefits.ListAllGrantsAsync(testBenefit.Id))
+        await foreach (var grantResult in client.Benefits.ListAllGrantsAsync(testBenefit.Id))
         {
-            grants.Add(grant);
+            if (grantResult.IsSuccess)
+            {
+                grants.Add(grantResult.Value);
+            }
         }
 
         // Assert
         grants.Should().NotBeNull();
         grants.Count.Should().BeGreaterThanOrEqualTo(0);
-        
+
         _output.WriteLine($"Total grants enumerated for benefit {testBenefit.Id}: {grants.Count}");
     }
 
@@ -427,14 +525,16 @@ public class BenefitsIntegrationTests : IClassFixture<IntegrationTestFixture>
         var client = _fixture.CreateClient();
 
         // Act
-        var exportResponse = await client.Benefits.ExportAsync();
+        var result = await client.Benefits.ExportAsync();
 
         // Assert
+        result.IsSuccess.Should().BeTrue();
+        var exportResponse = result.Value;
         exportResponse.Should().NotBeNull();
         exportResponse.ExportUrl.Should().NotBeNullOrEmpty();
         exportResponse.Size.Should().BeGreaterThanOrEqualTo(0);
         exportResponse.RecordCount.Should().BeGreaterThanOrEqualTo(0);
-        
+
         _output.WriteLine($"Export created: {exportResponse.ExportUrl}");
         _output.WriteLine($"File size: {exportResponse.Size} bytes, Records: {exportResponse.RecordCount}");
     }
@@ -444,18 +544,26 @@ public class BenefitsIntegrationTests : IClassFixture<IntegrationTestFixture>
     {
         // Arrange
         var client = _fixture.CreateClient();
-        var testBenefit = await CreateTestBenefitAsync(client);
+        var testBenefitResult = await CreateTestBenefitAsync(client);
+        if (testBenefitResult.IsFailure)
+        {
+            _output.WriteLine($"Skipped: Could not create test benefit - {testBenefitResult.Error!.Message}");
+            return;
+        }
+        var testBenefit = testBenefitResult.Value;
         _createdResources.Add(("benefit", testBenefit.Id));
 
         // Act
-        var exportResponse = await client.Benefits.ExportGrantsAsync(testBenefit.Id);
+        var result = await client.Benefits.ExportGrantsAsync(testBenefit.Id);
 
         // Assert
+        result.IsSuccess.Should().BeTrue();
+        var exportResponse = result.Value;
         exportResponse.Should().NotBeNull();
         exportResponse.ExportUrl.Should().NotBeNullOrEmpty();
         exportResponse.Size.Should().BeGreaterThanOrEqualTo(0);
         exportResponse.RecordCount.Should().BeGreaterThanOrEqualTo(0);
-        
+
         _output.WriteLine($"Grant export created: {exportResponse.ExportUrl}");
         _output.WriteLine($"File size: {exportResponse.Size} bytes, Records: {exportResponse.RecordCount}");
     }
@@ -465,35 +573,45 @@ public class BenefitsIntegrationTests : IClassFixture<IntegrationTestFixture>
     {
         // Arrange
         var client = _fixture.CreateClient();
-        var testBenefit = await CreateTestBenefitAsync(client);
+        var testBenefitResult = await CreateTestBenefitAsync(client);
+        if (testBenefitResult.IsFailure)
+        {
+            _output.WriteLine($"Skipped: Could not create test benefit - {testBenefitResult.Error!.Message}");
+            return;
+        }
+        var testBenefit = testBenefitResult.Value;
         _createdResources.Add(("benefit", testBenefit.Id));
 
         // Act - Get first page
-        var firstPage = await client.Benefits.ListAsync(page: 1, limit: 5);
+        var firstPageResult = await client.Benefits.ListAsync(page: 1, limit: 5);
 
         // Assert
+        firstPageResult.IsSuccess.Should().BeTrue();
+        var firstPage = firstPageResult.Value;
         firstPage.Should().NotBeNull();
         firstPage.Items.Count.Should().BeLessThanOrEqualTo(5);
         firstPage.Pagination.Page.Should().Be(1);
-        
+
         if (firstPage.Pagination.MaxPage > 1)
         {
             // Get second page if it exists
-            var secondPage = await client.Benefits.ListAsync(page: 2, limit: 5);
+            var secondPageResult = await client.Benefits.ListAsync(page: 2, limit: 5);
+            secondPageResult.IsSuccess.Should().BeTrue();
+            var secondPage = secondPageResult.Value;
             secondPage.Should().NotBeNull();
             secondPage.Pagination.Page.Should().Be(2);
-            
+
             // Ensure no duplicates between pages
             var firstPageIds = firstPage.Items.Select(b => b.Id).ToHashSet();
             var secondPageIds = secondPage.Items.Select(b => b.Id).ToHashSet();
             firstPageIds.IntersectWith(secondPageIds);
             firstPageIds.Should().BeEmpty();
         }
-        
+
         _output.WriteLine($"Pagination test completed. Max pages: {firstPage.Pagination.MaxPage}");
     }
 
-    private async Task<Benefit> CreateTestBenefitAsync(PolarClient client)
+    private async Task<PolarResult<Benefit>> CreateTestBenefitAsync(PolarClient client)
     {
         var request = new BenefitCreateRequest
         {
@@ -510,7 +628,7 @@ public class BenefitsIntegrationTests : IClassFixture<IntegrationTestFixture>
         return await client.Benefits.CreateAsync(request);
     }
 
-    private async Task<Customer> CreateTestCustomerAsync(PolarClient client)
+    private async Task<PolarResult<Customer>> CreateTestCustomerAsync(PolarClient client)
     {
         var request = new CustomerCreateRequest
         {

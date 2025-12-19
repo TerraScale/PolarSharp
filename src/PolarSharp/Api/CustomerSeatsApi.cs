@@ -4,10 +4,10 @@ using System.Text.Json;
 using Polly;
 using Polly.Retry;
 using Polly.RateLimit;
-using PolarSharp.Exceptions;
 using PolarSharp.Extensions;
 using PolarSharp.Models.Common;
 using PolarSharp.Models.Seats;
+using PolarSharp.Results;
 
 namespace PolarSharp.Api;
 
@@ -40,7 +40,7 @@ public class CustomerSeatsApi
     /// <param name="limit">Number of items per page (default: 10, max: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing customer seats.</returns>
-    public async Task<PaginatedResponse<CustomerSeat>> ListAsync(
+    public async Task<PolarResult<PaginatedResponse<CustomerSeat>>> ListAsync(
         int page = 1,
         int limit = 10,
         CancellationToken cancellationToken = default)
@@ -55,11 +55,7 @@ public class CustomerSeatsApi
             () => _httpClient.GetAsync($"v1/customer_seats?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<CustomerSeat>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<CustomerSeat>>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -68,7 +64,7 @@ public class CustomerSeatsApi
     /// <param name="customerSeatId">The customer seat ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The customer seat, or null if not found.</returns>
-    public async Task<CustomerSeat?> GetAsync(
+    public async Task<PolarResult<CustomerSeat>> GetAsync(
         string customerSeatId,
         CancellationToken cancellationToken = default)
     {
@@ -76,7 +72,7 @@ public class CustomerSeatsApi
             () => _httpClient.GetAsync($"v1/customer_seats/{customerSeatId}", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<CustomerSeat>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultAsync<CustomerSeat>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -85,7 +81,7 @@ public class CustomerSeatsApi
     /// <param name="request">The seat assignment request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A task that represents the operation.</returns>
-public async Task AssignAsync(
+    public async Task<PolarResult> AssignAsync(
         CustomerSeatAssignRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -93,7 +89,7 @@ public async Task AssignAsync(
             () => _httpClient.PostAsJsonAsync("v1/customer_seats/assign", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
+        return await response.ToPolarResultAsync(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -102,7 +98,7 @@ public async Task AssignAsync(
     /// <param name="request">The seat revoke request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A task that represents the operation.</returns>
-    public async Task RevokeAsync(
+    public async Task<PolarResult> RevokeAsync(
         SeatRevokeRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -110,7 +106,7 @@ public async Task AssignAsync(
             () => _httpClient.PostAsJsonAsync("v1/customer_seats/revoke", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
+        return await response.ToPolarResultAsync(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -119,7 +115,7 @@ public async Task AssignAsync(
     /// <param name="request">The seat invitation resend request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A task that represents the operation.</returns>
-    public async Task ResendInvitationAsync(
+    public async Task<PolarResult> ResendInvitationAsync(
         SeatResendInvitationRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -127,7 +123,7 @@ public async Task AssignAsync(
             () => _httpClient.PostAsJsonAsync("v1/customer_seats/resend_invitation", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
+        return await response.ToPolarResultAsync(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -135,13 +131,13 @@ public async Task AssignAsync(
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The seat claim information, or null if not found.</returns>
-    public async Task<SeatClaimInfo?> GetClaimInfoAsync(CancellationToken cancellationToken = default)
+    public async Task<PolarResult<SeatClaimInfo>> GetClaimInfoAsync(CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
             () => _httpClient.GetAsync("v1/customer_seats/claim_info", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<SeatClaimInfo>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultAsync<SeatClaimInfo>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -150,7 +146,7 @@ public async Task AssignAsync(
     /// <param name="request">The seat claim request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A task that represents the operation.</returns>
-    public async Task ClaimAsync(
+    public async Task<PolarResult> ClaimAsync(
         SeatClaimRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -158,7 +154,7 @@ public async Task AssignAsync(
             () => _httpClient.PostAsJsonAsync("v1/customer_seats/claim", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
+        return await response.ToPolarResultAsync(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -166,21 +162,27 @@ public async Task AssignAsync(
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An async enumerable of all customer seats.</returns>
-    public async IAsyncEnumerable<CustomerSeat> ListAllAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<PolarResult<CustomerSeat>> ListAllAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var page = 1;
         const int limit = 100; // Use maximum page size for efficiency
 
         while (true)
         {
-            var response = await ListAsync(page, limit, cancellationToken);
-            
-            foreach (var customerSeat in response.Items)
+            var result = await ListAsync(page, limit, cancellationToken);
+
+            if (result.IsFailure)
             {
-                yield return customerSeat;
+                yield return PolarResult<CustomerSeat>.Failure(result.Error!);
+                yield break;
             }
 
-            if (page >= response.Pagination.MaxPage)
+            foreach (var customerSeat in result.Value!.Items)
+            {
+                yield return PolarResult<CustomerSeat>.Success(customerSeat);
+            }
+
+            if (page >= result.Value!.Pagination.MaxPage)
                 break;
 
             page++;
@@ -209,7 +211,7 @@ public async Task AssignAsync(
     /// <param name="limit">Number of items per page (default: 10, max: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing filtered customer seats.</returns>
-    public async Task<PaginatedResponse<CustomerSeat>> ListAsync(
+    public async Task<PolarResult<PaginatedResponse<CustomerSeat>>> ListAsync(
         CustomerSeatsQueryBuilder builder,
         int page = 1,
         int limit = 10,
@@ -231,11 +233,7 @@ public async Task AssignAsync(
             () => _httpClient.GetAsync($"v1/customer_seats?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<CustomerSeat>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<CustomerSeat>>(_jsonOptions, cancellationToken);
     }
 
     private static string GetQueryString(Dictionary<string, string> parameters)

@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
 using PolarSharp.Models.Products;
+using PolarSharp.Results;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace PolarSharp.IntegrationTests;
 
@@ -13,10 +15,12 @@ namespace PolarSharp.IntegrationTests;
 public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
 {
     private readonly IntegrationTestFixture _fixture;
+    private readonly ITestOutputHelper _output;
 
-    public ProductsIntegrationTests(IntegrationTestFixture fixture)
+    public ProductsIntegrationTests(IntegrationTestFixture fixture, ITestOutputHelper output)
     {
         _fixture = fixture;
+        _output = output;
     }
 
     #region ListAsync Tests
@@ -32,9 +36,11 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Assert
         result.Should().NotBeNull();
-        result.Items.Should().NotBeNull();
-        result.Pagination.Should().NotBeNull();
-        result.Pagination.MaxPage.Should().BeGreaterThanOrEqualTo(1);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
+        result.Value.Pagination.Should().NotBeNull();
+        result.Value.Pagination.MaxPage.Should().BeGreaterThanOrEqualTo(1);
     }
 
     [Fact]
@@ -44,17 +50,19 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
         var client = _fixture.CreateClient();
 
         // Act
-        var firstPage = await client.Products.ListAsync(page: 1, limit: 5);
-        var secondPage = await client.Products.ListAsync(page: 2, limit: 5);
+        var firstPageResult = await client.Products.ListAsync(page: 1, limit: 5);
+        var secondPageResult = await client.Products.ListAsync(page: 2, limit: 5);
 
         // Assert
-        firstPage.Should().NotBeNull();
-        firstPage.Items.Should().NotBeNull();
+        firstPageResult.Should().NotBeNull();
+        firstPageResult.IsSuccess.Should().BeTrue();
+        firstPageResult.Value.Items.Should().NotBeNull();
         // If there are enough products for a second page, it should be different
-        if (firstPage.Pagination.MaxPage >= 2)
+        if (firstPageResult.Value.Pagination.MaxPage >= 2)
         {
-            secondPage.Should().NotBeNull();
-            secondPage.Items.Should().NotBeNull();
+            secondPageResult.Should().NotBeNull();
+            secondPageResult.IsSuccess.Should().BeTrue();
+            secondPageResult.Value.Items.Should().NotBeNull();
         }
     }
 
@@ -69,7 +77,9 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Assert - Should succeed (API caps internally at 100)
         result.Should().NotBeNull();
-        result.Items.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
     }
 
     #endregion
@@ -89,7 +99,9 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Assert
         result.Should().NotBeNull();
-        result.Items.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
         // Note: The is_active filter behavior may vary - just verify the query executes successfully
         // The API may return archived products depending on the filter implementation
     }
@@ -107,7 +119,9 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Assert
         result.Should().NotBeNull();
-        result.Items.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
         // The API should filter products by name - verify the query executes successfully
     }
 
@@ -124,7 +138,9 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Assert
         result.Should().NotBeNull();
-        result.Items.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
     }
 
     [Fact]
@@ -141,9 +157,11 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Assert
         result.Should().NotBeNull();
-        result.Items.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
         // All products should be created after the specified date
-        result.Items.Should().OnlyContain(p => p.CreatedAt >= pastDate);
+        result.Value.Items.Should().OnlyContain(p => p.CreatedAt >= pastDate);
     }
 
     [Fact]
@@ -160,9 +178,11 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Assert
         result.Should().NotBeNull();
-        result.Items.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
         // All products should be created before the specified date
-        result.Items.Should().OnlyContain(p => p.CreatedAt <= futureDate);
+        result.Value.Items.Should().OnlyContain(p => p.CreatedAt <= futureDate);
     }
 
     [Fact]
@@ -181,7 +201,9 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Assert
         result.Should().NotBeNull();
-        result.Items.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
     }
 
     #endregion
@@ -196,9 +218,10 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
         var products = new List<Product>();
 
         // Act
-        await foreach (var product in client.Products.ListAllAsync())
+        await foreach (var productResult in client.Products.ListAllAsync())
         {
-            products.Add(product);
+            if (productResult.IsFailure) break;
+            products.Add(productResult.Value);
             // Limit for safety in tests
             if (products.Count >= 100) break;
         }
@@ -217,9 +240,10 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
         var products = new List<Product>();
 
         // Act & Assert
-        await foreach (var product in client.Products.ListAllAsync(cts.Token))
+        await foreach (var productResult in client.Products.ListAllAsync(cts.Token))
         {
-            products.Add(product);
+            if (productResult.IsFailure) break;
+            products.Add(productResult.Value);
             if (products.Count >= 2)
             {
                 cts.Cancel();
@@ -265,24 +289,16 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
     }
 
     [Fact]
-    public async Task ProductsApi_GetAsync_WithEmptyId_ReturnsNullOrThrows()
+    public async Task ProductsApi_GetAsync_WithEmptyId_ReturnsNull()
     {
         // Arrange
         var client = _fixture.CreateClient();
 
-        // Act & Assert
-        // Empty ID may return null or throw depending on API validation
-        try
-        {
-            var result = await client.Products.GetAsync("");
-            // If no exception, the result should be null for empty/invalid ID
-            result.Should().BeNull();
-        }
-        catch (Exception)
-        {
-            // Expected - API throws for empty product ID (validation error)
-            true.Should().BeTrue();
-        }
+        // Act
+        var result = await client.Products.GetAsync("");
+
+        // Assert - Should return null for empty/invalid ID
+        result.Should().BeNull();
     }
 
     [Fact]
@@ -290,7 +306,7 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         // First create a product to retrieve
         var createRequest = new ProductCreateRequest
         {
@@ -302,12 +318,16 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
                 new() { Amount = 500, Currency = "usd", Type = ProductPriceType.Fixed }
             }
         };
-        var createdProduct = await client.Products.CreateAsync(createRequest);
+        var createResult = await client.Products.CreateAsync(createRequest);
+        var createdProduct = createResult.Value;
 
         // Act
-        var result = await client.Products.GetAsync(createdProduct.Id);
+        var getResult = await client.Products.GetAsync(createdProduct.Id);
 
         // Assert
+        getResult.Should().NotBeNull();
+        getResult.IsSuccess.Should().BeTrue();
+        var result = getResult.Value;
         result.Should().NotBeNull();
         result!.Id.Should().Be(createdProduct.Id);
         result.Name.Should().Be(createRequest.Name);
@@ -325,7 +345,7 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         // First create a product to update
         var createRequest = new ProductCreateRequest
         {
@@ -337,7 +357,8 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
                 new() { Amount = 500, Currency = "usd", Type = ProductPriceType.Fixed }
             }
         };
-        var createdProduct = await client.Products.CreateAsync(createRequest);
+        var createProductResult = await client.Products.CreateAsync(createRequest);
+        var createdProduct = createProductResult.Value;
 
         var newName = $"Updated Product Name {Guid.NewGuid()}";
         var updateRequest = new ProductUpdateRequest
@@ -346,9 +367,12 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var updatedProduct = await client.Products.UpdateAsync(createdProduct.Id, updateRequest);
+        var updateResult = await client.Products.UpdateAsync(createdProduct.Id, updateRequest);
 
         // Assert
+        updateResult.Should().NotBeNull();
+        updateResult.IsSuccess.Should().BeTrue();
+        var updatedProduct = updateResult.Value;
         updatedProduct.Should().NotBeNull();
         updatedProduct!.Name.Should().Be(newName);
         updatedProduct.Description.Should().Be(createRequest.Description); // Should remain unchanged
@@ -362,7 +386,7 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         var createRequest = new ProductCreateRequest
         {
             Name = $"Test Product {Guid.NewGuid()}",
@@ -373,7 +397,8 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
                 new() { Amount = 500, Currency = "usd", Type = ProductPriceType.Fixed }
             }
         };
-        var createdProduct = await client.Products.CreateAsync(createRequest);
+        var createProductResult = await client.Products.CreateAsync(createRequest);
+        var createdProduct = createProductResult.Value;
 
         var newDescription = "Updated description for testing";
         var updateRequest = new ProductUpdateRequest
@@ -382,9 +407,12 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var updatedProduct = await client.Products.UpdateAsync(createdProduct.Id, updateRequest);
+        var updateResult = await client.Products.UpdateAsync(createdProduct.Id, updateRequest);
 
         // Assert
+        updateResult.Should().NotBeNull();
+        updateResult.IsSuccess.Should().BeTrue();
+        var updatedProduct = updateResult.Value;
         updatedProduct.Should().NotBeNull();
         updatedProduct!.Description.Should().Be(newDescription);
         updatedProduct.Name.Should().Be(createRequest.Name); // Should remain unchanged
@@ -398,7 +426,7 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         var createRequest = new ProductCreateRequest
         {
             Name = $"Test Product {Guid.NewGuid()}",
@@ -409,7 +437,8 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
                 new() { Amount = 500, Currency = "usd", Type = ProductPriceType.Fixed }
             }
         };
-        var createdProduct = await client.Products.CreateAsync(createRequest);
+        var createProductResult = await client.Products.CreateAsync(createRequest);
+        var createdProduct = createProductResult.Value;
 
         var newName = $"Updated Name {Guid.NewGuid()}";
         var newDescription = "Updated description";
@@ -420,9 +449,12 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var updatedProduct = await client.Products.UpdateAsync(createdProduct.Id, updateRequest);
+        var updateResult = await client.Products.UpdateAsync(createdProduct.Id, updateRequest);
 
         // Assert
+        updateResult.Should().NotBeNull();
+        updateResult.IsSuccess.Should().BeTrue();
+        var updatedProduct = updateResult.Value;
         updatedProduct.Should().NotBeNull();
         updatedProduct!.Name.Should().Be(newName);
         updatedProduct.Description.Should().Be(newDescription);
@@ -477,7 +509,7 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         // Create a product first
         var createRequest = new ProductCreateRequest
         {
@@ -489,7 +521,8 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
                 new() { Amount = 1000, Currency = "usd", Type = ProductPriceType.Fixed }
             }
         };
-        var createdProduct = await client.Products.CreateAsync(createRequest);
+        var createProductResult = await client.Products.CreateAsync(createRequest);
+        var createdProduct = createProductResult.Value;
 
         var newPriceRequest = new ProductPriceCreateRequest
         {
@@ -499,18 +532,26 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var newPrice = await client.Products.CreatePriceAsync(createdProduct.Id, newPriceRequest);
+        var priceResult = await client.Products.CreatePriceAsync(createdProduct.Id, newPriceRequest);
 
         // Assert - The API may return null if it doesn't support adding prices after creation
         // or may return the new price. Both behaviors are acceptable.
-        if (newPrice != null)
+        priceResult.Should().NotBeNull();
+        if (priceResult.IsSuccess)
         {
-            // If price was created, verify it exists
-            newPrice.Should().NotBeNull();
+            priceResult.IsSuccess.Should().BeTrue();
+            if (priceResult.Value != null)
+            {
+                // If price was created, verify it exists
+                priceResult.Value.Should().NotBeNull();
+            }
         }
 
         // Verify the product still has at least the original price
-        var retrievedProduct = await client.Products.GetAsync(createdProduct.Id);
+        var retrievedProductResult = await client.Products.GetAsync(createdProduct.Id);
+        retrievedProductResult.Should().NotBeNull();
+        retrievedProductResult.IsSuccess.Should().BeTrue();
+        var retrievedProduct = retrievedProductResult.Value;
         retrievedProduct.Should().NotBeNull();
         retrievedProduct!.Prices.Should().NotBeEmpty();
 
@@ -568,7 +609,7 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         var createRequest = new ProductCreateRequest
         {
             Name = $"Test Product to Archive {Guid.NewGuid()}",
@@ -579,12 +620,16 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
                 new() { Amount = 500, Currency = "usd", Type = ProductPriceType.Fixed }
             }
         };
-        var createdProduct = await client.Products.CreateAsync(createRequest);
+        var createProductResult = await client.Products.CreateAsync(createRequest);
+        var createdProduct = createProductResult.Value;
 
         // Act
-        var archivedProduct = await client.Products.ArchiveAsync(createdProduct.Id);
+        var archiveResult = await client.Products.ArchiveAsync(createdProduct.Id);
 
         // Assert
+        archiveResult.Should().NotBeNull();
+        archiveResult.IsSuccess.Should().BeTrue();
+        var archivedProduct = archiveResult.Value;
         archivedProduct.Should().NotBeNull();
         archivedProduct!.IsArchived.Should().BeTrue();
     }
@@ -643,7 +688,8 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var createdProduct = await client.Products.CreateAsync(createRequest);
+        var createProductResult = await client.Products.CreateAsync(createRequest);
+        var createdProduct = createProductResult.Value;
 
         // Retrieve product with prices
         var retrievedProduct = await client.Products.GetAsync(createdProduct.Id);
@@ -655,7 +701,8 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
         createdProduct.Description.Should().Be(createRequest.Description);
 
         retrievedProduct.Should().NotBeNull();
-        retrievedProduct.Prices.Should().HaveCount(1);
+        retrievedProduct.IsSuccess.Should().BeTrue();
+        retrievedProduct.Value.Prices.Should().HaveCount(1);
         createdProduct.Type.Should().Be(ProductType.OneTime);
         createdProduct.IsRecurring.Should().BeFalse();
 
@@ -664,7 +711,7 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
     }
 
     [Fact]
-    public async Task ProductsApi_CreateAsync_WithMissingRequiredFields_ThrowsException()
+    public async Task ProductsApi_CreateAsync_WithMissingRequiredFields_ReturnsFailure()
     {
         // Arrange
         var client = _fixture.CreateClient();
@@ -675,14 +722,14 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var action = async () => await client.Products.CreateAsync(invalidRequest);
+        var result = await client.Products.CreateAsync(invalidRequest);
 
-        // Assert
-        await action.Should().ThrowAsync<Exception>();
+        // Assert - Should return null for validation errors
+        result.Should().BeNull();
     }
 
     [Fact]
-    public async Task ProductsApi_CreateAsync_WithEmptyPrices_ThrowsOrReturnsError()
+    public async Task ProductsApi_CreateAsync_WithEmptyPrices_SucceedsOrReturnsNull()
     {
         // Arrange
         var client = _fixture.CreateClient();
@@ -693,23 +740,14 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
             Prices = new List<ProductPriceCreateRequest>() // Empty prices list
         };
 
-        // Act & Assert
-        // The API may validate this server-side and return an error, or accept it
-        try
+        // Act
+        var result = await client.Products.CreateAsync(invalidRequest);
+
+        // Assert
+        // If the API accepts empty prices, clean up
+        if (result.IsSuccess && !string.IsNullOrEmpty(result.Value.Id))
         {
-            var result = await client.Products.CreateAsync(invalidRequest);
-            // If the API accepts empty prices, clean up
-            if (!string.IsNullOrEmpty(result.Id))
-            {
-                await client.Products.ArchiveAsync(result.Id);
-            }
-            // Test passes - API accepted the request (behavior may vary)
-            true.Should().BeTrue();
-        }
-        catch (Exception)
-        {
-            // Expected - API or client validation rejects empty prices
-            true.Should().BeTrue();
+            await client.Products.ArchiveAsync(result.Value.Id);
         }
     }
 
@@ -742,7 +780,8 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var createdProduct = await client.Products.CreateAsync(productRequest);
+        var createProductResult = await client.Products.CreateAsync(productRequest);
+        var createdProduct = createProductResult.Value;
 
         // Assert
         createdProduct.Should().NotBeNull();
@@ -769,20 +808,15 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
         // Arrange
         var client = _fixture.CreateClient();
 
-        // Act & Assert
-        // Export endpoints may require higher permissions in sandbox
-        // or may return an empty response when no data to export
-        try
+        // Act
+        var exportResult = await client.Products.ExportAsync();
+
+        // Assert
+        if (exportResult.IsSuccess)
         {
-            var exportResult = await client.Products.ExportAsync();
             exportResult.Should().NotBeNull();
+            exportResult.Value.Should().NotBeNull();
             // ExportUrl may be empty if no products to export or permissions are limited
-            // Just verify the call succeeds
-        }
-        catch (Exceptions.PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed") || ex.Message.Contains("RequestValidationError"))
-        {
-            // Expected in sandbox environment with limited permissions or validation requirements
-            true.Should().BeTrue(); // Test passes - this is expected behavior
         }
     }
 
@@ -791,21 +825,16 @@ public class ProductsIntegrationTests : IClassFixture<IntegrationTestFixture>
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
-        // Act & Assert
-        // Export endpoints may require higher permissions in sandbox
-        // or may return an empty response when no data to export
-        try
+
+        // Act
+        var exportResult = await client.Products.ExportPricesAsync("test_product_id");
+
+        // Assert
+        if (exportResult.IsSuccess)
         {
-            var exportResult = await client.Products.ExportPricesAsync("test_product_id");
             exportResult.Should().NotBeNull();
+            exportResult.Value.Should().NotBeNull();
             // ExportUrl may be empty if product doesn't exist or permissions are limited
-            // Just verify the call succeeds
-        }
-        catch (Exceptions.PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed") || ex.Message.Contains("Not Found") || ex.Message.Contains("RequestValidationError"))
-        {
-            // Expected in sandbox environment with limited permissions or when using fake product ID
-            true.Should().BeTrue(); // Test passes - this is expected behavior
         }
     }
 

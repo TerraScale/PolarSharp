@@ -1,7 +1,6 @@
 using System.Net;
 using System.Text.Json;
-using FluentResults;
-using PolarSharp.Exceptions;
+using PolarSharp.Results;
 
 namespace PolarSharp.Extensions;
 
@@ -11,38 +10,35 @@ namespace PolarSharp.Extensions;
 internal static class ErrorHandlerExtensions
 {
     /// <summary>
-    /// Handles HTTP response errors and returns a Result indicating success or failure.
+    /// Handles HTTP response errors and returns a PolarResult indicating success or failure.
     /// This method does not throw exceptions - errors are returned as failed Results.
     /// </summary>
     /// <param name="response">The HTTP response.</param>
     /// <param name="jsonOptions">JSON serializer options.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>A Result indicating success or containing error details.</returns>
-    public static async Task<Result> HandleErrorsAsync(
+    /// <returns>A PolarResult indicating success or containing error details.</returns>
+    public static async Task<PolarResult> ToPolarResultAsync(
         this HttpResponseMessage response,
         JsonSerializerOptions jsonOptions,
         CancellationToken cancellationToken = default)
     {
         if (response.IsSuccessStatusCode)
-            return Result.Ok();
+            return PolarResult.Success();
 
-        var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
-        var retryAfter = response.Headers.RetryAfter;
-        var error = TryParseError(responseBody, response.StatusCode, jsonOptions, retryAfter);
-        
-        return Result.Fail(new PolarApiResultError(error));
+        var error = await ParseErrorAsync(response, jsonOptions, cancellationToken);
+        return PolarResult.Failure(error);
     }
 
     /// <summary>
-    /// Handles HTTP response errors and returns a Result with value on success or error on failure.
+    /// Handles HTTP response errors and returns a PolarResult with value on success or error on failure.
     /// This method does not throw exceptions - errors are returned as failed Results.
     /// </summary>
     /// <typeparam name="T">The type of value expected on success.</typeparam>
     /// <param name="response">The HTTP response.</param>
     /// <param name="jsonOptions">JSON serializer options.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>A Result containing the deserialized value or error details.</returns>
-    public static async Task<Result<T>> HandleErrorsAsync<T>(
+    /// <returns>A PolarResult containing the deserialized value or error details.</returns>
+    public static async Task<PolarResult<T>> ToPolarResultAsync<T>(
         this HttpResponseMessage response,
         JsonSerializerOptions jsonOptions,
         CancellationToken cancellationToken = default)
@@ -50,234 +46,78 @@ internal static class ErrorHandlerExtensions
         if (response.IsSuccessStatusCode)
         {
             var content = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            // Handle empty response (e.g., 204 No Content)
+            if (string.IsNullOrWhiteSpace(content))
+            {
+                return PolarResult<T>.Failure(PolarError.InternalError("Response body was empty."));
+            }
+
             var value = JsonSerializer.Deserialize<T>(content, jsonOptions);
-            
+
             if (value == null)
-                return Result.Fail<T>("Failed to deserialize response.");
-            
-            return Result.Ok(value);
+                return PolarResult<T>.Failure(PolarError.InternalError("Failed to deserialize response."));
+
+            return PolarResult<T>.Success(value);
         }
 
-        var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
-        var retryAfter = response.Headers.RetryAfter;
-        var error = TryParseError(responseBody, response.StatusCode, jsonOptions, retryAfter);
-        
-        return Result.Fail<T>(new PolarApiResultError(error));
+        var error = await ParseErrorAsync(response, jsonOptions, cancellationToken);
+        return PolarResult<T>.Failure(error);
     }
 
     /// <summary>
-    /// Checks if the result contains a NotFound (404) error.
-    /// </summary>
-    /// <param name="result">The result to check.</param>
-    /// <returns>True if the result is a NotFound error, false otherwise.</returns>
-    public static bool IsNotFoundError(this Result result)
-    {
-        if (result.IsSuccess)
-            return false;
-
-        var error = result.Errors.OfType<PolarApiResultError>().FirstOrDefault();
-        return error?.StatusCode == HttpStatusCode.NotFound;
-    }
-
-    /// <summary>
-    /// Checks if the result contains a NotFound (404) error.
-    /// </summary>
-    /// <typeparam name="T">The result value type.</typeparam>
-    /// <param name="result">The result to check.</param>
-    /// <returns>True if the result is a NotFound error, false otherwise.</returns>
-    public static bool IsNotFoundError<T>(this Result<T> result)
-    {
-        if (result.IsSuccess)
-            return false;
-
-        var error = result.Errors.OfType<PolarApiResultError>().FirstOrDefault();
-        return error?.StatusCode == HttpStatusCode.NotFound;
-    }
-
-    /// <summary>
-    /// Handles HTTP response errors with nullable return for NotFound (404) responses.
-    /// Returns null for 404 or 422 (validation error for invalid/non-existent resource IDs),
-    /// the deserialized value for success, or throws for other errors.
+    /// Handles HTTP response for nullable return types.
+    /// Returns Success(null) for 404/422, Success(value) for success, or Failure for other errors.
     /// </summary>
     /// <typeparam name="T">The type of value expected on success.</typeparam>
     /// <param name="response">The HTTP response.</param>
     /// <param name="jsonOptions">JSON serializer options.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The value if successful, null if not found or resource validation failed, or throws for other errors.</returns>
-    public static async Task<T?> HandleNotFoundAsNullAsync<T>(
+    /// <returns>A PolarResult containing the value, null for not found, or error details.</returns>
+    public static async Task<PolarResult<T?>> ToPolarResultWithNullableAsync<T>(
         this HttpResponseMessage response,
         JsonSerializerOptions jsonOptions,
         CancellationToken cancellationToken = default) where T : class
     {
         // Return null for NotFound (404) and UnprocessableEntity (422) which is often used
         // for resource ID validation errors (non-existent resource)
-        if (response.StatusCode == HttpStatusCode.NotFound || 
+        if (response.StatusCode == HttpStatusCode.NotFound ||
             response.StatusCode == HttpStatusCode.UnprocessableEntity)
-            return null;
+        {
+            return PolarResult<T?>.Success(null);
+        }
 
         if (response.IsSuccessStatusCode)
         {
             var content = await response.Content.ReadAsStringAsync(cancellationToken);
+
             // Handle empty response (e.g., 204 No Content)
             if (string.IsNullOrWhiteSpace(content))
-                return null;
-            return JsonSerializer.Deserialize<T>(content, jsonOptions);
+                return PolarResult<T?>.Success(null);
+
+            var value = JsonSerializer.Deserialize<T>(content, jsonOptions);
+            return PolarResult<T?>.Success(value);
         }
 
-        // For other errors, parse and throw
-        var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
-        var retryAfter = response.Headers.RetryAfter;
-        var error = TryParseError(responseBody, response.StatusCode, jsonOptions, retryAfter);
-        throw new PolarApiResultError(error).ToPolarApiException();
+        var error = await ParseErrorAsync(response, jsonOptions, cancellationToken);
+        return PolarResult<T?>.Failure(error);
     }
 
     /// <summary>
-    /// Handles HTTP response errors with nullable return for NotFound (404) responses.
-    /// Returns null for 404 or 422 (validation error for invalid/non-existent resource IDs),
-    /// true for success, or throws for other errors.
-    /// Use this for DELETE operations that don't return content.
+    /// Parses error details from an HTTP response.
     /// </summary>
     /// <param name="response">The HTTP response.</param>
     /// <param name="jsonOptions">JSON serializer options.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>True if successful, null if not found or resource validation failed, or throws for other errors.</returns>
-    public static async Task<bool?> HandleNotFoundAsNullAsync(
-        this HttpResponseMessage response,
+    /// <returns>A PolarError with the error details.</returns>
+    private static async Task<PolarError> ParseErrorAsync(
+        HttpResponseMessage response,
         JsonSerializerOptions jsonOptions,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken)
     {
-        // Return null for NotFound (404) and UnprocessableEntity (422) which is often used
-        // for resource ID validation errors (non-existent resource)
-        if (response.StatusCode == HttpStatusCode.NotFound || 
-            response.StatusCode == HttpStatusCode.UnprocessableEntity)
-            return null;
-
-        if (response.IsSuccessStatusCode)
-            return true;
-
-        // For other errors, parse and throw
         var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
         var retryAfter = response.Headers.RetryAfter;
-        var error = TryParseError(responseBody, response.StatusCode, jsonOptions, retryAfter);
-        throw new PolarApiResultError(error).ToPolarApiException();
-    }
-
-    /// <summary>
-    /// Validates the Result and returns a structured error if it failed.
-    /// This method does not throw exceptions - use for functional error handling.
-    /// </summary>
-    /// <param name="result">The result to check.</param>
-    /// <returns>A PolarApiResultError if the result failed, null if successful.</returns>
-    public static PolarApiResultError? GetError(this Result result)
-    {
-        if (result.IsSuccess)
-            return null;
-
-        return result.Errors.OfType<PolarApiResultError>().FirstOrDefault()
-               ?? new PolarApiResultError(
-                   string.Join("; ", result.Errors.Select(e => e.Message)),
-                   System.Net.HttpStatusCode.InternalServerError);
-    }
-
-    /// <summary>
-    /// Validates the Result and returns a structured error if it failed.
-    /// This method does not throw exceptions - use for functional error handling.
-    /// </summary>
-    /// <typeparam name="T">The result value type.</typeparam>
-    /// <param name="result">The result to check.</param>
-    /// <returns>A PolarApiResultError if the result failed, null if successful.</returns>
-    public static PolarApiResultError? GetError<T>(this Result<T> result)
-    {
-        if (result.IsSuccess)
-            return null;
-
-        return result.Errors.OfType<PolarApiResultError>().FirstOrDefault()
-               ?? new PolarApiResultError(
-                   string.Join("; ", result.Errors.Select(e => e.Message)),
-                   System.Net.HttpStatusCode.InternalServerError);
-    }
-
-    /// <summary>
-    /// Tries to get the value from a Result, returning false if it failed.
-    /// This method does not throw exceptions - use for functional error handling.
-    /// </summary>
-    /// <typeparam name="T">The result value type.</typeparam>
-    /// <param name="result">The result to check.</param>
-    /// <param name="value">The value if successful.</param>
-    /// <param name="error">The error if failed.</param>
-    /// <returns>True if successful, false otherwise.</returns>
-    public static bool TryGetValue<T>(this Result<T> result, out T? value, out PolarApiResultError? error)
-    {
-        if (result.IsSuccess)
-        {
-            value = result.Value;
-            error = null;
-            return true;
-        }
-
-        value = default;
-        error = result.GetError();
-        return false;
-    }
-
-    /// <summary>
-    /// Validates the Result and returns the structured error if it failed, or null if successful.
-    /// This method does not throw exceptions - use for functional error handling.
-    /// </summary>
-    /// <param name="result">The result to check.</param>
-    /// <returns>A PolarApiResultError if failed, null if successful.</returns>
-    public static PolarApiResultError? ValidateResult(this Result result)
-    {
-        if (result.IsSuccess)
-            return null;
-
-        return result.Errors.OfType<PolarApiResultError>().FirstOrDefault()
-               ?? new PolarApiResultError(
-                   string.Join("; ", result.Errors.Select(e => e.Message)),
-                   System.Net.HttpStatusCode.InternalServerError);
-    }
-
-    /// <summary>
-    /// Validates the Result and returns either the value or the error.
-    /// This method does not throw exceptions - use for functional error handling.
-    /// </summary>
-    /// <typeparam name="T">The result value type.</typeparam>
-    /// <param name="result">The result to check.</param>
-    /// <returns>A tuple containing the value (if successful) and error (if failed).</returns>
-    public static (T? Value, PolarApiResultError? Error) ValidateResult<T>(this Result<T> result)
-    {
-        if (result.IsSuccess)
-            return (result.Value, null);
-
-        var error = result.Errors.OfType<PolarApiResultError>().FirstOrDefault()
-                    ?? new PolarApiResultError(
-                        string.Join("; ", result.Errors.Select(e => e.Message)),
-                        System.Net.HttpStatusCode.InternalServerError);
-
-        return (default, error);
-    }
-
-    /// <summary>
-    /// Validates the Result and returns the structured error if it failed, or null if successful.
-    /// This method does not throw exceptions - use for functional error handling.
-    /// </summary>
-    /// <param name="result">The result to check.</param>
-    /// <returns>A PolarApiResultError if failed, null if successful.</returns>
-    public static PolarApiResultError? EnsureSuccess(this Result result)
-    {
-        return result.ValidateResult();
-    }
-
-    /// <summary>
-    /// Validates the Result and returns either the value or the error.
-    /// This method does not throw exceptions - use for functional error handling.
-    /// </summary>
-    /// <typeparam name="T">The result value type.</typeparam>
-    /// <param name="result">The result to check.</param>
-    /// <returns>A tuple containing the value (if successful) and error (if failed).</returns>
-    public static (T? Value, PolarApiResultError? Error) EnsureSuccess<T>(this Result<T> result)
-    {
-        return result.ValidateResult();
+        return TryParseError(responseBody, response.StatusCode, jsonOptions, retryAfter);
     }
 
     /// <summary>
@@ -287,18 +127,32 @@ internal static class ErrorHandlerExtensions
     /// <param name="statusCode">The HTTP status code.</param>
     /// <param name="jsonOptions">JSON serializer options.</param>
     /// <param name="retryAfter">Optional retry-after information from response headers.</param>
-    /// <returns>A PolarApiError instance.</returns>
-    private static PolarApiError TryParseError(
+    /// <returns>A PolarError instance.</returns>
+    private static PolarError TryParseError(
         string responseBody,
         HttpStatusCode statusCode,
         JsonSerializerOptions jsonOptions,
         System.Net.Http.Headers.RetryConditionHeaderValue? retryAfter = null)
     {
+        TimeSpan? retryAfterDuration = null;
+        if (retryAfter?.Delta.HasValue == true)
+        {
+            retryAfterDuration = retryAfter.Delta.Value;
+        }
+        else if (retryAfter?.Date.HasValue == true)
+        {
+            var delay = retryAfter.Date.Value - DateTimeOffset.UtcNow;
+            if (delay > TimeSpan.Zero)
+            {
+                retryAfterDuration = delay;
+            }
+        }
+
         try
         {
             // Try to parse as JSON error response
             var jsonElement = JsonSerializer.Deserialize<JsonElement>(responseBody, jsonOptions);
-            
+
             if (jsonElement.ValueKind == JsonValueKind.Object)
             {
                 // Look for common error fields
@@ -312,13 +166,14 @@ internal static class ErrorHandlerExtensions
                     message = AddRateLimitContext(message, retryAfter);
                 }
 
-                return new PolarApiError
+                return new PolarError
                 {
-                    StatusCode = (int)statusCode,
+                    StatusCode = statusCode,
                     Message = message,
-                    Type = type,
+                    ErrorType = type,
                     ResponseBody = responseBody,
-                    Details = details
+                    Details = details,
+                    RetryAfter = retryAfterDuration
                 };
             }
         }
@@ -329,19 +184,20 @@ internal static class ErrorHandlerExtensions
 
         // Fallback to status code based error messages
         var defaultMessage = GetDefaultErrorMessage(statusCode, responseBody);
-        
+
         // Add rate limit context if applicable
         if (statusCode == HttpStatusCode.TooManyRequests)
         {
             defaultMessage = AddRateLimitContext(defaultMessage, retryAfter);
         }
 
-        return new PolarApiError
+        return new PolarError
         {
-            StatusCode = (int)statusCode,
+            StatusCode = statusCode,
             Message = defaultMessage,
-            Type = statusCode.ToString(),
-            ResponseBody = responseBody
+            ErrorType = statusCode.ToString(),
+            ResponseBody = responseBody,
+            RetryAfter = retryAfterDuration
         };
     }
 
@@ -354,7 +210,7 @@ internal static class ErrorHandlerExtensions
     {
         // Try common error message field names
         var messageFields = new[] { "message", "error", "detail", "description" };
-        
+
         foreach (var field in messageFields)
         {
             if (jsonElement.TryGetProperty(field, out var messageElement))
@@ -369,19 +225,19 @@ internal static class ErrorHandlerExtensions
         }
 
         // If no message field found, check for errors array
-        if (jsonElement.TryGetProperty("errors", out var errorsElement) && 
+        if (jsonElement.TryGetProperty("errors", out var errorsElement) &&
             errorsElement.ValueKind == JsonValueKind.Array)
         {
             var errors = new List<string>();
             foreach (var error in errorsElement.EnumerateArray())
             {
-                if (error.TryGetProperty("message", out var errorElement) && 
+                if (error.TryGetProperty("message", out var errorElement) &&
                     errorElement.ValueKind == JsonValueKind.String)
                 {
                     errors.Add(errorElement.GetString() ?? string.Empty);
                 }
             }
-            
+
             if (errors.Count > 0)
                 return string.Join("; ", errors);
         }
@@ -397,10 +253,10 @@ internal static class ErrorHandlerExtensions
     private static string? GetErrorType(JsonElement jsonElement)
     {
         var typeFields = new[] { "type", "code", "error_code", "error_type" };
-        
+
         foreach (var field in typeFields)
         {
-            if (jsonElement.TryGetProperty(field, out var typeElement) && 
+            if (jsonElement.TryGetProperty(field, out var typeElement) &&
                 typeElement.ValueKind == JsonValueKind.String)
             {
                 return typeElement.GetString();
@@ -418,7 +274,7 @@ internal static class ErrorHandlerExtensions
     private static JsonElement? GetErrorDetails(JsonElement jsonElement)
     {
         var detailFields = new[] { "details", "data", "context", "validation_errors" };
-        
+
         foreach (var field in detailFields)
         {
             if (jsonElement.TryGetProperty(field, out var detailElement))
@@ -450,7 +306,7 @@ internal static class ErrorHandlerExtensions
                 return $"{message} Retry after {delay.TotalSeconds:F0} seconds.";
             }
         }
-        
+
         return $"{message} Consider implementing exponential backoff and reducing request frequency.";
     }
 

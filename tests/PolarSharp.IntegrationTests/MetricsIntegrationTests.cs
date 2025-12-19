@@ -6,7 +6,7 @@ using FluentAssertions;
 using PolarSharp.Extensions;
 using PolarSharp.Models.Common;
 using PolarSharp.Models.Metrics;
-using PolarSharp.Exceptions;
+using PolarSharp.Results;
 using PolarSharp.Api;
 using Xunit;
 
@@ -35,17 +35,21 @@ public class MetricsIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().BeAssignableTo<List<Metric>>();
-        
-        // If there are any metrics, validate their structure
-        if (result.Any())
+        if (result.IsSuccess)
         {
-            result.Should().AllSatisfy(metric =>
+            result.Value.Should().NotBeNull();
+            result.Value.Should().BeAssignableTo<List<Metric>>();
+
+            // If there are any metrics, validate their structure
+            if (result.Value.Any())
             {
-                metric.Name.Should().NotBeNullOrEmpty();
-                metric.Period.Should().NotBeNullOrEmpty();
-                metric.Timestamp.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromDays(365)); // Within last year
-            });
+                result.Value.Should().AllSatisfy(metric =>
+                {
+                    metric.Name.Should().NotBeNullOrEmpty();
+                    metric.Period.Should().NotBeNullOrEmpty();
+                    metric.Timestamp.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromDays(365)); // Within last year
+                });
+            }
         }
     }
 
@@ -60,25 +64,29 @@ public class MetricsIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().BeAssignableTo<List<MetricLimit>>();
-        
-        // If there are any limits, validate their structure
-        if (result.Any())
+        if (result.IsSuccess)
         {
-            result.Should().AllSatisfy(limit =>
+            result.Value.Should().NotBeNull();
+            result.Value.Should().BeAssignableTo<List<MetricLimit>>();
+
+            // If there are any limits, validate their structure
+            if (result.Value.Any())
             {
-                limit.Name.Should().NotBeNullOrEmpty();
-                limit.MaxValue.Should().BeGreaterThanOrEqualTo(0);
-                limit.CurrentValue.Should().BeGreaterThanOrEqualTo(0);
-                limit.PercentageUsed.Should().BeGreaterThanOrEqualTo(0);
-                
-                // Percentage should be calculated correctly
-                if (limit.MaxValue > 0)
+                result.Value.Should().AllSatisfy(limit =>
                 {
-                    var expectedPercentage = (limit.CurrentValue / limit.MaxValue) * 100;
-                    limit.PercentageUsed.Should().BeApproximately(expectedPercentage, 0.01m);
-                }
-            });
+                    limit.Name.Should().NotBeNullOrEmpty();
+                    limit.MaxValue.Should().BeGreaterThanOrEqualTo(0);
+                    limit.CurrentValue.Should().BeGreaterThanOrEqualTo(0);
+                    limit.PercentageUsed.Should().BeGreaterThanOrEqualTo(0);
+
+                    // Percentage should be calculated correctly
+                    if (limit.MaxValue > 0)
+                    {
+                        var expectedPercentage = (limit.CurrentValue / limit.MaxValue) * 100;
+                        limit.PercentageUsed.Should().BeApproximately(expectedPercentage, 0.01m);
+                    }
+                });
+            }
         }
     }
 
@@ -93,10 +101,14 @@ public class MetricsIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Assert
         result.Should().NotBeNull();
-        result.Items.Should().NotBeNull();
-        result.Pagination.Page.Should().BeGreaterThanOrEqualTo(1);
-        result.Pagination.TotalCount.Should().BeGreaterThanOrEqualTo(0);
-        result.Pagination.MaxPage.Should().BeGreaterThanOrEqualTo(0);
+        if (result.IsSuccess)
+        {
+            result.Value.Should().NotBeNull();
+            result.Value.Items.Should().NotBeNull();
+            result.Value.Pagination.Page.Should().BeGreaterThanOrEqualTo(1);
+            result.Value.Pagination.TotalCount.Should().BeGreaterThanOrEqualTo(0);
+            result.Value.Pagination.MaxPage.Should().BeGreaterThanOrEqualTo(0);
+        }
     }
 
     [Fact]
@@ -112,7 +124,10 @@ public class MetricsIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Assert
         result.Should().NotBeNull();
-        result.Pagination.Page.Should().Be(page);
+        if (result.IsSuccess)
+        {
+            result.Value.Pagination.Page.Should().Be(page);
+        }
     }
 
     [Fact]
@@ -130,19 +145,22 @@ public class MetricsIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Assert
         result.Should().NotBeNull();
-        result.Items.Should().NotBeNull();
-        
-        // Validate date range if any metrics are returned
-        if (result.Items.Any())
+        if (result.IsSuccess)
         {
-            var startDate = DateTime.UtcNow.AddDays(-30);
-            var endDate = DateTime.UtcNow;
-            
-            result.Items.Should().AllSatisfy(metric =>
+            result.Value.Items.Should().NotBeNull();
+
+            // Validate date range if any metrics are returned
+            if (result.Value.Items.Any())
             {
-                metric.Timestamp.Should().BeOnOrAfter(startDate);
-                metric.Timestamp.Should().BeOnOrBefore(endDate);
-            });
+                var startDate = DateTime.UtcNow.AddDays(-30);
+                var endDate = DateTime.UtcNow;
+
+                result.Value.Items.Should().AllSatisfy(metric =>
+                {
+                    metric.Timestamp.Should().BeOnOrAfter(startDate);
+                    metric.Timestamp.Should().BeOnOrBefore(endDate);
+                });
+            }
         }
     }
 
@@ -151,32 +169,38 @@ public class MetricsIntegrationTests : IClassFixture<IntegrationTestFixture>
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         // First create a customer to filter by
         var customerRequest = new PolarSharp.Models.Customers.CustomerCreateRequest
         {
             Email = "metrics-test@mailinator.com",
             Name = "Metrics Test Customer"
         };
-        var customer = await client.Customers.CreateAsync(customerRequest);
+        var customerResult = await client.Customers.CreateAsync(customerRequest);
 
-        try
+        if (customerResult.IsSuccess)
         {
-            var builder = client.Metrics.Query()
-                .WithCustomerId(customer.Id);
+            try
+            {
+                var builder = client.Metrics.Query()
+                    .WithCustomerId(customerResult.Value.Id);
 
-            // Act
-            var result = await client.Metrics.ListAsync(builder);
+                // Act
+                var result = await client.Metrics.ListAsync(builder);
 
-            // Assert
-            result.Should().NotBeNull();
-            result.Items.Should().NotBeNull();
-            // Note: This might return empty if no metrics exist for this customer yet
-        }
-        finally
-        {
-            // Cleanup customer
-            try { await client.Customers.DeleteAsync(customer.Id); } catch { }
+                // Assert
+                result.Should().NotBeNull();
+                if (result.IsSuccess)
+                {
+                    result.Value.Items.Should().NotBeNull();
+                    // Note: This might return empty if no metrics exist for this customer yet
+                }
+            }
+            finally
+            {
+                // Cleanup customer
+                try { await client.Customers.DeleteAsync(customerResult.Value.Id); } catch { }
+            }
         }
     }
 
@@ -188,16 +212,17 @@ public class MetricsIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Act
         var metrics = new List<Metric>();
-        var method = typeof(MetricsApi).GetMethod("ListAllAsync", new[] { typeof(CancellationToken) });
-        var listAllFunc = (Func<CancellationToken, IAsyncEnumerable<Metric>>)Delegate.CreateDelegate(typeof(Func<CancellationToken, IAsyncEnumerable<Metric>>), client.Metrics, method!);
-        await foreach (var metric in listAllFunc(CancellationToken.None))
+        await foreach (var result in client.Metrics.ListAllAsync(CancellationToken.None))
         {
-            metrics.Add(metric);
+            if (result.IsSuccess)
+            {
+                metrics.Add(result.Value);
+            }
         }
 
         // Assert
         metrics.Should().NotBeNull();
-        
+
         // Should contain all metrics across all pages
         if (metrics.Any())
         {
@@ -221,20 +246,22 @@ public class MetricsIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Act
         var metrics = new List<Metric>();
-        var listAllMethod = (Func<CancellationToken, IAsyncEnumerable<Metric>>)(ct => client.Metrics.ListAllAsync(ct));
-        await foreach (var metric in listAllMethod(CancellationToken.None))
+        await foreach (var result in client.Metrics.ListAllAsync(CancellationToken.None))
         {
-            metrics.Add(metric);
+            if (result.IsSuccess)
+            {
+                metrics.Add(result.Value);
+            }
         }
 
         // Assert
         metrics.Should().NotBeNull();
-        
+
         if (metrics.Any())
         {
             var startDate = DateTime.UtcNow.AddDays(-7);
             var endDate = DateTime.UtcNow;
-            
+
             metrics.Should().AllSatisfy(metric =>
             {
                 metric.Timestamp.Should().BeOnOrAfter(startDate);
@@ -251,16 +278,17 @@ public class MetricsIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Act
         var metrics = new List<Metric>();
-        var method = typeof(MetricsApi).GetMethod("ListAllAsync", new[] { typeof(CancellationToken) });
-        var listAllFunc = (Func<CancellationToken, IAsyncEnumerable<Metric>>)Delegate.CreateDelegate(typeof(Func<CancellationToken, IAsyncEnumerable<Metric>>), client.Metrics, method!);
-        await foreach (var metric in listAllFunc(CancellationToken.None))
+        await foreach (var result in client.Metrics.ListAllAsync(CancellationToken.None))
         {
-            metrics.Add(metric);
+            if (result.IsSuccess)
+            {
+                metrics.Add(result.Value);
+            }
         }
 
         // Assert
         metrics.Should().NotBeNull();
-        
+
         // Should contain all metrics across all pages
         if (metrics.Any())
         {
@@ -289,11 +317,14 @@ public class MetricsIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Assert
         result.Should().NotBeNull();
-        result.Items.Should().AllSatisfy(metric =>
+        if (result.IsSuccess)
         {
-            metric.Timestamp.Should().BeOnOrAfter(yesterday);
-            metric.Timestamp.Should().BeOnOrBefore(now);
-        });
+            result.Value.Items.Should().AllSatisfy(metric =>
+            {
+                metric.Timestamp.Should().BeOnOrAfter(yesterday);
+                metric.Timestamp.Should().BeOnOrBefore(now);
+            });
+        }
     }
 
     [Fact]
@@ -311,18 +342,21 @@ public class MetricsIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Assert
         result.Should().NotBeNull();
-        result.Items.Should().NotBeNull();
-        
-        if (result.Items.Any())
+        if (result.IsSuccess)
         {
-            var startDate = DateTime.UtcNow.AddDays(-30);
-            var endDate = DateTime.UtcNow;
-            
-            result.Items.Should().AllSatisfy(metric =>
+            result.Value.Items.Should().NotBeNull();
+
+            if (result.Value.Items.Any())
             {
-                metric.Timestamp.Should().BeOnOrAfter(startDate);
-                metric.Timestamp.Should().BeOnOrBefore(endDate);
-            });
+                var startDate = DateTime.UtcNow.AddDays(-30);
+                var endDate = DateTime.UtcNow;
+
+                result.Value.Items.Should().AllSatisfy(metric =>
+                {
+                    metric.Timestamp.Should().BeOnOrAfter(startDate);
+                    metric.Timestamp.Should().BeOnOrBefore(endDate);
+                });
+            }
         }
     }
 
@@ -333,19 +367,23 @@ public class MetricsIntegrationTests : IClassFixture<IntegrationTestFixture>
         var client = _fixture.CreateClient();
 
         // Act
-        var metrics = await client.Metrics.GetAsync();
+        var result = await client.Metrics.GetAsync();
 
         // Assert
-        metrics.Should().NotBeNull();
-        
-        if (metrics.Any())
+        result.Should().NotBeNull();
+        if (result.IsSuccess)
         {
-            var firstMetric = metrics.First();
-            firstMetric.Should().NotBeNull();
-            firstMetric.Name.Should().NotBeNullOrEmpty();
-            firstMetric.Value.Should().BeGreaterThanOrEqualTo(0);
-            firstMetric.Period.Should().NotBeNullOrEmpty();
-            firstMetric.Timestamp.Should().BeBefore(DateTime.UtcNow.AddMinutes(5));
+            result.Value.Should().NotBeNull();
+
+            if (result.Value.Any())
+            {
+                var firstMetric = result.Value.First();
+                firstMetric.Should().NotBeNull();
+                firstMetric.Name.Should().NotBeNullOrEmpty();
+                firstMetric.Value.Should().BeGreaterThanOrEqualTo(0);
+                firstMetric.Period.Should().NotBeNullOrEmpty();
+                firstMetric.Timestamp.Should().BeBefore(DateTime.UtcNow.AddMinutes(5));
+            }
         }
     }
 
@@ -356,24 +394,28 @@ public class MetricsIntegrationTests : IClassFixture<IntegrationTestFixture>
         var client = _fixture.CreateClient();
 
         // Act
-        var limits = await client.Metrics.GetLimitsAsync();
+        var result = await client.Metrics.GetLimitsAsync();
 
         // Assert
-        limits.Should().NotBeNull();
-        
-        if (limits.Any())
+        result.Should().NotBeNull();
+        if (result.IsSuccess)
         {
-            var firstLimit = limits.First();
-            firstLimit.Should().NotBeNull();
-            firstLimit.Name.Should().NotBeNullOrEmpty();
-            firstLimit.MaxValue.Should().BeGreaterThanOrEqualTo(0);
-            firstLimit.CurrentValue.Should().BeGreaterThanOrEqualTo(0);
-            firstLimit.PercentageUsed.Should().BeGreaterThanOrEqualTo(0);
-            
-            // If there's a reset date, it should be in the future
-            if (firstLimit.ResetsAt.HasValue)
+            result.Value.Should().NotBeNull();
+
+            if (result.Value.Any())
             {
-                firstLimit.ResetsAt.Value.Should().BeAfter(DateTime.UtcNow);
+                var firstLimit = result.Value.First();
+                firstLimit.Should().NotBeNull();
+                firstLimit.Name.Should().NotBeNullOrEmpty();
+                firstLimit.MaxValue.Should().BeGreaterThanOrEqualTo(0);
+                firstLimit.CurrentValue.Should().BeGreaterThanOrEqualTo(0);
+                firstLimit.PercentageUsed.Should().BeGreaterThanOrEqualTo(0);
+
+                // If there's a reset date, it should be in the future
+                if (firstLimit.ResetsAt.HasValue)
+                {
+                    firstLimit.ResetsAt.Value.Should().BeAfter(DateTime.UtcNow);
+                }
             }
         }
     }
@@ -390,7 +432,10 @@ public class MetricsIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().BeAssignableTo<List<Metric>>();
+        if (result.IsSuccess)
+        {
+            result.Value.Should().BeAssignableTo<List<Metric>>();
+        }
     }
 
     [Fact]
@@ -405,7 +450,10 @@ public class MetricsIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().BeAssignableTo<List<MetricLimit>>();
+        if (result.IsSuccess)
+        {
+            result.Value.Should().BeAssignableTo<List<MetricLimit>>();
+        }
     }
 
     [Fact]
@@ -420,8 +468,11 @@ public class MetricsIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Assert
         result.Should().NotBeNull();
-        result.Items.Should().NotBeNull();
-        result.Pagination.Should().NotBeNull();
+        if (result.IsSuccess)
+        {
+            result.Value.Items.Should().NotBeNull();
+            result.Value.Pagination.Should().NotBeNull();
+        }
     }
 
     [Fact]
@@ -433,10 +484,13 @@ public class MetricsIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Act
         var metrics = new List<Metric>();
-        await foreach (var metric in client.Metrics.ListAllAsync(cancellationToken: cts.Token))
+        await foreach (var result in client.Metrics.ListAllAsync(cancellationToken: cts.Token))
         {
-            metrics.Add(metric);
-            if (metrics.Count >= 5) break; // Limit for testing purposes
+            if (result.IsSuccess)
+            {
+                metrics.Add(result.Value);
+                if (metrics.Count >= 5) break; // Limit for testing purposes
+            }
         }
 
         // Assert

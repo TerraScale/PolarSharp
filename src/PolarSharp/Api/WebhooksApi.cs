@@ -4,10 +4,10 @@ using System.Text.Json;
 using Polly;
 using Polly.Retry;
 using Polly.RateLimit;
-using PolarSharp.Exceptions;
 using PolarSharp.Extensions;
 using PolarSharp.Models.Common;
 using PolarSharp.Models.Webhooks;
+using PolarSharp.Results;
 
 namespace PolarSharp.Api;
 
@@ -40,7 +40,7 @@ public class WebhooksApi
     /// <param name="limit">Number of items per page (default: 10, max: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing webhook endpoints.</returns>
-    public async Task<PaginatedResponse<WebhookEndpoint>> ListEndpointsAsync(
+    public async Task<PolarResult<PaginatedResponse<WebhookEndpoint>>> ListEndpointsAsync(
         int page = 1,
         int limit = 10,
         CancellationToken cancellationToken = default)
@@ -55,11 +55,7 @@ public class WebhooksApi
             () => _httpClient.GetAsync($"v1/webhooks/endpoints?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<WebhookEndpoint>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<WebhookEndpoint>>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -68,7 +64,7 @@ public class WebhooksApi
     /// <param name="endpointId">The webhook endpoint ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The webhook endpoint, or null if not found.</returns>
-    public async Task<WebhookEndpoint?> GetEndpointAsync(
+    public async Task<PolarResult<WebhookEndpoint>> GetEndpointAsync(
         string endpointId,
         CancellationToken cancellationToken = default)
     {
@@ -76,7 +72,7 @@ public class WebhooksApi
             () => _httpClient.GetAsync($"v1/webhooks/endpoints/{endpointId}", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<WebhookEndpoint>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultAsync<WebhookEndpoint>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -85,7 +81,7 @@ public class WebhooksApi
     /// <param name="request">The webhook endpoint creation request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The created webhook endpoint.</returns>
-    public async Task<WebhookEndpoint> CreateEndpointAsync(
+    public async Task<PolarResult<WebhookEndpoint>> CreateEndpointAsync(
         WebhookEndpointCreateRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -93,11 +89,7 @@ public class WebhooksApi
             () => _httpClient.PostAsJsonAsync("v1/webhooks/endpoints", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<WebhookEndpoint>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<WebhookEndpoint>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -107,7 +99,7 @@ public class WebhooksApi
     /// <param name="request">The webhook endpoint update request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The updated webhook endpoint, or null if not found.</returns>
-    public async Task<WebhookEndpoint?> UpdateEndpointAsync(
+    public async Task<PolarResult<WebhookEndpoint>> UpdateEndpointAsync(
         string endpointId,
         WebhookEndpointUpdateRequest request,
         CancellationToken cancellationToken = default)
@@ -116,7 +108,7 @@ public class WebhooksApi
             () => _httpClient.PatchAsJsonAsync($"v1/webhooks/endpoints/{endpointId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<WebhookEndpoint>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultAsync<WebhookEndpoint>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -125,7 +117,7 @@ public class WebhooksApi
     /// <param name="endpointId">The webhook endpoint ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The deleted webhook endpoint, or null if not found.</returns>
-    public async Task<WebhookEndpoint?> DeleteEndpointAsync(
+    public async Task<PolarResult<WebhookEndpoint>> DeleteEndpointAsync(
         string endpointId,
         CancellationToken cancellationToken = default)
     {
@@ -133,7 +125,7 @@ public class WebhooksApi
             () => _httpClient.DeleteAsync($"v1/webhooks/endpoints/{endpointId}", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<WebhookEndpoint>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultAsync<WebhookEndpoint>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -142,7 +134,7 @@ public class WebhooksApi
     /// <param name="endpointId">The webhook endpoint ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The updated webhook endpoint with new secret.</returns>
-    public async Task<WebhookEndpoint> ResetEndpointSecretAsync(
+    public async Task<PolarResult<WebhookEndpoint>> ResetEndpointSecretAsync(
         string endpointId,
         CancellationToken cancellationToken = default)
     {
@@ -150,11 +142,7 @@ public class WebhooksApi
             () => _httpClient.PostAsync($"v1/webhooks/endpoints/{endpointId}/reset_secret", null, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<WebhookEndpoint>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<WebhookEndpoint>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -164,7 +152,7 @@ public class WebhooksApi
     /// <param name="limit">Number of items per page (default: 10, max: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing webhook deliveries.</returns>
-    public async Task<PaginatedResponse<WebhookDelivery>> ListDeliveriesAsync(
+    public async Task<PolarResult<PaginatedResponse<WebhookDelivery>>> ListDeliveriesAsync(
         int page = 1,
         int limit = 10,
         CancellationToken cancellationToken = default)
@@ -179,11 +167,7 @@ public class WebhooksApi
             () => _httpClient.GetAsync($"v1/webhooks/deliveries?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<WebhookDelivery>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<WebhookDelivery>>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -192,7 +176,7 @@ public class WebhooksApi
     /// <param name="deliveryId">The webhook delivery ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The redelivery result.</returns>
-    public async Task<WebhookDelivery> RedeliverAsync(
+    public async Task<PolarResult<WebhookDelivery>> RedeliverAsync(
         string deliveryId,
         CancellationToken cancellationToken = default)
     {
@@ -200,11 +184,7 @@ public class WebhooksApi
             () => _httpClient.PostAsync($"v1/webhooks/deliveries/redeliver", null, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<WebhookDelivery>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<WebhookDelivery>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -212,21 +192,27 @@ public class WebhooksApi
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An async enumerable of all webhook endpoints.</returns>
-    public async IAsyncEnumerable<WebhookEndpoint> ListAllEndpointsAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<PolarResult<WebhookEndpoint>> ListAllEndpointsAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var page = 1;
         const int limit = 100; // Use maximum page size for efficiency
 
         while (true)
         {
-            var response = await ListEndpointsAsync(page, limit, cancellationToken);
-            
-            foreach (var endpoint in response.Items)
+            var result = await ListEndpointsAsync(page, limit, cancellationToken);
+
+            if (result.IsFailure)
             {
-                yield return endpoint;
+                yield return PolarResult<WebhookEndpoint>.Failure(result.Error!);
+                yield break;
             }
 
-            if (page >= response.Pagination.MaxPage)
+            foreach (var endpoint in result.Value!.Items)
+            {
+                yield return PolarResult<WebhookEndpoint>.Success(endpoint);
+            }
+
+            if (page >= result.Value.Pagination.MaxPage)
                 break;
 
             page++;
@@ -255,7 +241,7 @@ public class WebhooksApi
     /// <param name="limit">Number of items per page (default: 10, max: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing filtered webhook endpoints.</returns>
-    public async Task<PaginatedResponse<WebhookEndpoint>> ListAsync(
+    public async Task<PolarResult<PaginatedResponse<WebhookEndpoint>>> ListAsync(
         WebhooksQueryBuilder builder,
         int page = 1,
         int limit = 10,
@@ -277,11 +263,7 @@ public class WebhooksApi
             () => _httpClient.GetAsync($"v1/webhooks/endpoints?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<WebhookEndpoint>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<WebhookEndpoint>>(_jsonOptions, cancellationToken);
     }
 
     private static string GetQueryString(Dictionary<string, string> parameters)

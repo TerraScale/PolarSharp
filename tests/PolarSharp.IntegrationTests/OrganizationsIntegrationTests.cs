@@ -1,6 +1,8 @@
 using FluentAssertions;
 using PolarSharp.Models.Organizations;
+using PolarSharp.Results;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace PolarSharp.IntegrationTests;
 
@@ -10,10 +12,12 @@ namespace PolarSharp.IntegrationTests;
 public class OrganizationsIntegrationTests : IClassFixture<IntegrationTestFixture>
 {
     private readonly IntegrationTestFixture _fixture;
+    private readonly ITestOutputHelper _output;
 
-    public OrganizationsIntegrationTests(IntegrationTestFixture fixture)
+    public OrganizationsIntegrationTests(IntegrationTestFixture fixture, ITestOutputHelper output)
     {
         _fixture = fixture;
+        _output = output;
     }
 
     [Fact]
@@ -27,9 +31,10 @@ public class OrganizationsIntegrationTests : IClassFixture<IntegrationTestFixtur
 
         // Assert
         response.Should().NotBeNull();
-        response.Items.Should().NotBeNull();
-        response.Pagination.Should().NotBeNull();
-        response.Pagination.Page.Should().Be(1);
+        response.IsSuccess.Should().BeTrue();
+        response.Value.Items.Should().NotBeNull();
+        response.Value.Pagination.Should().NotBeNull();
+        response.Value.Pagination.Page.Should().Be(1);
     }
 
     [Fact]
@@ -37,36 +42,41 @@ public class OrganizationsIntegrationTests : IClassFixture<IntegrationTestFixtur
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         // First, list organizations to get a valid ID
         var organizations = await client.Organizations.ListAsync();
-        if (organizations.Items.Count == 0)
+        organizations.IsSuccess.Should().BeTrue();
+        if (organizations.Value.Items.Count == 0)
         {
             return; // Skip if no organizations exist
         }
 
-        var organizationId = organizations.Items.First().Id;
+        var organizationId = organizations.Value.Items.First().Id;
 
         // Act
         var organization = await client.Organizations.GetAsync(organizationId);
 
         // Assert
         organization.Should().NotBeNull();
-        organization.Id.Should().Be(organizationId);
-        organization.Name.Should().NotBeNullOrEmpty();
-        organization.Slug.Should().NotBeNullOrEmpty();
+        organization.IsSuccess.Should().BeTrue();
+        organization.Value.Id.Should().Be(organizationId);
+        organization.Value.Name.Should().NotBeNullOrEmpty();
+        organization.Value.Slug.Should().NotBeNullOrEmpty();
     }
 
     [Fact]
-    public async Task OrganizationsApi_GetOrganization_WithInvalidId_ThrowsException()
+    public async Task OrganizationsApi_GetOrganization_WithInvalidId_ReturnsNull()
     {
         // Arrange
         var client = _fixture.CreateClient();
         var invalidOrganizationId = "invalid_organization_id";
 
-        // Act & Assert
-        await Assert.ThrowsAsync<PolarSharp.Exceptions.PolarApiException>(
-            () => client.Organizations.GetAsync(invalidOrganizationId));
+        // Act
+        var result = await client.Organizations.GetAsync(invalidOrganizationId);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeFalse();
     }
 
     [Fact]
@@ -118,24 +128,25 @@ public class OrganizationsIntegrationTests : IClassFixture<IntegrationTestFixtur
 
         // Assert
         createdOrganization.Should().NotBeNull();
-        createdOrganization.Id.Should().NotBeNullOrEmpty();
-        createdOrganization.Name.Should().Be(organizationName);
-        createdOrganization.Slug.Should().Be(organizationSlug);
-        createdOrganization.Description.Should().Be("Integration test organization");
-        createdOrganization.WebsiteUrl.Should().Be("https://example.com");
-        createdOrganization.TwitterHandle.Should().Be("testorg");
-        createdOrganization.GithubUrl.Should().Be("https://github.com/testorg");
-        createdOrganization.Public.Should().BeTrue();
-        createdOrganization.DefaultCurrency.Should().Be("USD");
-        createdOrganization.Country.Should().Be("US");
-        createdOrganization.Timezone.Should().Be("UTC");
-        createdOrganization.Metadata.Should().NotBeNull();
-        createdOrganization.Settings.Should().NotBeNull();
+        createdOrganization.IsSuccess.Should().BeTrue();
+        createdOrganization.Value.Id.Should().NotBeNullOrEmpty();
+        createdOrganization.Value.Name.Should().Be(organizationName);
+        createdOrganization.Value.Slug.Should().Be(organizationSlug);
+        createdOrganization.Value.Description.Should().Be("Integration test organization");
+        createdOrganization.Value.WebsiteUrl.Should().Be("https://example.com");
+        createdOrganization.Value.TwitterHandle.Should().Be("testorg");
+        createdOrganization.Value.GithubUrl.Should().Be("https://github.com/testorg");
+        createdOrganization.Value.Public.Should().BeTrue();
+        createdOrganization.Value.DefaultCurrency.Should().Be("USD");
+        createdOrganization.Value.Country.Should().Be("US");
+        createdOrganization.Value.Timezone.Should().Be("UTC");
+        createdOrganization.Value.Metadata.Should().NotBeNull();
+        createdOrganization.Value.Settings.Should().NotBeNull();
 
         // Cleanup
         try
         {
-            await client.Organizations.DeleteAsync(createdOrganization.Id);
+            await client.Organizations.DeleteAsync(createdOrganization.Value.Id);
         }
         catch
         {
@@ -179,24 +190,25 @@ public class OrganizationsIntegrationTests : IClassFixture<IntegrationTestFixtur
         };
 
         // Act
-        var updatedOrganization = await client.Organizations.UpdateAsync(createdOrganization.Id, updateRequest);
+        var updatedOrganization = await client.Organizations.UpdateAsync(createdOrganization.Value.Id, updateRequest);
 
         // Assert
         updatedOrganization.Should().NotBeNull();
-        updatedOrganization.Id.Should().Be(createdOrganization.Id);
-        updatedOrganization.Name.Should().Be($"{organizationName} (Updated)");
-        updatedOrganization.Description.Should().Be("Updated description");
-        updatedOrganization.WebsiteUrl.Should().Be("https://updated-example.com");
-        updatedOrganization.Public.Should().BeFalse();
-        updatedOrganization.DefaultCurrency.Should().Be("EUR");
-        updatedOrganization.Country.Should().Be("GB");
-        updatedOrganization.Timezone.Should().Be("Europe/London");
-        updatedOrganization.Metadata.Should().ContainKey("updated");
+        updatedOrganization.IsSuccess.Should().BeTrue();
+        updatedOrganization.Value.Id.Should().Be(createdOrganization.Value.Id);
+        updatedOrganization.Value.Name.Should().Be($"{organizationName} (Updated)");
+        updatedOrganization.Value.Description.Should().Be("Updated description");
+        updatedOrganization.Value.WebsiteUrl.Should().Be("https://updated-example.com");
+        updatedOrganization.Value.Public.Should().BeFalse();
+        updatedOrganization.Value.DefaultCurrency.Should().Be("EUR");
+        updatedOrganization.Value.Country.Should().Be("GB");
+        updatedOrganization.Value.Timezone.Should().Be("Europe/London");
+        updatedOrganization.Value.Metadata.Should().ContainKey("updated");
 
         // Cleanup
         try
         {
-            await client.Organizations.DeleteAsync(updatedOrganization.Id);
+            await client.Organizations.DeleteAsync(updatedOrganization.Value.Id);
         }
         catch
         {
@@ -220,18 +232,20 @@ public class OrganizationsIntegrationTests : IClassFixture<IntegrationTestFixtur
         };
 
         var createdOrganization = await client.Organizations.CreateAsync(createRequest);
+        createdOrganization.IsSuccess.Should().BeTrue();
 
         // Act
-        var deletedOrganization = await client.Organizations.DeleteAsync(createdOrganization.Id);
+        var deletedOrganization = await client.Organizations.DeleteAsync(createdOrganization.Value.Id);
 
         // Assert
         deletedOrganization.Should().NotBeNull();
-        deletedOrganization.Id.Should().Be(createdOrganization.Id);
-        deletedOrganization.Name.Should().Be(organizationName);
+        deletedOrganization.IsSuccess.Should().BeTrue();
+        deletedOrganization.Value.Id.Should().Be(createdOrganization.Value.Id);
+        deletedOrganization.Value.Name.Should().Be(organizationName);
 
-        // Verify organization is deleted
-        await Assert.ThrowsAsync<PolarSharp.Exceptions.PolarApiException>(
-            () => client.Organizations.GetAsync(createdOrganization.Id));
+        // Verify organization is deleted by checking it returns false for IsSuccess
+        var result = await client.Organizations.GetAsync(createdOrganization.Value.Id);
+        result.IsSuccess.Should().BeFalse();
     }
 
     [Fact]
@@ -242,9 +256,10 @@ public class OrganizationsIntegrationTests : IClassFixture<IntegrationTestFixtur
 
         // Act
         var allOrganizations = new List<Organization>();
-        await foreach (var organization in client.Organizations.ListAllAsync())
+        await foreach (var organizationResult in client.Organizations.ListAllAsync())
         {
-            allOrganizations.Add(organization);
+            organizationResult.IsSuccess.Should().BeTrue();
+            allOrganizations.Add(organizationResult.Value);
         }
 
         // Assert
@@ -271,16 +286,17 @@ public class OrganizationsIntegrationTests : IClassFixture<IntegrationTestFixtur
 
         // Assert
         createdOrganization.Should().NotBeNull();
-        createdOrganization.Id.Should().NotBeNullOrEmpty();
-        createdOrganization.Name.Should().Be(organizationName);
-        createdOrganization.Slug.Should().Be(organizationSlug);
-        createdOrganization.Description.Should().BeNull();
-        createdOrganization.WebsiteUrl.Should().BeNull();
+        createdOrganization.IsSuccess.Should().BeTrue();
+        createdOrganization.Value.Id.Should().NotBeNullOrEmpty();
+        createdOrganization.Value.Name.Should().Be(organizationName);
+        createdOrganization.Value.Slug.Should().Be(organizationSlug);
+        createdOrganization.Value.Description.Should().BeNull();
+        createdOrganization.Value.WebsiteUrl.Should().BeNull();
 
         // Cleanup
         try
         {
-            await client.Organizations.DeleteAsync(createdOrganization.Id);
+            await client.Organizations.DeleteAsync(createdOrganization.Value.Id);
         }
         catch
         {
@@ -314,19 +330,20 @@ public class OrganizationsIntegrationTests : IClassFixture<IntegrationTestFixtur
         };
 
         // Act
-        var updatedOrganization = await client.Organizations.UpdateAsync(createdOrganization.Id, updateRequest);
+        var updatedOrganization = await client.Organizations.UpdateAsync(createdOrganization.Value.Id, updateRequest);
 
         // Assert
         updatedOrganization.Should().NotBeNull();
-        updatedOrganization.Id.Should().Be(createdOrganization.Id);
-        updatedOrganization.Name.Should().Be(organizationName); // Should remain unchanged
-        updatedOrganization.Description.Should().Be("Updated description only");
-        updatedOrganization.WebsiteUrl.Should().Be("https://original.com"); // Should remain unchanged
+        updatedOrganization.IsSuccess.Should().BeTrue();
+        updatedOrganization.Value.Id.Should().Be(createdOrganization.Value.Id);
+        updatedOrganization.Value.Name.Should().Be(organizationName); // Should remain unchanged
+        updatedOrganization.Value.Description.Should().Be("Updated description only");
+        updatedOrganization.Value.WebsiteUrl.Should().Be("https://original.com"); // Should remain unchanged
 
         // Cleanup
         try
         {
-            await client.Organizations.DeleteAsync(updatedOrganization.Id);
+            await client.Organizations.DeleteAsync(updatedOrganization.Value.Id);
         }
         catch
         {
@@ -346,14 +363,16 @@ public class OrganizationsIntegrationTests : IClassFixture<IntegrationTestFixtur
 
         // Assert
         page1.Should().NotBeNull();
-        page1.Pagination.Page.Should().Be(1);
-        
+        page1.IsSuccess.Should().BeTrue();
+        page1.Value.Pagination.Page.Should().Be(1);
+
         page2.Should().NotBeNull();
-        page2.Pagination.Page.Should().Be(2);
+        page2.IsSuccess.Should().BeTrue();
+        page2.Value.Pagination.Page.Should().Be(2);
     }
 
     [Fact]
-    public async Task OrganizationsApi_CreateOrganization_WithDuplicateSlug_ThrowsException()
+    public async Task OrganizationsApi_CreateOrganization_WithDuplicateSlug_ThrowsValidationException()
     {
         // Arrange
         var client = _fixture.CreateClient();
@@ -367,6 +386,7 @@ public class OrganizationsIntegrationTests : IClassFixture<IntegrationTestFixtur
         };
 
         var firstOrganization = await client.Organizations.CreateAsync(firstRequest);
+        firstOrganization.IsSuccess.Should().BeTrue();
 
         // Try to create second organization with same slug
         var secondRequest = new OrganizationCreateRequest
@@ -375,14 +395,18 @@ public class OrganizationsIntegrationTests : IClassFixture<IntegrationTestFixtur
             Slug = organizationSlug
         };
 
-        // Act & Assert
-        await Assert.ThrowsAsync<PolarSharp.Exceptions.PolarApiException>(
-            () => client.Organizations.CreateAsync(secondRequest));
+        // Act
+        var secondOrganization = await client.Organizations.CreateAsync(secondRequest);
+
+        // Assert
+        secondOrganization.Should().NotBeNull();
+        secondOrganization.IsSuccess.Should().BeFalse();
+        secondOrganization.IsValidationError.Should().BeTrue();
 
         // Cleanup
         try
         {
-            await client.Organizations.DeleteAsync(firstOrganization.Id);
+            await client.Organizations.DeleteAsync(firstOrganization.Value.Id);
         }
         catch
         {
@@ -391,7 +415,7 @@ public class OrganizationsIntegrationTests : IClassFixture<IntegrationTestFixtur
     }
 
     [Fact]
-    public async Task OrganizationsApi_UpdateOrganization_WithInvalidId_ThrowsException()
+    public async Task OrganizationsApi_UpdateOrganization_WithInvalidId_ReturnsNull()
     {
         // Arrange
         var client = _fixture.CreateClient();
@@ -402,21 +426,27 @@ public class OrganizationsIntegrationTests : IClassFixture<IntegrationTestFixtur
             Name = "Updated Name"
         };
 
-        // Act & Assert
-        await Assert.ThrowsAsync<PolarSharp.Exceptions.PolarApiException>(
-            () => client.Organizations.UpdateAsync(invalidOrganizationId, updateRequest));
+        // Act
+        var result = await client.Organizations.UpdateAsync(invalidOrganizationId, updateRequest);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeFalse();
     }
 
     [Fact]
-    public async Task OrganizationsApi_DeleteOrganization_WithInvalidId_ThrowsException()
+    public async Task OrganizationsApi_DeleteOrganization_WithInvalidId_ReturnsNull()
     {
         // Arrange
         var client = _fixture.CreateClient();
         var invalidOrganizationId = "invalid_organization_id";
 
-        // Act & Assert
-        await Assert.ThrowsAsync<PolarSharp.Exceptions.PolarApiException>(
-            () => client.Organizations.DeleteAsync(invalidOrganizationId));
+        // Act
+        var result = await client.Organizations.DeleteAsync(invalidOrganizationId);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeFalse();
     }
 
     [Fact]
@@ -430,6 +460,7 @@ public class OrganizationsIntegrationTests : IClassFixture<IntegrationTestFixtur
 
         // Assert
         response.Should().NotBeNull();
-        response.Items.Should().NotBeNull();
+        response.IsSuccess.Should().BeTrue();
+        response.Value.Items.Should().NotBeNull();
     }
 }

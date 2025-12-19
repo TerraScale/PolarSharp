@@ -1,4 +1,5 @@
 using FluentAssertions;
+using PolarSharp.Results;
 using PolarSharp.Models.Events;
 using Xunit;
 
@@ -23,9 +24,12 @@ public class EventsIntegrationTests : IClassFixture<IntegrationTestFixture>
         var client = _fixture.CreateClient();
 
         // Act
-        var response = await client.Events.ListAsync(page: 1, limit: 10);
+        var result = await client.Events.ListAsync(page: 1, limit: 10);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var response = result.Value;
         response.Should().NotBeNull();
         response.Items.Should().NotBeNull();
         response.Pagination.Should().NotBeNull();
@@ -39,9 +43,12 @@ public class EventsIntegrationTests : IClassFixture<IntegrationTestFixture>
         var client = _fixture.CreateClient();
 
         // Act
-        var eventNames = await client.Events.ListNamesAsync();
+        var result = await client.Events.ListNamesAsync();
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var eventNames = result.Value;
         eventNames.Should().NotBeNull();
         eventNames.Should().BeAssignableTo<List<EventName>>();
     }
@@ -52,7 +59,7 @@ public class EventsIntegrationTests : IClassFixture<IntegrationTestFixture>
         // Arrange
         var client = _fixture.CreateClient();
         var testEventName = $"test_event_{Guid.NewGuid()}";
-        
+
         var ingestRequest = new EventIngestRequest
         {
             Events = new List<EventData>
@@ -75,13 +82,19 @@ public class EventsIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        await client.Events.IngestAsync(ingestRequest);
+        var ingestResult = await client.Events.IngestAsync(ingestRequest);
+
+        // Assert
+        ingestResult.Should().NotBeNull();
+        ingestResult.IsSuccess.Should().BeTrue();
 
         // Allow some time for event processing
         await Task.Delay(1000);
 
         // Verify the event was created by listing events
-        var events = await client.Events.ListAsync();
+        var listResult = await client.Events.ListAsync();
+        listResult.IsSuccess.Should().BeTrue();
+        var events = listResult.Value;
         var createdEvent = events.Items.FirstOrDefault(e => e.Name == testEventName);
 
         // Assert
@@ -97,7 +110,7 @@ public class EventsIntegrationTests : IClassFixture<IntegrationTestFixture>
         // Arrange
         var client = _fixture.CreateClient();
         var testEventNamePrefix = $"batch_test_{Guid.NewGuid()}";
-        
+
         var ingestRequest = new EventIngestRequest
         {
             Events = new List<EventData>
@@ -121,13 +134,16 @@ public class EventsIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        await client.Events.IngestAsync(ingestRequest);
+        var ingestResult = await client.Events.IngestAsync(ingestRequest);
+        ingestResult.IsSuccess.Should().BeTrue();
 
         // Allow some time for event processing
         await Task.Delay(1000);
 
         // Verify events were created
-        var events = await client.Events.ListAsync();
+        var listResult = await client.Events.ListAsync();
+        listResult.IsSuccess.Should().BeTrue();
+        var events = listResult.Value;
         var createdEvents = events.Items.Where(e => e.Name.StartsWith(testEventNamePrefix)).ToList();
 
         // Assert
@@ -146,7 +162,7 @@ public class EventsIntegrationTests : IClassFixture<IntegrationTestFixture>
         // Arrange
         var client = _fixture.CreateClient();
         var testEventName = $"get_test_{Guid.NewGuid()}";
-        
+
         var ingestRequest = new EventIngestRequest
         {
             Events = new List<EventData>
@@ -159,11 +175,14 @@ public class EventsIntegrationTests : IClassFixture<IntegrationTestFixture>
             }
         };
 
-        await client.Events.IngestAsync(ingestRequest);
+        var ingestResult = await client.Events.IngestAsync(ingestRequest);
+        ingestResult.IsSuccess.Should().BeTrue();
         await Task.Delay(1000);
 
         // Find the created event
-        var events = await client.Events.ListAsync();
+        var listResult = await client.Events.ListAsync();
+        listResult.IsSuccess.Should().BeTrue();
+        var events = listResult.Value;
         var createdEvent = events.Items.FirstOrDefault(e => e.Name == testEventName);
 
         // Skip test if event wasn't found (might be processing delay)
@@ -173,9 +192,12 @@ public class EventsIntegrationTests : IClassFixture<IntegrationTestFixture>
         }
 
         // Act
-        var retrievedEvent = await client.Events.GetAsync(createdEvent.Id);
+        var result = await client.Events.GetAsync(createdEvent.Id);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var retrievedEvent = result.Value;
         retrievedEvent.Should().NotBeNull();
         retrievedEvent.Id.Should().Be(createdEvent.Id);
         retrievedEvent.Name.Should().Be(testEventName);
@@ -189,19 +211,12 @@ public class EventsIntegrationTests : IClassFixture<IntegrationTestFixture>
         var client = _fixture.CreateClient();
         var invalidEventId = "invalid_event_id";
 
-        // Act & Assert
-        try
-        {
-            var result = await client.Events.GetAsync(invalidEventId);
-            
-            // Assert - With nullable return types, invalid IDs return null
-            result.Should().BeNull();
-        }
-        catch (PolarSharp.Exceptions.PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed"))
-        {
-            // Expected in sandbox environment with limited permissions
-            true.Should().BeTrue();
-        }
+        // Act
+        var result = await client.Events.GetAsync(invalidEventId);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeFalse();
     }
 
     [Fact]
@@ -210,7 +225,7 @@ public class EventsIntegrationTests : IClassFixture<IntegrationTestFixture>
         // Arrange
         var client = _fixture.CreateClient();
         var testEventNamePrefix = $"async_test_{Guid.NewGuid()}";
-        
+
         // Create multiple events
         var ingestRequest = new EventIngestRequest
         {
@@ -223,13 +238,17 @@ public class EventsIntegrationTests : IClassFixture<IntegrationTestFixture>
                 .ToList()
         };
 
-        await client.Events.IngestAsync(ingestRequest);
+        var ingestResult = await client.Events.IngestAsync(ingestRequest);
+        ingestResult.IsSuccess.Should().BeTrue();
         await Task.Delay(1000);
 
         // Act
         var allEvents = new List<Event>();
-        await foreach (var @event in client.Events.ListAllAsync())
+        await foreach (var eventResult in client.Events.ListAllAsync())
         {
+            if (eventResult.IsFailure) break;
+
+            var @event = eventResult.Value;
             allEvents.Add(@event);
         }
 
@@ -245,7 +264,7 @@ public class EventsIntegrationTests : IClassFixture<IntegrationTestFixture>
         // Arrange
         var client = _fixture.CreateClient();
         var testEventName = $"query_test_{Guid.NewGuid()}";
-        
+
         var ingestRequest = new EventIngestRequest
         {
             Events = new List<EventData>
@@ -258,19 +277,23 @@ public class EventsIntegrationTests : IClassFixture<IntegrationTestFixture>
             }
         };
 
-        await client.Events.IngestAsync(ingestRequest);
+        var ingestResult = await client.Events.IngestAsync(ingestRequest);
+        ingestResult.IsSuccess.Should().BeTrue();
         await Task.Delay(1000);
 
         // Act
         var queryBuilder = client.Events.Query()
             .WithName(testEventName);
 
-        var response = await client.Events.ListAsync(queryBuilder);
+        var result = await client.Events.ListAsync(queryBuilder);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var response = result.Value;
         response.Should().NotBeNull();
         response.Items.Should().NotBeNull();
-        
+
         // Due to processing delays, we just verify the query structure works
         response.Pagination.Should().NotBeNull();
     }
@@ -289,9 +312,12 @@ public class EventsIntegrationTests : IClassFixture<IntegrationTestFixture>
             .CreatedAfter(yesterday)
             .CreatedBefore(tomorrow);
 
-        var response = await client.Events.ListAsync(queryBuilder);
+        var result = await client.Events.ListAsync(queryBuilder);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var response = result.Value;
         response.Should().NotBeNull();
         response.Items.Should().NotBeNull();
         response.Pagination.Should().NotBeNull();
@@ -318,16 +344,20 @@ public class EventsIntegrationTests : IClassFixture<IntegrationTestFixture>
             }
         };
 
-        await client.Events.IngestAsync(ingestRequest);
+        var ingestResult = await client.Events.IngestAsync(ingestRequest);
+        ingestResult.IsSuccess.Should().BeTrue();
         await Task.Delay(1000);
 
         // Act
         var queryBuilder = client.Events.Query()
             .WithCustomerId(testCustomerId);
 
-        var response = await client.Events.ListAsync(queryBuilder);
+        var result = await client.Events.ListAsync(queryBuilder);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var response = result.Value;
         response.Should().NotBeNull();
         response.Items.Should().NotBeNull();
         response.Pagination.Should().NotBeNull();
@@ -340,13 +370,19 @@ public class EventsIntegrationTests : IClassFixture<IntegrationTestFixture>
         var client = _fixture.CreateClient();
 
         // Act
-        var page1 = await client.Events.ListAsync(page: 1, limit: 5);
-        var page2 = await client.Events.ListAsync(page: 2, limit: 5);
+        var page1Result = await client.Events.ListAsync(page: 1, limit: 5);
+        var page2Result = await client.Events.ListAsync(page: 2, limit: 5);
 
         // Assert
+        page1Result.Should().NotBeNull();
+        page1Result.IsSuccess.Should().BeTrue();
+        var page1 = page1Result.Value;
         page1.Should().NotBeNull();
         page1.Pagination.Page.Should().Be(1);
-        
+
+        page2Result.Should().NotBeNull();
+        page2Result.IsSuccess.Should().BeTrue();
+        var page2 = page2Result.Value;
         page2.Should().NotBeNull();
         page2.Pagination.Page.Should().Be(2);
     }
@@ -373,13 +409,16 @@ public class EventsIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        await client.Events.IngestAsync(ingestRequest);
+        var ingestResult = await client.Events.IngestAsync(ingestRequest);
+        ingestResult.IsSuccess.Should().BeTrue();
 
         // Allow some time for event processing
         await Task.Delay(1000);
 
         // Verify the event was created
-        var events = await client.Events.ListAsync();
+        var listResult = await client.Events.ListAsync();
+        listResult.IsSuccess.Should().BeTrue();
+        var events = listResult.Value;
         var createdEvent = events.Items.FirstOrDefault(e => e.Name == testEventName);
 
         // Assert
@@ -398,8 +437,11 @@ public class EventsIntegrationTests : IClassFixture<IntegrationTestFixture>
             Events = new List<EventData>()
         };
 
-        // Act & Assert - Should not throw
-        await client.Events.IngestAsync(ingestRequest);
+        // Act
+        var result = await client.Events.IngestAsync(ingestRequest);
+
+        // Assert - Should not throw
+        result.Should().NotBeNull();
     }
 
     [Fact]
@@ -409,9 +451,12 @@ public class EventsIntegrationTests : IClassFixture<IntegrationTestFixture>
         var client = _fixture.CreateClient();
 
         // Act
-        var response = await client.Events.ListAsync(page: 1, limit: 100);
+        var result = await client.Events.ListAsync(page: 1, limit: 100);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var response = result.Value;
         response.Should().NotBeNull();
         response.Items.Should().NotBeNull();
     }

@@ -7,6 +7,7 @@ using Polly.Retry;
 using Polly.RateLimit;
 using PolarSharp.Extensions;
 using PolarSharp.Models.CustomerSessions;
+using PolarSharp.Results;
 
 namespace PolarSharp.Api;
 
@@ -38,7 +39,7 @@ public class CustomerSessionsApi
     /// <param name="request">The customer session creation request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The created customer session.</returns>
-    public async Task<CustomerSession> CreateAsync(
+    public async Task<PolarResult<CustomerSession>> CreateAsync(
         CustomerSessionCreateRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -46,11 +47,7 @@ public class CustomerSessionsApi
             () => _httpClient.PostAsJsonAsync("v1/customer-sessions", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<CustomerSession>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<CustomerSession>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -59,7 +56,7 @@ public class CustomerSessionsApi
     /// <param name="request">The customer session introspection request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The introspection response.</returns>
-    public async Task<CustomerSessionIntrospectResponse> IntrospectAsync(
+    public async Task<PolarResult<CustomerSessionIntrospectResponse>> IntrospectAsync(
         CustomerSessionIntrospectRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -67,11 +64,7 @@ public class CustomerSessionsApi
             () => _httpClient.PostAsJsonAsync("v1/customer-sessions/introspect", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<CustomerSessionIntrospectResponse>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<CustomerSessionIntrospectResponse>(_jsonOptions, cancellationToken);
     }
 
     private async Task<HttpResponseMessage> ExecuteWithPoliciesAsync(

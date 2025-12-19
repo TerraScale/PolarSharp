@@ -9,6 +9,7 @@ using Polly.RateLimit;
 using PolarSharp.Extensions;
 using PolarSharp.Models.Checkouts;
 using PolarSharp.Models.Common;
+using PolarSharp.Results;
 
 namespace PolarSharp.Api;
 
@@ -44,7 +45,7 @@ public class CheckoutsApi
     /// <param name="status">Filter by checkout status.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing checkout sessions.</returns>
-    public async Task<PaginatedResponse<Checkout>> ListAsync(
+    public async Task<PolarResult<PaginatedResponse<Checkout>>> ListAsync(
         int page = 1,
         int limit = 10,
         string? customerId = null,
@@ -60,10 +61,10 @@ public class CheckoutsApi
 
         if (!string.IsNullOrEmpty(customerId))
             queryParams["customer_id"] = customerId;
-        
+
         if (!string.IsNullOrEmpty(productId))
             queryParams["product_id"] = productId;
-        
+
         if (status.HasValue)
             queryParams["status"] = status.Value.ToString().ToLowerInvariant();
 
@@ -71,12 +72,7 @@ public class CheckoutsApi
             () => _httpClient.GetAsync($"v1/checkouts/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        var result = await response.HandleErrorsAsync<PaginatedResponse<Checkout>>(_jsonOptions, cancellationToken);
-        var (value, error) = result.EnsureSuccess();
-        if (error != null)
-            throw error.ToPolarApiException();
-        
-        return value ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<Checkout>>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -93,7 +89,7 @@ public class CheckoutsApi
     /// <param name="limit">Number of items per page (default: 10, max: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing filtered checkouts.</returns>
-    public async Task<PaginatedResponse<Checkout>> ListAsync(
+    public async Task<PolarResult<PaginatedResponse<Checkout>>> ListAsync(
         CheckoutsQueryBuilder builder,
         int page = 1,
         int limit = 10,
@@ -115,12 +111,7 @@ public class CheckoutsApi
             () => _httpClient.GetAsync($"v1/checkouts/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        var result = await response.HandleErrorsAsync<PaginatedResponse<Checkout>>(_jsonOptions, cancellationToken);
-        var (value, error) = result.EnsureSuccess();
-        if (error != null)
-            throw error.ToPolarApiException();
-        
-        return value ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<Checkout>>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -129,7 +120,7 @@ public class CheckoutsApi
     /// <param name="checkoutId">The checkout session ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The checkout session, or null if not found.</returns>
-    public async Task<Checkout?> GetAsync(
+    public async Task<PolarResult<Checkout?>> GetAsync(
         string checkoutId,
         CancellationToken cancellationToken = default)
     {
@@ -137,7 +128,7 @@ public class CheckoutsApi
             () => _httpClient.GetAsync($"v1/checkouts/{checkoutId}/", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Checkout>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultWithNullableAsync<Checkout>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -146,7 +137,7 @@ public class CheckoutsApi
     /// <param name="request">The checkout creation request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The created checkout session.</returns>
-    public async Task<Checkout> CreateAsync(
+    public async Task<PolarResult<Checkout>> CreateAsync(
         CheckoutCreateRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -154,12 +145,7 @@ public class CheckoutsApi
             () => _httpClient.PostAsJsonAsync("v1/checkouts/", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        var result = await response.HandleErrorsAsync<Checkout>(_jsonOptions, cancellationToken);
-        var (value, error) = result.EnsureSuccess();
-        if (error != null)
-            throw error.ToPolarApiException();
-        
-        return value ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<Checkout>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -169,7 +155,7 @@ public class CheckoutsApi
     /// <param name="request">The checkout update request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The updated checkout session, or null if not found.</returns>
-    public async Task<Checkout?> UpdateAsync(
+    public async Task<PolarResult<Checkout?>> UpdateAsync(
         string checkoutId,
         CheckoutUpdateRequest request,
         CancellationToken cancellationToken = default)
@@ -178,7 +164,7 @@ public class CheckoutsApi
             () => _httpClient.PatchAsJsonAsync($"v1/checkouts/{checkoutId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Checkout>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultWithNullableAsync<Checkout>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -187,7 +173,7 @@ public class CheckoutsApi
     /// <param name="checkoutId">The checkout session ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The checkout session, or null if not found.</returns>
-    public async Task<Checkout?> GetFromClientAsync(
+    public async Task<PolarResult<Checkout?>> GetFromClientAsync(
         string checkoutId,
         CancellationToken cancellationToken = default)
     {
@@ -195,7 +181,7 @@ public class CheckoutsApi
             () => _httpClient.GetAsync($"v1/checkouts/client/{checkoutId}", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Checkout>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultWithNullableAsync<Checkout>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -205,7 +191,7 @@ public class CheckoutsApi
     /// <param name="request">The checkout update request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The updated checkout session, or null if not found.</returns>
-    public async Task<Checkout?> UpdateFromClientAsync(
+    public async Task<PolarResult<Checkout?>> UpdateFromClientAsync(
         string checkoutId,
         CheckoutUpdateRequest request,
         CancellationToken cancellationToken = default)
@@ -214,7 +200,7 @@ public class CheckoutsApi
             () => _httpClient.PatchAsJsonAsync($"v1/checkouts/client/{checkoutId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Checkout>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultWithNullableAsync<Checkout>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -223,7 +209,7 @@ public class CheckoutsApi
     /// <param name="checkoutId">The checkout session ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The confirmed checkout session, or null if not found.</returns>
-    public async Task<Checkout?> ConfirmFromClientAsync(
+    public async Task<PolarResult<Checkout?>> ConfirmFromClientAsync(
         string checkoutId,
         CancellationToken cancellationToken = default)
     {
@@ -231,7 +217,7 @@ public class CheckoutsApi
             () => _httpClient.PostAsync($"v1/checkouts/client/{checkoutId}/confirm", null, cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Checkout>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultWithNullableAsync<Checkout>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -240,7 +226,7 @@ public class CheckoutsApi
     /// <param name="checkoutId">The checkout session ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The deleted checkout session, or null if not found.</returns>
-    public async Task<Checkout?> DeleteAsync(
+    public async Task<PolarResult<Checkout?>> DeleteAsync(
         string checkoutId,
         CancellationToken cancellationToken = default)
     {
@@ -248,7 +234,7 @@ public class CheckoutsApi
             () => _httpClient.DeleteAsync($"v1/checkouts/{checkoutId}", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Checkout>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultWithNullableAsync<Checkout>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -259,7 +245,7 @@ public class CheckoutsApi
     /// <param name="status">Filter by checkout status.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An async enumerable of all checkout sessions.</returns>
-    public async IAsyncEnumerable<Checkout> ListAllAsync(
+    public async IAsyncEnumerable<PolarResult<Checkout>> ListAllAsync(
         string? customerId = null,
         string? productId = null,
         CheckoutStatus? status = null,
@@ -270,14 +256,20 @@ public class CheckoutsApi
 
         while (true)
         {
-            var response = await ListAsync(page, limit, customerId, productId, status, cancellationToken);
-            
-            foreach (var checkout in response.Items)
+            var result = await ListAsync(page, limit, customerId, productId, status, cancellationToken);
+
+            if (result.IsFailure)
             {
-                yield return checkout;
+                yield return PolarResult<Checkout>.Failure(result.Error!);
+                yield break;
             }
 
-            if (page >= response.Pagination.MaxPage)
+            foreach (var checkout in result.Value.Items)
+            {
+                yield return PolarResult<Checkout>.Success(checkout);
+            }
+
+            if (page >= result.Value.Pagination.MaxPage)
                 break;
 
             page++;

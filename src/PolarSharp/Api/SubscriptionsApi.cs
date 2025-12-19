@@ -9,6 +9,7 @@ using Polly.RateLimit;
 using PolarSharp.Extensions;
 using PolarSharp.Models.Common;
 using PolarSharp.Models.Subscriptions;
+using PolarSharp.Results;
 
 namespace PolarSharp.Api;
 
@@ -44,7 +45,7 @@ public class SubscriptionsApi
     /// <param name="status">Filter by subscription status.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing subscriptions.</returns>
-    public async Task<PaginatedResponse<Subscription>> ListAsync(
+    public async Task<PolarResult<PaginatedResponse<Subscription>>> ListAsync(
         int page = 1,
         int limit = 10,
         string? customerId = null,
@@ -60,10 +61,10 @@ public class SubscriptionsApi
 
         if (!string.IsNullOrEmpty(customerId))
             queryParams["customer_id"] = customerId;
-        
+
         if (!string.IsNullOrEmpty(productId))
             queryParams["product_id"] = productId;
-        
+
         if (status.HasValue)
             queryParams["status"] = status.Value.ToString().ToLowerInvariant();
 
@@ -71,11 +72,7 @@ public class SubscriptionsApi
             () => _httpClient.GetAsync($"v1/subscriptions/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<Subscription>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<Subscription>>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -84,7 +81,7 @@ public class SubscriptionsApi
     /// <param name="subscriptionId">The subscription ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The subscription, or null if not found.</returns>
-    public async Task<Subscription?> GetAsync(
+    public async Task<PolarResult<Subscription>> GetAsync(
         string subscriptionId,
         CancellationToken cancellationToken = default)
     {
@@ -92,7 +89,7 @@ public class SubscriptionsApi
             () => _httpClient.GetAsync($"v1/subscriptions/{subscriptionId}", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Subscription>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultAsync<Subscription>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -101,7 +98,7 @@ public class SubscriptionsApi
     /// <param name="request">The subscription creation request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The created subscription, or null if the operation could not complete (e.g., sandbox limitations).</returns>
-    public async Task<Subscription?> CreateAsync(
+    public async Task<PolarResult<Subscription>> CreateAsync(
         SubscriptionCreateRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -109,21 +106,7 @@ public class SubscriptionsApi
             () => _httpClient.PostAsJsonAsync("v1/subscriptions/", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        
-        // Handle empty response
-        if (string.IsNullOrWhiteSpace(content))
-            return null;
-            
-        var subscription = JsonSerializer.Deserialize<Subscription>(content, _jsonOptions);
-        
-        // Return null if deserialization resulted in an object with empty/null ID
-        if (subscription == null || string.IsNullOrEmpty(subscription.Id))
-            return null;
-            
-        return subscription;
+        return await response.ToPolarResultAsync<Subscription>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -133,7 +116,7 @@ public class SubscriptionsApi
     /// <param name="request">The subscription update request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The updated subscription, or null if not found.</returns>
-    public async Task<Subscription?> UpdateAsync(
+    public async Task<PolarResult<Subscription>> UpdateAsync(
         string subscriptionId,
         SubscriptionUpdateRequest request,
         CancellationToken cancellationToken = default)
@@ -142,7 +125,7 @@ public class SubscriptionsApi
             () => _httpClient.PatchAsJsonAsync($"v1/subscriptions/{subscriptionId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Subscription>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultAsync<Subscription>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -151,7 +134,7 @@ public class SubscriptionsApi
     /// <param name="subscriptionId">The subscription ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The revoked subscription, or null if not found.</returns>
-    public async Task<Subscription?> RevokeAsync(
+    public async Task<PolarResult<Subscription>> RevokeAsync(
         string subscriptionId,
         CancellationToken cancellationToken = default)
     {
@@ -159,7 +142,7 @@ public class SubscriptionsApi
             () => _httpClient.DeleteAsync($"v1/subscriptions/{subscriptionId}", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Subscription>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultAsync<Subscription>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -168,7 +151,7 @@ public class SubscriptionsApi
     /// <param name="request">The export request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The export response, or null if the operation could not complete.</returns>
-    public async Task<SubscriptionExportResponse?> ExportAsync(
+    public async Task<PolarResult<SubscriptionExportResponse>> ExportAsync(
         SubscriptionExportRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -176,21 +159,7 @@ public class SubscriptionsApi
             () => _httpClient.PostAsJsonAsync("v1/subscriptions/export", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        
-        // Handle empty response
-        if (string.IsNullOrWhiteSpace(content))
-            return null;
-            
-        var exportResponse = JsonSerializer.Deserialize<SubscriptionExportResponse>(content, _jsonOptions);
-        
-        // Return null if deserialization resulted in an object with empty/null export URL
-        if (exportResponse == null || string.IsNullOrEmpty(exportResponse.ExportUrl))
-            return null;
-            
-        return exportResponse;
+        return await response.ToPolarResultAsync<SubscriptionExportResponse>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -201,7 +170,7 @@ public class SubscriptionsApi
     /// <param name="status">Filter by subscription status.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An async enumerable of all subscriptions.</returns>
-    public async IAsyncEnumerable<Subscription> ListAllAsync(
+    public async IAsyncEnumerable<PolarResult<Subscription>> ListAllAsync(
         string? customerId = null,
         string? productId = null,
         SubscriptionStatus? status = null,
@@ -212,14 +181,20 @@ public class SubscriptionsApi
 
         while (true)
         {
-            var response = await ListAsync(page, limit, customerId, productId, status, cancellationToken);
-            
-            foreach (var subscription in response.Items)
+            var result = await ListAsync(page, limit, customerId, productId, status, cancellationToken);
+
+            if (result.IsFailure)
             {
-                yield return subscription;
+                yield return PolarResult<Subscription>.Failure(result.Error!);
+                yield break;
             }
 
-            if (page >= response.Pagination.MaxPage)
+            foreach (var subscription in result.Value!.Items)
+            {
+                yield return PolarResult<Subscription>.Success(subscription);
+            }
+
+            if (page >= result.Value.Pagination.MaxPage)
                 break;
 
             page++;
@@ -248,7 +223,7 @@ public class SubscriptionsApi
     /// <param name="limit">Number of items per page (default: 10, max: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing filtered subscriptions.</returns>
-    public async Task<PaginatedResponse<Subscription>> ListAsync(
+    public async Task<PolarResult<PaginatedResponse<Subscription>>> ListAsync(
         SubscriptionsQueryBuilder builder,
         int page = 1,
         int limit = 10,
@@ -270,11 +245,7 @@ public class SubscriptionsApi
             () => _httpClient.GetAsync($"v1/subscriptions/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<Subscription>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<Subscription>>(_jsonOptions, cancellationToken);
     }
 
     private static string GetQueryString(Dictionary<string, string> parameters)

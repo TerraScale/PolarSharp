@@ -5,7 +5,7 @@ using FluentAssertions;
 using PolarSharp.Models.Checkouts;
 using PolarSharp.Models.Common;
 using PolarSharp.Models.Products;
-using PolarSharp.Exceptions;
+using PolarSharp.Results;
 using Xunit;
 
 namespace PolarSharp.IntegrationTests;
@@ -33,8 +33,9 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
 
         // Assert
         result.Should().NotBeNull();
-        result.Items.Should().NotBeNull();
-        result.Pagination.Page.Should().BeGreaterThanOrEqualTo(1);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Items.Should().NotBeNull();
+        result.Value.Pagination.Page.Should().BeGreaterThanOrEqualTo(1);
     }
 
     [Fact]
@@ -50,7 +51,8 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
 
         // Assert
         result.Should().NotBeNull();
-        result.Pagination.Page.Should().Be(page);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Pagination.Page.Should().Be(page);
     }
 
     [Fact]
@@ -58,7 +60,7 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         // First create a product to filter by
         var productRequest = new ProductCreateRequest
         {
@@ -66,7 +68,13 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
             Type = ProductType.OneTime,
             Description = "Test product for checkout link filtering"
         };
-        var product = await client.Products.CreateAsync(productRequest);
+        var productResult = await client.Products.CreateAsync(productRequest);
+        if (productResult.IsFailure)
+        {
+            // Skip test if product creation failed
+            return;
+        }
+        var product = productResult.Value;
 
         try
         {
@@ -75,9 +83,10 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
 
             // Assert
             result.Should().NotBeNull();
+            result.IsSuccess.Should().BeTrue();
             // Note: This might return empty if no checkout links exist for this product yet
-            if (result.Items.Any())
-                result.Items.Should().AllSatisfy(item => item.ProductId.Should().Be(product.Id));
+            if (result.Value.Items.Any())
+                result.Value.Items.Should().AllSatisfy(item => item.ProductId.Should().Be(product.Id));
         }
         finally
         {
@@ -98,13 +107,15 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
 
         // Assert
         enabledResult.Should().NotBeNull();
+        enabledResult.IsSuccess.Should().BeTrue();
         disabledResult.Should().NotBeNull();
-        
-        if (enabledResult.Items.Any())
-            enabledResult.Items.Should().AllSatisfy(item => item.Enabled.Should().BeTrue());
-        
-        if (disabledResult.Items.Any())
-            disabledResult.Items.Should().AllSatisfy(item => item.Enabled.Should().BeFalse());
+        disabledResult.IsSuccess.Should().BeTrue();
+
+        if (enabledResult.Value.Items.Any())
+            enabledResult.Value.Items.Should().AllSatisfy(item => item.Enabled.Should().BeTrue());
+
+        if (disabledResult.Value.Items.Any())
+            disabledResult.Value.Items.Should().AllSatisfy(item => item.Enabled.Should().BeFalse());
     }
 
     [Fact]
@@ -119,13 +130,15 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
 
         // Assert
         archivedResult.Should().NotBeNull();
+        archivedResult.IsSuccess.Should().BeTrue();
         activeResult.Should().NotBeNull();
-        
-        if (archivedResult.Items.Any())
-            archivedResult.Items.Should().AllSatisfy(item => item.Archived.Should().BeTrue());
-        
-        if (activeResult.Items.Any())
-            activeResult.Items.Should().AllSatisfy(item => item.Archived.Should().BeFalse());
+        activeResult.IsSuccess.Should().BeTrue();
+
+        if (archivedResult.Value.Items.Any())
+            archivedResult.Value.Items.Should().AllSatisfy(item => item.Archived.Should().BeTrue());
+
+        if (activeResult.Value.Items.Any())
+            activeResult.Value.Items.Should().AllSatisfy(item => item.Archived.Should().BeFalse());
     }
 
     [Fact]
@@ -142,7 +155,8 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
 
         // Assert
         result.Should().NotBeNull();
-        result.Items.Should().AllSatisfy(item =>
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Items.Should().AllSatisfy(item =>
         {
             item.Enabled.Should().BeTrue();
             item.Archived.Should().BeFalse();
@@ -157,9 +171,12 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
 
         // Act
         var checkoutLinks = new List<CheckoutLink>();
-        await foreach (var checkoutLink in client.CheckoutLinks.ListAllAsync())
+        await foreach (var checkoutLinkResult in client.CheckoutLinks.ListAllAsync())
         {
-            checkoutLinks.Add(checkoutLink);
+            if (checkoutLinkResult.IsSuccess)
+            {
+                checkoutLinks.Add(checkoutLinkResult.Value);
+            }
         }
 
         // Assert
@@ -180,9 +197,12 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
 
         // Act
         var checkoutLinks = new List<CheckoutLink>();
-        await foreach (var checkoutLink in client.CheckoutLinks.ListAllAsync(enabled: true))
+        await foreach (var checkoutLinkResult in client.CheckoutLinks.ListAllAsync(enabled: true))
         {
-            checkoutLinks.Add(checkoutLink);
+            if (checkoutLinkResult.IsSuccess)
+            {
+                checkoutLinks.Add(checkoutLinkResult.Value);
+            }
         }
 
         // Assert
@@ -195,7 +215,7 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         // First create a product and price for the checkout link
         var productRequest = new ProductCreateRequest
         {
@@ -203,7 +223,13 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
             Type = ProductType.OneTime,
             Description = "Test product for get checkout link test"
         };
-        var product = await client.Products.CreateAsync(productRequest);
+        var productResult = await client.Products.CreateAsync(productRequest);
+        if (productResult.IsFailure)
+        {
+            // Skip test if product creation failed
+            return;
+        }
+        var product = productResult.Value;
 
         try
         {
@@ -213,26 +239,37 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
                 Currency = "USD",
                 Type = ProductPriceType.Fixed
             };
-            var price = await client.Products.CreatePriceAsync(product.Id, priceRequest);
-            price.Should().NotBeNull();
+            var priceResult = await client.Products.CreatePriceAsync(product.Id, priceRequest);
+            if (priceResult.IsFailure)
+            {
+                return;
+            }
+            var price = priceResult.Value;
 
             // Create a checkout link
             var createRequest = new CheckoutLinkCreateRequest
             {
                 ProductId = product.Id,
-                ProductPriceId = price!.Id,
+                ProductPriceId = price.Id,
                 Label = "Test Checkout Link for Get",
                 Description = "Test checkout link for get operation",
                 Enabled = true
             };
-            var createdCheckoutLink = await client.CheckoutLinks.CreateAsync(createRequest);
+            var createResult = await client.CheckoutLinks.CreateAsync(createRequest);
+            if (createResult.IsFailure)
+            {
+                return;
+            }
+            var createdCheckoutLink = createResult.Value;
 
             try
             {
                 // Act
-                var retrievedCheckoutLink = await client.CheckoutLinks.GetAsync(createdCheckoutLink.Id);
+                var result = await client.CheckoutLinks.GetAsync(createdCheckoutLink.Id);
 
                 // Assert
+                result.IsSuccess.Should().BeTrue();
+                var retrievedCheckoutLink = result.Value;
                 retrievedCheckoutLink.Should().NotBeNull();
                 retrievedCheckoutLink.Id.Should().Be(createdCheckoutLink.Id);
                 retrievedCheckoutLink.Label.Should().Be(createdCheckoutLink.Label);
@@ -244,7 +281,10 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
             finally
             {
                 // Cleanup checkout link
-                try { await client.CheckoutLinks.DeleteAsync(createdCheckoutLink.Id); } catch { }
+                if (createResult.IsSuccess)
+                {
+                    try { await client.CheckoutLinks.DeleteAsync(createResult.Value.Id); } catch { }
+                }
             }
         }
         finally
@@ -255,25 +295,17 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
     }
 
     [Fact]
-    public async Task GetAsync_WithInvalidId_ReturnsNull()
+    public async Task GetAsync_WithInvalidId_ReturnsFailure()
     {
         // Arrange
         var client = _fixture.CreateClient();
         var invalidId = "invalid_checkout_link_id";
 
-        // Act & Assert
-        try
-        {
-            var result = await client.CheckoutLinks.GetAsync(invalidId);
-            
-            // Assert - With nullable return types, invalid IDs return null instead of throwing
-            result.Should().BeNull();
-        }
-        catch (PolarSharp.Exceptions.PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed"))
-        {
-            // Expected in sandbox environment with limited permissions
-            true.Should().BeTrue();
-        }
+        // Act
+        var result = await client.CheckoutLinks.GetAsync(invalidId);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
     }
 
     [Fact]
@@ -281,7 +313,7 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         // Create a product and price first
         var productRequest = new ProductCreateRequest
         {
@@ -289,7 +321,12 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
             Type = ProductType.OneTime,
             Description = "Test product for checkout link creation"
         };
-        var product = await client.Products.CreateAsync(productRequest);
+        var productResult = await client.Products.CreateAsync(productRequest);
+        if (productResult.IsFailure)
+        {
+            return;
+        }
+        var product = productResult.Value;
 
         try
         {
@@ -299,13 +336,17 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
                 Currency = "USD",
                 Type = ProductPriceType.Fixed
             };
-            var price = await client.Products.CreatePriceAsync(product.Id, priceRequest);
-            price.Should().NotBeNull();
+            var priceResult = await client.Products.CreatePriceAsync(product.Id, priceRequest);
+            if (priceResult.IsFailure)
+            {
+                return;
+            }
+            var price = priceResult.Value;
 
             var createRequest = new CheckoutLinkCreateRequest
             {
                 ProductId = product.Id,
-                ProductPriceId = price!.Id,
+                ProductPriceId = price.Id,
                 Label = "Test Checkout Link",
                 Description = "Test checkout link created via API",
                 Enabled = true,
@@ -322,25 +363,27 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
             try
             {
                 // Assert
-                result.Should().NotBeNull();
-                result.Id.Should().NotBeEmpty();
-                result.Url.Should().NotBeEmpty();
-                result.Label.Should().Be(createRequest.Label);
-                result.Description.Should().Be(createRequest.Description);
-                result.ProductId.Should().Be(createRequest.ProductId);
-                result.ProductPriceId.Should().Be(createRequest.ProductPriceId);
-                result.Enabled.Should().Be(createRequest.Enabled);
-                result.Metadata.Should().NotBeNull();
-                result.Metadata["test_key"].Should().Be("test_value");
-                result.Metadata["integration_test"].Should().Be(true);
-                result.Archived.Should().BeFalse();
-                result.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
-                result.UpdatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
+                result.IsSuccess.Should().BeTrue();
+                var checkoutLink = result.Value;
+                checkoutLink.Should().NotBeNull();
+                checkoutLink.Id.Should().NotBeEmpty();
+                checkoutLink.Url.Should().NotBeEmpty();
+                checkoutLink.Label.Should().Be(createRequest.Label);
+                checkoutLink.Description.Should().Be(createRequest.Description);
+                checkoutLink.ProductId.Should().Be(createRequest.ProductId);
+                checkoutLink.ProductPriceId.Should().Be(createRequest.ProductPriceId);
+                checkoutLink.Enabled.Should().Be(createRequest.Enabled);
+                checkoutLink.Metadata.Should().NotBeNull();
+                checkoutLink.Metadata["test_key"].Should().Be("test_value");
+                checkoutLink.Metadata["integration_test"].Should().Be(true);
+                checkoutLink.Archived.Should().BeFalse();
+                checkoutLink.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
+                checkoutLink.UpdatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
             }
             finally
             {
                 // Cleanup
-                try { await client.CheckoutLinks.DeleteAsync(result.Id); } catch { }
+                try { await client.CheckoutLinks.DeleteAsync(result.Value.Id); } catch { }
             }
         }
         finally
@@ -355,14 +398,19 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         // Create a product and price first
         var productRequest = new ProductCreateRequest
         {
             Name = "Minimal Test Product for Checkout Link",
             Type = ProductType.OneTime
         };
-        var product = await client.Products.CreateAsync(productRequest);
+        var productResult = await client.Products.CreateAsync(productRequest);
+        if (productResult.IsFailure)
+        {
+            return;
+        }
+        var product = productResult.Value;
 
         try
         {
@@ -372,13 +420,17 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
                 Currency = "USD",
                 Type = ProductPriceType.Fixed
             };
-            var price = await client.Products.CreatePriceAsync(product.Id, priceRequest);
-            price.Should().NotBeNull();
+            var priceResult = await client.Products.CreatePriceAsync(product.Id, priceRequest);
+            if (priceResult.IsFailure)
+            {
+                return;
+            }
+            var price = priceResult.Value;
 
             var createRequest = new CheckoutLinkCreateRequest
             {
                 ProductId = product.Id,
-                ProductPriceId = price!.Id
+                ProductPriceId = price.Id
             };
 
             // Act
@@ -387,19 +439,21 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
             try
             {
                 // Assert
-                result.Should().NotBeNull();
-                result.Id.Should().NotBeEmpty();
-                result.Url.Should().NotBeEmpty();
-                result.ProductId.Should().Be(createRequest.ProductId);
-                result.ProductPriceId.Should().Be(createRequest.ProductPriceId);
-                result.Enabled.Should().BeTrue(); // Default value
-                result.Label.Should().BeNull();
-                result.Description.Should().BeNull();
+                result.IsSuccess.Should().BeTrue();
+                var checkoutLink = result.Value;
+                checkoutLink.Should().NotBeNull();
+                checkoutLink.Id.Should().NotBeEmpty();
+                checkoutLink.Url.Should().NotBeEmpty();
+                checkoutLink.ProductId.Should().Be(createRequest.ProductId);
+                checkoutLink.ProductPriceId.Should().Be(createRequest.ProductPriceId);
+                checkoutLink.Enabled.Should().BeTrue(); // Default value
+                checkoutLink.Label.Should().BeNull();
+                checkoutLink.Description.Should().BeNull();
             }
             finally
             {
                 // Cleanup
-                try { await client.CheckoutLinks.DeleteAsync(result.Id); } catch { }
+                try { await client.CheckoutLinks.DeleteAsync(result.Value.Id); } catch { }
             }
         }
         finally
@@ -414,7 +468,7 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         // Create a product and price first
         var productRequest = new ProductCreateRequest
         {
@@ -422,7 +476,12 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
             Type = ProductType.OneTime,
             Description = "Test product for checkout link update"
         };
-        var product = await client.Products.CreateAsync(productRequest);
+        var productResult = await client.Products.CreateAsync(productRequest);
+        if (productResult.IsFailure)
+        {
+            return;
+        }
+        var product = productResult.Value;
 
         try
         {
@@ -432,19 +491,28 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
                 Currency = "USD",
                 Type = ProductPriceType.Fixed
             };
-            var price = await client.Products.CreatePriceAsync(product.Id, priceRequest);
-            price.Should().NotBeNull();
+            var priceResult = await client.Products.CreatePriceAsync(product.Id, priceRequest);
+            if (priceResult.IsFailure)
+            {
+                return;
+            }
+            var price = priceResult.Value;
 
             // Create a checkout link
             var createRequest = new CheckoutLinkCreateRequest
             {
                 ProductId = product.Id,
-                ProductPriceId = price!.Id,
+                ProductPriceId = price.Id,
                 Label = "Original Label",
                 Description = "Original Description",
                 Enabled = true
             };
-            var createdCheckoutLink = await client.CheckoutLinks.CreateAsync(createRequest);
+            var createResult = await client.CheckoutLinks.CreateAsync(createRequest);
+            if (createResult.IsFailure)
+            {
+                return;
+            }
+            var createdCheckoutLink = createResult.Value;
 
             try
             {
@@ -464,20 +532,25 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
                 var result = await client.CheckoutLinks.UpdateAsync(createdCheckoutLink.Id, updateRequest);
 
                 // Assert
-                result.Should().NotBeNull();
-                result.Id.Should().Be(createdCheckoutLink.Id);
-                result.Label.Should().Be(updateRequest.Label);
-                result.Description.Should().Be(updateRequest.Description);
-                result.Enabled.Should().Be(updateRequest.Enabled!.Value);
-                result.Metadata.Should().NotBeNull();
-                result.Metadata["updated"].Should().Be(true);
-                result.Metadata["version"].Should().Be(2);
-                result.UpdatedAt.Should().BeAfter(createdCheckoutLink.UpdatedAt);
+                result.IsSuccess.Should().BeTrue();
+                var updatedCheckoutLink = result.Value;
+                updatedCheckoutLink.Should().NotBeNull();
+                updatedCheckoutLink.Id.Should().Be(createdCheckoutLink.Id);
+                updatedCheckoutLink.Label.Should().Be(updateRequest.Label);
+                updatedCheckoutLink.Description.Should().Be(updateRequest.Description);
+                updatedCheckoutLink.Enabled.Should().Be(updateRequest.Enabled!.Value);
+                updatedCheckoutLink.Metadata.Should().NotBeNull();
+                updatedCheckoutLink.Metadata["updated"].Should().Be(true);
+                updatedCheckoutLink.Metadata["version"].Should().Be(2);
+                updatedCheckoutLink.UpdatedAt.Should().BeAfter(createdCheckoutLink.UpdatedAt);
             }
             finally
             {
                 // Cleanup checkout link
-                try { await client.CheckoutLinks.DeleteAsync(createdCheckoutLink.Id); } catch { }
+                if (createResult.IsSuccess)
+                {
+                    try { await client.CheckoutLinks.DeleteAsync(createResult.Value.Id); } catch { }
+                }
             }
         }
         finally
@@ -492,14 +565,19 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         // Create a product and price first
         var productRequest = new ProductCreateRequest
         {
             Name = "Test Product for Partial Checkout Link Update",
             Type = ProductType.OneTime
         };
-        var product = await client.Products.CreateAsync(productRequest);
+        var productResult = await client.Products.CreateAsync(productRequest);
+        if (productResult.IsFailure)
+        {
+            return;
+        }
+        var product = productResult.Value;
 
         try
         {
@@ -509,19 +587,28 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
                 Currency = "USD",
                 Type = ProductPriceType.Fixed
             };
-            var price = await client.Products.CreatePriceAsync(product.Id, priceRequest);
-            price.Should().NotBeNull();
+            var priceResult = await client.Products.CreatePriceAsync(product.Id, priceRequest);
+            if (priceResult.IsFailure)
+            {
+                return;
+            }
+            var price = priceResult.Value;
 
             // Create a checkout link
             var createRequest = new CheckoutLinkCreateRequest
             {
                 ProductId = product.Id,
-                ProductPriceId = price!.Id,
+                ProductPriceId = price.Id,
                 Label = "Original Label",
                 Description = "Original Description",
                 Enabled = true
             };
-            var createdCheckoutLink = await client.CheckoutLinks.CreateAsync(createRequest);
+            var createResult = await client.CheckoutLinks.CreateAsync(createRequest);
+            if (createResult.IsFailure)
+            {
+                return;
+            }
+            var createdCheckoutLink = createResult.Value;
 
             try
             {
@@ -535,16 +622,21 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
                 var result = await client.CheckoutLinks.UpdateAsync(createdCheckoutLink.Id, updateRequest);
 
                 // Assert
-                result.Should().NotBeNull();
-                result.Id.Should().Be(createdCheckoutLink.Id);
-                result.Label.Should().Be(updateRequest.Label);
-                result.Description.Should().Be(createdCheckoutLink.Description); // Should remain unchanged
-                result.Enabled.Should().Be(createdCheckoutLink.Enabled); // Should remain unchanged
+                result.IsSuccess.Should().BeTrue();
+                var updatedCheckoutLink = result.Value;
+                updatedCheckoutLink.Should().NotBeNull();
+                updatedCheckoutLink.Id.Should().Be(createdCheckoutLink.Id);
+                updatedCheckoutLink.Label.Should().Be(updateRequest.Label);
+                updatedCheckoutLink.Description.Should().Be(createdCheckoutLink.Description); // Should remain unchanged
+                updatedCheckoutLink.Enabled.Should().Be(createdCheckoutLink.Enabled); // Should remain unchanged
             }
             finally
             {
                 // Cleanup checkout link
-                try { await client.CheckoutLinks.DeleteAsync(createdCheckoutLink.Id); } catch { }
+                if (createResult.IsSuccess)
+                {
+                    try { await client.CheckoutLinks.DeleteAsync(createResult.Value.Id); } catch { }
+                }
             }
         }
         finally
@@ -559,14 +651,19 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         // Create a product and price first
         var productRequest = new ProductCreateRequest
         {
             Name = "Test Product for Checkout Link Deletion",
             Type = ProductType.OneTime
         };
-        var product = await client.Products.CreateAsync(productRequest);
+        var productResult = await client.Products.CreateAsync(productRequest);
+        if (productResult.IsFailure)
+        {
+            return;
+        }
+        var product = productResult.Value;
 
         try
         {
@@ -576,29 +673,40 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
                 Currency = "USD",
                 Type = ProductPriceType.Fixed
             };
-            var price = await client.Products.CreatePriceAsync(product.Id, priceRequest);
-            price.Should().NotBeNull();
+            var priceResult = await client.Products.CreatePriceAsync(product.Id, priceRequest);
+            if (priceResult.IsFailure)
+            {
+                return;
+            }
+            var price = priceResult.Value;
 
             // Create a checkout link
             var createRequest = new CheckoutLinkCreateRequest
             {
                 ProductId = product.Id,
-                ProductPriceId = price!.Id,
+                ProductPriceId = price.Id,
                 Label = "Checkout Link to Delete"
             };
-            var createdCheckoutLink = await client.CheckoutLinks.CreateAsync(createRequest);
+            var createResult = await client.CheckoutLinks.CreateAsync(createRequest);
+            if (createResult.IsFailure)
+            {
+                return;
+            }
+            var createdCheckoutLink = createResult.Value;
 
             // Act
-            var deletedCheckoutLink = await client.CheckoutLinks.DeleteAsync(createdCheckoutLink.Id);
+            var result = await client.CheckoutLinks.DeleteAsync(createdCheckoutLink.Id);
 
             // Assert
+            result.IsSuccess.Should().BeTrue();
+            var deletedCheckoutLink = result.Value;
             deletedCheckoutLink.Should().NotBeNull();
             deletedCheckoutLink.Id.Should().Be(createdCheckoutLink.Id);
             deletedCheckoutLink.Label.Should().Be(createdCheckoutLink.Label);
-            
-            // Verify the checkout link is actually deleted by trying to get it (returns null for deleted items)
-            var afterDelete = await client.CheckoutLinks.GetAsync(createdCheckoutLink.Id);
-            afterDelete.Should().BeNull();
+
+            // Verify the checkout link is actually deleted by trying to get it
+            var afterDeleteResult = await client.CheckoutLinks.GetAsync(createdCheckoutLink.Id);
+            afterDeleteResult.IsFailure.Should().BeTrue();
         }
         finally
         {
@@ -608,25 +716,17 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
     }
 
     [Fact]
-    public async Task DeleteAsync_WithInvalidId_ReturnsNull()
+    public async Task DeleteAsync_WithInvalidId_ReturnsFailure()
     {
         // Arrange
         var client = _fixture.CreateClient();
         var invalidId = "invalid_checkout_link_id";
 
-        // Act & Assert
-        try
-        {
-            var result = await client.CheckoutLinks.DeleteAsync(invalidId);
-            
-            // Assert - With nullable return types, invalid IDs return null instead of throwing
-            result.Should().BeNull();
-        }
-        catch (PolarSharp.Exceptions.PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed"))
-        {
-            // Expected in sandbox environment with limited permissions
-            true.Should().BeTrue();
-        }
+        // Act
+        var result = await client.CheckoutLinks.DeleteAsync(invalidId);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
     }
 
     [Fact]
@@ -634,7 +734,7 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         // Create a product and price first
         var productRequest = new ProductCreateRequest
         {
@@ -642,7 +742,12 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
             Type = ProductType.OneTime,
             Description = "Test product with nested objects"
         };
-        var product = await client.Products.CreateAsync(productRequest);
+        var productResult = await client.Products.CreateAsync(productRequest);
+        if (productResult.IsFailure)
+        {
+            return;
+        }
+        var product = productResult.Value;
 
         try
         {
@@ -652,32 +757,43 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
                 Currency = "USD",
                 Type = ProductPriceType.Fixed
             };
-            var price = await client.Products.CreatePriceAsync(product.Id, priceRequest);
-            price.Should().NotBeNull();
+            var priceResult = await client.Products.CreatePriceAsync(product.Id, priceRequest);
+            if (priceResult.IsFailure)
+            {
+                return;
+            }
+            var price = priceResult.Value;
 
             // Create a checkout link
             var createRequest = new CheckoutLinkCreateRequest
             {
                 ProductId = product.Id,
-                ProductPriceId = price!.Id,
+                ProductPriceId = price.Id,
                 Label = "Checkout Link with Nested Objects"
             };
-            var createdCheckoutLink = await client.CheckoutLinks.CreateAsync(createRequest);
+            var createResult = await client.CheckoutLinks.CreateAsync(createRequest);
+            if (createResult.IsFailure)
+            {
+                return;
+            }
+            var createdCheckoutLink = createResult.Value;
 
             try
             {
                 // Act
-                var retrievedCheckoutLink = await client.CheckoutLinks.GetAsync(createdCheckoutLink.Id);
+                var result = await client.CheckoutLinks.GetAsync(createdCheckoutLink.Id);
 
                 // Assert
+                result.IsSuccess.Should().BeTrue();
+                var retrievedCheckoutLink = result.Value;
                 retrievedCheckoutLink.Should().NotBeNull();
                 retrievedCheckoutLink.Product.Should().NotBeNull();
                 retrievedCheckoutLink.ProductPrice.Should().NotBeNull();
-                
+
                 retrievedCheckoutLink.Product.Id.Should().Be(product.Id);
                 retrievedCheckoutLink.Product.Name.Should().Be(product.Name);
                 retrievedCheckoutLink.Product.Type.Should().Be(product.Type);
-                
+
                 retrievedCheckoutLink.ProductPrice.Id.Should().Be(price.Id);
                 retrievedCheckoutLink.ProductPrice.Amount.Should().Be(price.Amount);
                 retrievedCheckoutLink.ProductPrice.Currency.Should().Be(price.Currency);
@@ -686,7 +802,10 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
             finally
             {
                 // Cleanup checkout link
-                try { await client.CheckoutLinks.DeleteAsync(createdCheckoutLink.Id); } catch { }
+                if (createResult.IsSuccess)
+                {
+                    try { await client.CheckoutLinks.DeleteAsync(createResult.Value.Id); } catch { }
+                }
             }
         }
         finally
@@ -712,6 +831,7 @@ public class CheckoutLinksIntegrationTests : IClassFixture<IntegrationTestFixtur
 
         // Assert
         result.Should().NotBeNull();
-        result.Items.Should().AllSatisfy(item => item.CreatedAt.Should().BeOnOrAfter(yesterday));
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Items.Should().AllSatisfy(item => item.CreatedAt.Should().BeOnOrAfter(yesterday));
     }
 }

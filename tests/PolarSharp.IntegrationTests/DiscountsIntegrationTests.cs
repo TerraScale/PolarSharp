@@ -1,6 +1,6 @@
 using System.Net;
 using FluentAssertions;
-using PolarSharp.Exceptions;
+using PolarSharp.Results;
 using PolarSharp.Models.Discounts;
 using Xunit;
 
@@ -25,12 +25,14 @@ public class DiscountsIntegrationTests : IClassFixture<IntegrationTestFixture>
         var client = _fixture.CreateClient();
 
         // Act
-        var response = await client.Discounts.ListAsync();
+        var result = await client.Discounts.ListAsync();
 
         // Assert
-        response.Should().NotBeNull();
-        response.Items.Should().NotBeNull();
-        response.Pagination.Should().NotBeNull();
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
+        result.Value.Pagination.Should().NotBeNull();
     }
 
     [Fact]
@@ -40,13 +42,15 @@ public class DiscountsIntegrationTests : IClassFixture<IntegrationTestFixture>
         var client = _fixture.CreateClient();
 
         // Act
-        var response = await client.Discounts.ListAsync(page: 1, limit: 5);
+        var result = await client.Discounts.ListAsync(page: 1, limit: 5);
 
         // Assert
-        response.Should().NotBeNull();
-        response.Items.Should().NotBeNull();
-        response.Pagination.Should().NotBeNull();
-        response.Pagination.Page.Should().BeGreaterThanOrEqualTo(0);
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
+        result.Value.Pagination.Should().NotBeNull();
+        result.Value.Pagination.Page.Should().BeGreaterThanOrEqualTo(0);
     }
 
     [Fact]
@@ -57,8 +61,11 @@ public class DiscountsIntegrationTests : IClassFixture<IntegrationTestFixture>
         var discountCount = 0;
 
         // Act
-        await foreach (var discount in client.Discounts.ListAllAsync())
+        await foreach (var discountResult in client.Discounts.ListAllAsync())
         {
+            if (discountResult.IsFailure) break;
+
+            var discount = discountResult.Value;
             discountCount++;
             discount.Should().NotBeNull();
             discount.Id.Should().NotBeNullOrEmpty();
@@ -94,9 +101,12 @@ public class DiscountsIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var discount = await client.Discounts.CreateAsync(request);
+        var result = await client.Discounts.CreateAsync(request);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var discount = result.Value;
         discount.Should().NotBeNull();
         discount.Id.Should().NotBeNullOrEmpty();
         discount.Name.Should().Be(request.Name);
@@ -136,9 +146,12 @@ public class DiscountsIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var discount = await client.Discounts.CreateAsync(request);
+        var result = await client.Discounts.CreateAsync(request);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var discount = result.Value;
         discount.Should().NotBeNull();
         discount.Id.Should().NotBeNullOrEmpty();
         discount.Name.Should().Be(request.Name);
@@ -161,9 +174,12 @@ public class DiscountsIntegrationTests : IClassFixture<IntegrationTestFixture>
         var createdDiscount = await CreateTestDiscountAsync(client);
 
         // Act
-        var retrievedDiscount = await client.Discounts.GetAsync(createdDiscount.Id);
+        var result = await client.Discounts.GetAsync(createdDiscount.Id);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var retrievedDiscount = result.Value;
         retrievedDiscount.Should().NotBeNull();
         retrievedDiscount.Id.Should().Be(createdDiscount.Id);
         retrievedDiscount.Name.Should().Be(createdDiscount.Name);
@@ -193,9 +209,12 @@ public class DiscountsIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var updatedDiscount = await client.Discounts.UpdateAsync(createdDiscount.Id, updateRequest);
+        var result = await client.Discounts.UpdateAsync(createdDiscount.Id, updateRequest);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var updatedDiscount = result.Value;
         updatedDiscount.Should().NotBeNull();
         updatedDiscount.Id.Should().Be(createdDiscount.Id);
         updatedDiscount.Name.Should().Be(updateRequest.Name);
@@ -215,15 +234,18 @@ public class DiscountsIntegrationTests : IClassFixture<IntegrationTestFixture>
         var createdDiscount = await CreateTestDiscountAsync(client);
 
         // Act
-        var deletedDiscount = await client.Discounts.DeleteAsync(createdDiscount.Id);
+        var result = await client.Discounts.DeleteAsync(createdDiscount.Id);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var deletedDiscount = result.Value;
         deletedDiscount.Should().NotBeNull();
-        deletedDiscount!.Id.Should().Be(createdDiscount.Id);
-        
-        // Verify discount is deleted by trying to get it (returns null for deleted items)
-        var afterDelete = await client.Discounts.GetAsync(createdDiscount.Id);
-        afterDelete.Should().BeNull();
+        deletedDiscount.Id.Should().Be(createdDiscount.Id);
+
+        // Verify discount is deleted by trying to get it
+        var afterDeleteResult = await client.Discounts.GetAsync(createdDiscount.Id);
+        afterDeleteResult.IsSuccess.Should().BeFalse();
     }
 
     [Fact]
@@ -236,13 +258,16 @@ public class DiscountsIntegrationTests : IClassFixture<IntegrationTestFixture>
             .WithType("fixed_amount");
 
         // Act
-        var response = await client.Discounts.ListAsync(builder);
+        var result = await client.Discounts.ListAsync(builder);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var response = result.Value;
         response.Should().NotBeNull();
         response.Items.Should().NotBeNull();
         response.Pagination.Should().NotBeNull();
-        
+
         // Verify filtering (if any discounts exist)
         foreach (var discount in response.Items)
         {
@@ -263,13 +288,16 @@ public class DiscountsIntegrationTests : IClassFixture<IntegrationTestFixture>
             .CreatedBefore(nextMonth);
 
         // Act
-        var response = await client.Discounts.ListAsync(builder);
+        var result = await client.Discounts.ListAsync(builder);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var response = result.Value;
         response.Should().NotBeNull();
         response.Items.Should().NotBeNull();
         response.Pagination.Should().NotBeNull();
-        
+
         // Verify date filtering (if any discounts exist)
         foreach (var discount in response.Items)
         {
@@ -290,13 +318,16 @@ public class DiscountsIntegrationTests : IClassFixture<IntegrationTestFixture>
             .ExpiresBefore(nextYear);
 
         // Act
-        var response = await client.Discounts.ListAsync(builder);
+        var result = await client.Discounts.ListAsync(builder);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var response = result.Value;
         response.Should().NotBeNull();
         response.Items.Should().NotBeNull();
         response.Pagination.Should().NotBeNull();
-        
+
         // Verify expiration filtering (if any discounts exist)
         foreach (var discount in response.Items)
         {
@@ -321,9 +352,12 @@ public class DiscountsIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var discount = await client.Discounts.CreateAsync(request);
+        var result = await client.Discounts.CreateAsync(request);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var discount = result.Value;
         discount.Should().NotBeNull();
         discount.Id.Should().NotBeNullOrEmpty();
         discount.Name.Should().Be(request.Name);
@@ -347,9 +381,12 @@ public class DiscountsIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var updatedDiscount = await client.Discounts.UpdateAsync(createdDiscount.Id, updateRequest);
+        var result = await client.Discounts.UpdateAsync(createdDiscount.Id, updateRequest);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var updatedDiscount = result.Value;
         updatedDiscount.Should().NotBeNull();
         updatedDiscount.Id.Should().Be(createdDiscount.Id);
         updatedDiscount.Type.Should().Be(originalType); // Should remain unchanged
@@ -371,9 +408,12 @@ public class DiscountsIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var discount = await client.Discounts.CreateAsync(request);
+        var result = await client.Discounts.CreateAsync(request);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var discount = result.Value;
         discount.Should().NotBeNull();
         discount.Id.Should().NotBeNullOrEmpty();
         discount.Name.Should().Be(request.Name);
@@ -407,9 +447,12 @@ public class DiscountsIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var discount = await client.Discounts.CreateAsync(request);
+        var result = await client.Discounts.CreateAsync(request);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var discount = result.Value;
         discount.Should().NotBeNull();
         discount.Metadata.Should().NotBeNull();
         discount.Metadata.Should().ContainKey("campaign");
@@ -439,6 +482,7 @@ public class DiscountsIntegrationTests : IClassFixture<IntegrationTestFixture>
             }
         };
 
-        return await client.Discounts.CreateAsync(request);
+        var result = await client.Discounts.CreateAsync(request);
+        return result.Value;
     }
 }

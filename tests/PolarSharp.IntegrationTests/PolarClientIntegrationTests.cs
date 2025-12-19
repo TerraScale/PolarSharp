@@ -6,6 +6,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using PolarSharp;
 using PolarSharp.Models.Products;
+using PolarSharp.Results;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -32,12 +33,14 @@ public class PolarClientIntegrationTests : IClassFixture<IntegrationTestFixture>
         var client = _fixture.CreateClient();
 
         // Act
-        var products = await client.Products.ListAsync(limit: 1);
+        var result = await client.Products.ListAsync(limit: 1);
 
         // Assert
-        products.Should().NotBeNull();
-        products.Items.Should().NotBeNull();
-        products.Pagination.Should().NotBeNull();
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
+        result.Value.Pagination.Should().NotBeNull();
     }
 
     [Fact]
@@ -48,17 +51,19 @@ public class PolarClientIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Act
         var result = await client.Products.ListAsync(page: 1, limit: 5);
-        
+
         //Log result
         var json = JsonSerializer.Serialize(result);
         _testOutputHelper.WriteLine(json);
 
         // Assert
         result.Should().NotBeNull();
-        result.Items.Should().NotBeEmpty();
-        result.Pagination.Should().NotBeNull();
-        result.Pagination.TotalCount.Should().BeGreaterThanOrEqualTo(0);
-        result.Pagination.MaxPage.Should().BeGreaterThanOrEqualTo(0);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeEmpty();
+        result.Value.Pagination.Should().NotBeNull();
+        result.Value.Pagination.TotalCount.Should().BeGreaterThanOrEqualTo(0);
+        result.Value.Pagination.MaxPage.Should().BeGreaterThanOrEqualTo(0);
     }
 
     [Fact]
@@ -69,9 +74,12 @@ public class PolarClientIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Act
         var products = new List<Product>();
-        await foreach (var product in client.Products.ListAllAsync())
+        await foreach (var result in client.Products.ListAllAsync())
         {
-            products.Add(product);
+            if (result.IsSuccess)
+            {
+                products.Add(result.Value);
+            }
         }
 
         // Assert
@@ -100,8 +108,13 @@ public class PolarClientIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var createdProduct = await client.Products.CreateAsync(createRequest);
-        var retrievedProduct = await client.Products.GetAsync(createdProduct.Id);
+        var createResult = await client.Products.CreateAsync(createRequest);
+        createResult.IsSuccess.Should().BeTrue();
+        var createdProduct = createResult.Value;
+
+        var getResult = await client.Products.GetAsync(createdProduct.Id);
+        getResult.IsSuccess.Should().BeTrue();
+        var retrievedProduct = getResult.Value;
 
         // Assert
         createdProduct.Should().NotBeNull();
@@ -139,7 +152,10 @@ public class PolarClientIntegrationTests : IClassFixture<IntegrationTestFixture>
             }
         };
 
-        var createdProduct = await client.Products.CreateAsync(createRequest);
+        var createResult = await client.Products.CreateAsync(createRequest);
+        createResult.IsSuccess.Should().BeTrue();
+        var createdProduct = createResult.Value;
+
         var updateRequest = new ProductUpdateRequest
         {
             Name = "Updated Product Name",
@@ -147,7 +163,9 @@ public class PolarClientIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var updatedProduct = await client.Products.UpdateAsync(createdProduct.Id, updateRequest);
+        var updateResult = await client.Products.UpdateAsync(createdProduct.Id, updateRequest);
+        updateResult.IsSuccess.Should().BeTrue();
+        var updatedProduct = updateResult.Value;
 
         // Assert
         updatedProduct.Should().NotBeNull();
@@ -170,10 +188,12 @@ public class PolarClientIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Assert
         result.Should().NotBeNull();
-        result.Items.Should().NotBeNull();
-        result.Pagination.Should().NotBeNull();
-        result.Pagination.TotalCount.Should().BeGreaterThanOrEqualTo(0);
-        result.Pagination.MaxPage.Should().BeGreaterThanOrEqualTo(0);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
+        result.Value.Pagination.Should().NotBeNull();
+        result.Value.Pagination.TotalCount.Should().BeGreaterThanOrEqualTo(0);
+        result.Value.Pagination.MaxPage.Should().BeGreaterThanOrEqualTo(0);
     }
 
     [Fact]
@@ -184,9 +204,12 @@ public class PolarClientIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Act
         var orders = new List<Models.Orders.Order>();
-        await foreach (var order in client.Orders.ListAllAsync())
+        await foreach (var result in client.Orders.ListAllAsync())
         {
-            orders.Add(order);
+            if (result.IsSuccess)
+            {
+                orders.Add(result.Value);
+            }
         }
 
         // Assert
@@ -204,10 +227,12 @@ public class PolarClientIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Assert
         result.Should().NotBeNull();
-        result.Items.Should().NotBeNull();
-        result.Pagination.Should().NotBeNull();
-        result.Pagination.TotalCount.Should().BeGreaterThanOrEqualTo(0);
-        result.Pagination.MaxPage.Should().BeGreaterThanOrEqualTo(0);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
+        result.Value.Pagination.Should().NotBeNull();
+        result.Value.Pagination.TotalCount.Should().BeGreaterThanOrEqualTo(0);
+        result.Value.Pagination.MaxPage.Should().BeGreaterThanOrEqualTo(0);
     }
 
     [Fact]
@@ -218,9 +243,12 @@ public class PolarClientIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Act
         var subscriptions = new List<Models.Subscriptions.Subscription>();
-        await foreach (var subscription in client.Subscriptions.ListAllAsync())
+        await foreach (var result in client.Subscriptions.ListAllAsync())
         {
-            subscriptions.Add(subscription);
+            if (result.IsSuccess)
+            {
+                subscriptions.Add(result.Value);
+            }
         }
 
         // Assert
@@ -238,10 +266,12 @@ public class PolarClientIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Assert
         result.Should().NotBeNull();
-        result.Items.Should().NotBeNull();
-        result.Pagination.Should().NotBeNull();
-        result.Pagination.TotalCount.Should().BeGreaterThanOrEqualTo(0);
-        result.Pagination.MaxPage.Should().BeGreaterThanOrEqualTo(0);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
+        result.Value.Pagination.Should().NotBeNull();
+        result.Value.Pagination.TotalCount.Should().BeGreaterThanOrEqualTo(0);
+        result.Value.Pagination.MaxPage.Should().BeGreaterThanOrEqualTo(0);
     }
 
     [Fact]
@@ -249,10 +279,10 @@ public class PolarClientIntegrationTests : IClassFixture<IntegrationTestFixture>
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         // Act & Assert
         // Checkout creation may require higher permissions in sandbox
-        var action = async () => 
+        var action = async () =>
         {
             // First, we need a product to create a checkout for
             var priceRequest = new ProductPriceCreateRequest
@@ -270,7 +300,9 @@ public class PolarClientIntegrationTests : IClassFixture<IntegrationTestFixture>
                 Prices = new List<ProductPriceCreateRequest> { priceRequest }
             };
 
-            var product = await client.Products.CreateAsync(productRequest);
+            var productResult = await client.Products.CreateAsync(productRequest);
+            productResult.IsSuccess.Should().BeTrue();
+            var product = productResult.Value;
             var price = product.Prices.First();
 
             var checkoutRequest = new Models.Checkouts.CheckoutCreateRequest
@@ -283,14 +315,16 @@ public class PolarClientIntegrationTests : IClassFixture<IntegrationTestFixture>
 
             return await client.Checkouts.CreateAsync(checkoutRequest);
         };
-        
+
         try
         {
-            var checkout = await action();
+            var checkoutResult = await action();
+            checkoutResult.IsSuccess.Should().BeTrue();
+            var checkout = checkoutResult.Value;
             checkout.Should().NotBeNull();
             checkout.Id.Should().NotBeNullOrEmpty();
         }
-        catch (Exceptions.PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed") || ex.Message.Contains("RequestValidationError"))
+        catch (Exception ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed") || ex.Message.Contains("RequestValidationError"))
         {
             // Expected in sandbox environment with limited permissions or validation requirements
             true.Should().BeTrue(); // Test passes - this is expected behavior
@@ -308,10 +342,12 @@ public class PolarClientIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Assert
         result.Should().NotBeNull();
-        result.Items.Should().NotBeNull();
-        result.Pagination.Should().NotBeNull();
-        result.Pagination.TotalCount.Should().BeGreaterThanOrEqualTo(0);
-        result.Pagination.MaxPage.Should().BeGreaterThanOrEqualTo(0);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
+        result.Value.Pagination.Should().NotBeNull();
+        result.Value.Pagination.TotalCount.Should().BeGreaterThanOrEqualTo(0);
+        result.Value.Pagination.MaxPage.Should().BeGreaterThanOrEqualTo(0);
     }
 
     [Fact]
@@ -331,8 +367,13 @@ public class PolarClientIntegrationTests : IClassFixture<IntegrationTestFixture>
         // Benefit creation may require higher permissions in sandbox
         try
         {
-            var createdBenefit = await client.Benefits.CreateAsync(createRequest);
-            var retrievedBenefit = await client.Benefits.GetAsync(createdBenefit.Id);
+            var createResult = await client.Benefits.CreateAsync(createRequest);
+            createResult.IsSuccess.Should().BeTrue();
+            var createdBenefit = createResult.Value;
+
+            var getResult = await client.Benefits.GetAsync(createdBenefit.Id);
+            getResult.IsSuccess.Should().BeTrue();
+            var retrievedBenefit = getResult.Value;
 
             createdBenefit.Should().NotBeNull();
             createdBenefit.Id.Should().NotBeNullOrEmpty();
@@ -349,7 +390,7 @@ public class PolarClientIntegrationTests : IClassFixture<IntegrationTestFixture>
             // Cleanup
             await client.Benefits.DeleteAsync(createdBenefit.Id);
         }
-        catch (Exceptions.PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed") || ex.Message.Contains("RequestValidationError"))
+        catch (Exception ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed") || ex.Message.Contains("RequestValidationError"))
         {
             // Expected in sandbox environment with limited permissions or validation requirements
             true.Should().BeTrue(); // Test passes - this is expected behavior
@@ -367,10 +408,12 @@ public class PolarClientIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Assert
         result.Should().NotBeNull();
-        result.Items.Should().NotBeNull();
-        result.Pagination.Should().NotBeNull();
-        result.Pagination.TotalCount.Should().BeGreaterThanOrEqualTo(0);
-        result.Pagination.MaxPage.Should().BeGreaterThanOrEqualTo(0);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
+        result.Value.Pagination.Should().NotBeNull();
+        result.Value.Pagination.TotalCount.Should().BeGreaterThanOrEqualTo(0);
+        result.Value.Pagination.MaxPage.Should().BeGreaterThanOrEqualTo(0);
     }
 
     [Fact]
@@ -386,8 +429,13 @@ public class PolarClientIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var createdCustomer = await client.Customers.CreateAsync(createRequest);
-        var retrievedCustomer = await client.Customers.GetAsync(createdCustomer.Id);
+        var createResult = await client.Customers.CreateAsync(createRequest);
+        createResult.IsSuccess.Should().BeTrue();
+        var createdCustomer = createResult.Value;
+
+        var getResult = await client.Customers.GetAsync(createdCustomer.Id);
+        getResult.IsSuccess.Should().BeTrue();
+        var retrievedCustomer = getResult.Value;
 
         // Assert
         createdCustomer.Should().NotBeNull();
@@ -411,7 +459,7 @@ public class PolarClientIntegrationTests : IClassFixture<IntegrationTestFixture>
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         // Act & Assert
         // Customer session creation may require higher permissions in sandbox
         try
@@ -423,14 +471,18 @@ public class PolarClientIntegrationTests : IClassFixture<IntegrationTestFixture>
                 Name = "Test Customer for Session"
             };
 
-            var customer = await client.Customers.CreateAsync(customerRequest);
+            var customerResult = await client.Customers.CreateAsync(customerRequest);
+            customerResult.IsSuccess.Should().BeTrue();
+            var customer = customerResult.Value;
 
             var sessionRequest = new Models.CustomerSessions.CustomerSessionCreateRequest
             {
                 CustomerId = customer.Id
             };
 
-            var session = await client.CustomerSessions.CreateAsync(sessionRequest);
+            var sessionResult = await client.CustomerSessions.CreateAsync(sessionRequest);
+            sessionResult.IsSuccess.Should().BeTrue();
+            var session = sessionResult.Value;
 
             session.Should().NotBeNull();
             session.Id.Should().NotBeNullOrEmpty();
@@ -441,7 +493,7 @@ public class PolarClientIntegrationTests : IClassFixture<IntegrationTestFixture>
             // Cleanup
             await client.Customers.DeleteAsync(customer.Id);
         }
-        catch (Exceptions.PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed") || ex.Message.Contains("RequestValidationError"))
+        catch (Exception ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed") || ex.Message.Contains("RequestValidationError"))
         {
             // Expected in sandbox environment with limited permissions or validation requirements
             true.Should().BeTrue(); // Test passes - this is expected behavior
@@ -459,10 +511,12 @@ public class PolarClientIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Assert
         result.Should().NotBeNull();
-        result.Items.Should().NotBeNull();
-        result.Pagination.Should().NotBeNull();
-        result.Pagination.TotalCount.Should().BeGreaterThanOrEqualTo(0);
-        result.Pagination.MaxPage.Should().BeGreaterThanOrEqualTo(0);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
+        result.Value.Pagination.Should().NotBeNull();
+        result.Value.Pagination.TotalCount.Should().BeGreaterThanOrEqualTo(0);
+        result.Value.Pagination.MaxPage.Should().BeGreaterThanOrEqualTo(0);
     }
 
     [Fact]

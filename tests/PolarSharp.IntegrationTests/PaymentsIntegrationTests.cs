@@ -1,6 +1,7 @@
 using FluentAssertions;
 using PolarSharp.Models.Payments;
 using PolarSharp.Models.Refunds;
+using PolarSharp.Results;
 using Xunit;
 
 namespace PolarSharp.IntegrationTests;
@@ -24,14 +25,16 @@ public class PaymentsIntegrationTests : IClassFixture<IntegrationTestFixture>
         var client = _fixture.CreateClient();
 
         // Act
-        var response = await client.Payments.ListAsync(page: 1, limit: 10);
+        var result = await client.Payments.ListAsync(page: 1, limit: 10);
 
         // Assert
-        response.Should().NotBeNull();
-        response.Items.Should().NotBeNull();
-        response.Pagination.Should().NotBeNull();
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
+        result.Value.Pagination.Should().NotBeNull();
         // API may return 0-indexed or 1-indexed pages
-        response.Pagination.Page.Should().BeGreaterThanOrEqualTo(0);
+        result.Value.Pagination.Page.Should().BeGreaterThanOrEqualTo(0);
     }
 
     [Fact]
@@ -39,20 +42,23 @@ public class PaymentsIntegrationTests : IClassFixture<IntegrationTestFixture>
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         // First, list payments to get a valid ID
-        var payments = await client.Payments.ListAsync();
-        if (payments.Items.Count == 0)
+        var paymentsResult = await client.Payments.ListAsync();
+        if (!paymentsResult.IsSuccess || paymentsResult.Value.Items.Count == 0)
         {
             return; // Skip if no payments exist
         }
 
-        var paymentId = payments.Items.First().Id;
+        var paymentId = paymentsResult.Value.Items.First().Id;
 
         // Act
-        var payment = await client.Payments.GetAsync(paymentId);
+        var paymentResult = await client.Payments.GetAsync(paymentId);
 
         // Assert
+        paymentResult.Should().NotBeNull();
+        paymentResult.IsSuccess.Should().BeTrue();
+        var payment = paymentResult.Value;
         payment.Should().NotBeNull();
         payment.Id.Should().Be(paymentId);
         payment.Amount.Should().BeGreaterThanOrEqualTo(0);
@@ -70,18 +76,13 @@ public class PaymentsIntegrationTests : IClassFixture<IntegrationTestFixture>
         var client = _fixture.CreateClient();
         var invalidPaymentId = "invalid_payment_id";
 
-        // Act & Assert
-        try
-        {
-            var result = await client.Payments.GetAsync(invalidPaymentId);
-            // With nullable return types, invalid IDs return null
-            result.Should().BeNull();
-        }
-        catch (PolarSharp.Exceptions.PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed"))
-        {
-            // Expected in sandbox environment with limited permissions
-            true.Should().BeTrue();
-        }
+        // Act
+        var result = await client.Payments.GetAsync(invalidPaymentId);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().BeNull();
     }
 
     [Fact]
@@ -92,9 +93,10 @@ public class PaymentsIntegrationTests : IClassFixture<IntegrationTestFixture>
 
         // Act
         var allPayments = new List<Payment>();
-        await foreach (var payment in client.Payments.ListAllAsync())
+        await foreach (var paymentResult in client.Payments.ListAllAsync())
         {
-            allPayments.Add(payment);
+            if (paymentResult.IsFailure) break;
+            allPayments.Add(paymentResult.Value);
         }
 
         // Assert
@@ -111,12 +113,14 @@ public class PaymentsIntegrationTests : IClassFixture<IntegrationTestFixture>
         // Act
         var queryBuilder = client.Payments.Query();
 
-        var response = await client.Payments.ListAsync(queryBuilder);
+        var result = await client.Payments.ListAsync(queryBuilder);
 
         // Assert
-        response.Should().NotBeNull();
-        response.Items.Should().NotBeNull();
-        response.Pagination.Should().NotBeNull();
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
+        result.Value.Pagination.Should().NotBeNull();
     }
 
     [Fact]
@@ -126,15 +130,17 @@ public class PaymentsIntegrationTests : IClassFixture<IntegrationTestFixture>
         var client = _fixture.CreateClient();
 
         // Act
-        var page1 = await client.Payments.ListAsync(page: 1, limit: 5);
-        var page2 = await client.Payments.ListAsync(page: 2, limit: 5);
+        var result1 = await client.Payments.ListAsync(page: 1, limit: 5);
+        var result2 = await client.Payments.ListAsync(page: 2, limit: 5);
 
         // Assert
-        page1.Should().NotBeNull();
-        page1.Pagination.Page.Should().BeGreaterThanOrEqualTo(0);
-        
-        page2.Should().NotBeNull();
-        page2.Pagination.Page.Should().BeGreaterThanOrEqualTo(0);
+        result1.Should().NotBeNull();
+        result1.IsSuccess.Should().BeTrue();
+        result1.Value.Pagination.Page.Should().BeGreaterThanOrEqualTo(0);
+
+        result2.Should().NotBeNull();
+        result2.IsSuccess.Should().BeTrue();
+        result2.Value.Pagination.Page.Should().BeGreaterThanOrEqualTo(0);
     }
 
     [Fact]
@@ -144,11 +150,13 @@ public class PaymentsIntegrationTests : IClassFixture<IntegrationTestFixture>
         var client = _fixture.CreateClient();
 
         // Act
-        var response = await client.Payments.ListAsync(page: 1, limit: 100);
+        var result = await client.Payments.ListAsync(page: 1, limit: 100);
 
         // Assert
-        response.Should().NotBeNull();
-        response.Items.Should().NotBeNull();
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
     }
 
     [Fact]
@@ -158,13 +166,15 @@ public class PaymentsIntegrationTests : IClassFixture<IntegrationTestFixture>
         var client = _fixture.CreateClient();
 
         // Act
-        var response = await client.Payments.ListAsync();
+        var result = await client.Payments.ListAsync();
 
         // Assert
-        response.Should().NotBeNull();
-        response.Items.Should().NotBeNull();
-        
-        foreach (var payment in response.Items)
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
+
+        foreach (var payment in result.Value.Items)
         {
             payment.Id.Should().NotBeNullOrEmpty();
             payment.Amount.Should().BeGreaterThanOrEqualTo(0);
@@ -183,13 +193,15 @@ public class PaymentsIntegrationTests : IClassFixture<IntegrationTestFixture>
         var client = _fixture.CreateClient();
 
         // Act
-        var response = await client.Payments.ListAsync();
+        var result = await client.Payments.ListAsync();
 
         // Assert
-        response.Should().NotBeNull();
-        response.Items.Should().NotBeNull();
-        
-        foreach (var payment in response.Items)
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
+
+        foreach (var payment in result.Value.Items)
         {
             // Payment method may be null if not included
             if (payment.PaymentMethod != null)
@@ -214,18 +226,21 @@ public class PaymentsIntegrationTests : IClassFixture<IntegrationTestFixture>
         var client = _fixture.CreateClient();
 
         // Act
-        var smallPage = await client.Payments.ListAsync(page: 1, limit: 1);
-        var mediumPage = await client.Payments.ListAsync(page: 1, limit: 10);
-        var largePage = await client.Payments.ListAsync(page: 1, limit: 50);
+        var smallPageResult = await client.Payments.ListAsync(page: 1, limit: 1);
+        var mediumPageResult = await client.Payments.ListAsync(page: 1, limit: 10);
+        var largePageResult = await client.Payments.ListAsync(page: 1, limit: 50);
 
         // Assert
-        smallPage.Should().NotBeNull();
-        mediumPage.Should().NotBeNull();
-        largePage.Should().NotBeNull();
-        
+        smallPageResult.Should().NotBeNull();
+        smallPageResult.IsSuccess.Should().BeTrue();
+        mediumPageResult.Should().NotBeNull();
+        mediumPageResult.IsSuccess.Should().BeTrue();
+        largePageResult.Should().NotBeNull();
+        largePageResult.IsSuccess.Should().BeTrue();
+
         // All should have the same total count
-        smallPage.Pagination.TotalCount.Should().Be(mediumPage.Pagination.TotalCount);
-        mediumPage.Pagination.TotalCount.Should().Be(largePage.Pagination.TotalCount);
+        smallPageResult.Value.Pagination.TotalCount.Should().Be(mediumPageResult.Value.Pagination.TotalCount);
+        mediumPageResult.Value.Pagination.TotalCount.Should().Be(largePageResult.Value.Pagination.TotalCount);
     }
 
     [Fact]
@@ -233,20 +248,23 @@ public class PaymentsIntegrationTests : IClassFixture<IntegrationTestFixture>
     {
         // Arrange
         var client = _fixture.CreateClient();
-        
+
         // First, list payments to get a valid ID
-        var payments = await client.Payments.ListAsync();
-        if (payments.Items.Count == 0)
+        var paymentsResult = await client.Payments.ListAsync();
+        if (!paymentsResult.IsSuccess || paymentsResult.Value.Items.Count == 0)
         {
             return; // Skip if no payments exist
         }
 
-        var paymentId = payments.Items.First().Id;
+        var paymentId = paymentsResult.Value.Items.First().Id;
 
         // Act
-        var payment = await client.Payments.GetAsync(paymentId);
+        var paymentResult = await client.Payments.GetAsync(paymentId);
 
         // Assert
+        paymentResult.Should().NotBeNull();
+        paymentResult.IsSuccess.Should().BeTrue();
+        var payment = paymentResult.Value;
         payment.Should().NotBeNull();
         payment.Id.Should().Be(paymentId);
         payment.Amount.Should().BeGreaterThanOrEqualTo(0);
@@ -305,13 +323,15 @@ public class PaymentsIntegrationTests : IClassFixture<IntegrationTestFixture>
         var queryBuilder = client.Payments.Query()
             .WithCustomerId("non_existent_customer_id");
 
-        var response = await client.Payments.ListAsync(queryBuilder);
+        var result = await client.Payments.ListAsync(queryBuilder);
 
         // Assert
-        response.Should().NotBeNull();
-        response.Items.Should().NotBeNull();
-        response.Items.Should().BeEmpty();
-        response.Pagination.TotalCount.Should().Be(0);
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
+        result.Value.Items.Should().BeEmpty();
+        result.Value.Pagination.TotalCount.Should().Be(0);
     }
 
     [Fact]
@@ -321,13 +341,15 @@ public class PaymentsIntegrationTests : IClassFixture<IntegrationTestFixture>
         var client = _fixture.CreateClient();
 
         // Act
-        var response = await client.Payments.ListAsync();
+        var result = await client.Payments.ListAsync();
 
         // Assert
-        response.Should().NotBeNull();
-        response.Items.Should().NotBeNull();
-        
-        var failedPayments = response.Items.Where(p => p.Status == PaymentStatus.Failed).ToList();
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
+
+        var failedPayments = result.Value.Items.Where(p => p.Status == PaymentStatus.Failed).ToList();
         
         foreach (var failedPayment in failedPayments)
         {
@@ -353,13 +375,15 @@ public class PaymentsIntegrationTests : IClassFixture<IntegrationTestFixture>
         var client = _fixture.CreateClient();
 
         // Act
-        var response = await client.Payments.ListAsync();
+        var result = await client.Payments.ListAsync();
 
         // Assert
-        response.Should().NotBeNull();
-        response.Items.Should().NotBeNull();
-        
-        var succeededPayments = response.Items.Where(p => p.Status == PaymentStatus.Succeeded).ToList();
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
+
+        var succeededPayments = result.Value.Items.Where(p => p.Status == PaymentStatus.Succeeded).ToList();
         
         foreach (var succeededPayment in succeededPayments)
         {

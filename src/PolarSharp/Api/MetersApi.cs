@@ -4,10 +4,10 @@ using System.Text.Json;
 using Polly;
 using Polly.Retry;
 using Polly.RateLimit;
-using PolarSharp.Exceptions;
 using PolarSharp.Extensions;
 using PolarSharp.Models.Common;
 using PolarSharp.Models.Meters;
+using PolarSharp.Results;
 
 namespace PolarSharp.Api;
 
@@ -40,7 +40,7 @@ public class MetersApi
     /// <param name="limit">Number of items per page (default: 10, max: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing meters.</returns>
-    public async Task<PaginatedResponse<Meter>> ListAsync(
+    public async Task<PolarResult<PaginatedResponse<Meter>>> ListAsync(
         int page = 1,
         int limit = 10,
         CancellationToken cancellationToken = default)
@@ -55,11 +55,7 @@ public class MetersApi
             () => _httpClient.GetAsync($"v1/meters?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<Meter>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<Meter>>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -68,7 +64,7 @@ public class MetersApi
     /// <param name="request">The meter creation request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The created meter.</returns>
-    public async Task<Meter> CreateAsync(
+    public async Task<PolarResult<Meter>> CreateAsync(
         MeterCreateRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -76,11 +72,7 @@ public class MetersApi
             () => _httpClient.PostAsJsonAsync("v1/meters", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        return await JsonSerializer.DeserializeAsync<Meter>(stream, _jsonOptions, cancellationToken)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<Meter>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -89,7 +81,7 @@ public class MetersApi
     /// <param name="meterId">The meter ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The meter, or null if not found.</returns>
-    public async Task<Meter?> GetAsync(
+    public async Task<PolarResult<Meter?>> GetAsync(
         string meterId,
         CancellationToken cancellationToken = default)
     {
@@ -97,7 +89,7 @@ public class MetersApi
             () => _httpClient.GetAsync($"v1/meters/{meterId}", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Meter>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultWithNullableAsync<Meter>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -107,7 +99,7 @@ public class MetersApi
     /// <param name="request">The meter update request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The updated meter, or null if not found.</returns>
-    public async Task<Meter?> UpdateAsync(
+    public async Task<PolarResult<Meter?>> UpdateAsync(
         string meterId,
         MeterUpdateRequest request,
         CancellationToken cancellationToken = default)
@@ -116,7 +108,7 @@ public class MetersApi
             () => _httpClient.PatchAsJsonAsync($"v1/meters/{meterId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Meter>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultWithNullableAsync<Meter>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -125,7 +117,7 @@ public class MetersApi
     /// <param name="meterId">The meter ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The deleted meter, or null if not found.</returns>
-    public async Task<Meter?> DeleteAsync(
+    public async Task<PolarResult<Meter?>> DeleteAsync(
         string meterId,
         CancellationToken cancellationToken = default)
     {
@@ -133,7 +125,7 @@ public class MetersApi
             () => _httpClient.DeleteAsync($"v1/meters/{meterId}", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<Meter>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultWithNullableAsync<Meter>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -144,7 +136,7 @@ public class MetersApi
     /// <param name="limit">Number of items per page (default: 10, max: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing meter quantities.</returns>
-    public async Task<PaginatedResponse<MeterQuantity>> GetQuantitiesAsync(
+    public async Task<PolarResult<PaginatedResponse<MeterQuantity>>> GetQuantitiesAsync(
         string meterId,
         int page = 1,
         int limit = 10,
@@ -160,11 +152,7 @@ public class MetersApi
             () => _httpClient.GetAsync($"v1/meters/{meterId}/quantities?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<MeterQuantity>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<MeterQuantity>>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -172,21 +160,27 @@ public class MetersApi
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An async enumerable of all meters.</returns>
-    public async IAsyncEnumerable<Meter> ListAllAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<PolarResult<Meter>> ListAllAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var page = 1;
         const int limit = 100; // Use maximum page size for efficiency
 
         while (true)
         {
-            var response = await ListAsync(page, limit, cancellationToken);
-            
-            foreach (var meter in response.Items)
+            var result = await ListAsync(page, limit, cancellationToken);
+
+            if (result.IsFailure)
             {
-                yield return meter;
+                yield return PolarResult<Meter>.Failure(result.Error!);
+                yield break;
             }
 
-            if (page >= response.Pagination.MaxPage)
+            foreach (var meter in result.Value.Items)
+            {
+                yield return PolarResult<Meter>.Success(meter);
+            }
+
+            if (page >= result.Value.Pagination.MaxPage)
                 break;
 
             page++;
@@ -215,7 +209,7 @@ public class MetersApi
     /// <param name="limit">Number of items per page (default: 10, max: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing filtered meters.</returns>
-    public async Task<PaginatedResponse<Meter>> ListAsync(
+    public async Task<PolarResult<PaginatedResponse<Meter>>> ListAsync(
         MetersQueryBuilder builder,
         int page = 1,
         int limit = 10,
@@ -237,11 +231,7 @@ public class MetersApi
             () => _httpClient.GetAsync($"v1/meters?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<Meter>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<Meter>>(_jsonOptions, cancellationToken);
     }
 
     private static string GetQueryString(Dictionary<string, string> parameters)

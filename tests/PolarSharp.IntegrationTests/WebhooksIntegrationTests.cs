@@ -1,7 +1,7 @@
 using System.Net;
 using FluentAssertions;
-using PolarSharp.Exceptions;
 using PolarSharp.Models.Webhooks;
+using PolarSharp.Results;
 using Xunit;
 
 namespace PolarSharp.IntegrationTests;
@@ -25,13 +25,15 @@ public class WebhooksIntegrationTests : IClassFixture<IntegrationTestFixture>
         var client = _fixture.CreateClient();
 
         // Act
-        var response = await client.Webhooks.ListEndpointsAsync();
+        var result = await client.Webhooks.ListEndpointsAsync();
 
-// Assert
-        response.Should().NotBeNull();
-        response.Items.Should().NotBeNull();
-        response.Pagination.Should().NotBeNull();
-        response.Pagination.Page.Should().BeGreaterThanOrEqualTo(0);
+        // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
+        result.Value.Pagination.Should().NotBeNull();
+        result.Value.Pagination.Page.Should().BeGreaterThanOrEqualTo(0);
     }
 
     [Fact]
@@ -42,8 +44,10 @@ public class WebhooksIntegrationTests : IClassFixture<IntegrationTestFixture>
         var endpointCount = 0;
 
         // Act
-        await foreach (var endpoint in client.Webhooks.ListAllEndpointsAsync())
+        await foreach (var endpointResult in client.Webhooks.ListAllEndpointsAsync())
         {
+            if (endpointResult.IsFailure) break;
+            var endpoint = endpointResult.Value;
             endpointCount++;
             endpoint.Should().NotBeNull();
             endpoint.Id.Should().NotBeNullOrEmpty();
@@ -75,9 +79,12 @@ public class WebhooksIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var endpoint = await client.Webhooks.CreateEndpointAsync(request);
+        var result = await client.Webhooks.CreateEndpointAsync(request);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var endpoint = result.Value;
         endpoint.Should().NotBeNull();
         endpoint.Id.Should().NotBeNullOrEmpty();
         endpoint.Url.Should().Be(request.Url);
@@ -98,9 +105,12 @@ public class WebhooksIntegrationTests : IClassFixture<IntegrationTestFixture>
         var createdEndpoint = await CreateTestWebhookEndpointAsync(client);
 
         // Act
-        var retrievedEndpoint = await client.Webhooks.GetEndpointAsync(createdEndpoint.Id);
+        var result = await client.Webhooks.GetEndpointAsync(createdEndpoint.Id);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var retrievedEndpoint = result.Value;
         retrievedEndpoint.Should().NotBeNull();
         retrievedEndpoint.Id.Should().Be(createdEndpoint.Id);
         retrievedEndpoint.Url.Should().Be(createdEndpoint.Url);
@@ -129,9 +139,12 @@ public class WebhooksIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var updatedEndpoint = await client.Webhooks.UpdateEndpointAsync(createdEndpoint.Id, updateRequest);
+        var result = await client.Webhooks.UpdateEndpointAsync(createdEndpoint.Id, updateRequest);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var updatedEndpoint = result.Value;
         updatedEndpoint.Should().NotBeNull();
         updatedEndpoint.Id.Should().Be(createdEndpoint.Id);
         updatedEndpoint.Url.Should().Be(updateRequest.Url);
@@ -152,9 +165,12 @@ public class WebhooksIntegrationTests : IClassFixture<IntegrationTestFixture>
         var originalSecret = createdEndpoint.Secret;
 
         // Act
-        var updatedEndpoint = await client.Webhooks.ResetEndpointSecretAsync(createdEndpoint.Id);
+        var result = await client.Webhooks.ResetEndpointSecretAsync(createdEndpoint.Id);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var updatedEndpoint = result.Value;
         updatedEndpoint.Should().NotBeNull();
         updatedEndpoint.Id.Should().Be(createdEndpoint.Id);
         updatedEndpoint.Secret.Should().NotBeNullOrEmpty();
@@ -169,15 +185,20 @@ public class WebhooksIntegrationTests : IClassFixture<IntegrationTestFixture>
         var createdEndpoint = await CreateTestWebhookEndpointAsync(client);
 
         // Act
-        var deletedEndpoint = await client.Webhooks.DeleteEndpointAsync(createdEndpoint.Id);
+        var result = await client.Webhooks.DeleteEndpointAsync(createdEndpoint.Id);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var deletedEndpoint = result.Value;
         deletedEndpoint.Should().NotBeNull();
         deletedEndpoint!.Id.Should().Be(createdEndpoint.Id);
-        
-        // Verify endpoint is deleted by trying to get it (returns null for deleted items)
-        var afterDelete = await client.Webhooks.GetEndpointAsync(createdEndpoint.Id);
-        afterDelete.Should().BeNull();
+
+        // Verify endpoint is deleted by trying to get it (returns success with null value for deleted items)
+        var afterDeleteResult = await client.Webhooks.GetEndpointAsync(createdEndpoint.Id);
+        afterDeleteResult.Should().NotBeNull();
+        afterDeleteResult.IsSuccess.Should().BeTrue();
+        afterDeleteResult.Value.Should().BeNull();
     }
 
     [Fact]
@@ -187,12 +208,14 @@ public class WebhooksIntegrationTests : IClassFixture<IntegrationTestFixture>
         var client = _fixture.CreateClient();
 
         // Act
-        var response = await client.Webhooks.ListDeliveriesAsync();
+        var result = await client.Webhooks.ListDeliveriesAsync();
 
         // Assert
-        response.Should().NotBeNull();
-        response.Items.Should().NotBeNull();
-        response.Pagination.Should().NotBeNull();
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
+        result.Value.Pagination.Should().NotBeNull();
     }
 
     [Fact]
@@ -202,13 +225,15 @@ public class WebhooksIntegrationTests : IClassFixture<IntegrationTestFixture>
         var client = _fixture.CreateClient();
 
         // Act
-        var response = await client.Webhooks.ListDeliveriesAsync(page: 1, limit: 5);
+        var result = await client.Webhooks.ListDeliveriesAsync(page: 1, limit: 5);
 
         // Assert
-        response.Should().NotBeNull();
-        response.Items.Should().NotBeNull();
-        response.Pagination.Should().NotBeNull();
-        response.Pagination.Page.Should().BeGreaterThanOrEqualTo(0);
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
+        result.Value.Pagination.Should().NotBeNull();
+        result.Value.Pagination.Page.Should().BeGreaterThanOrEqualTo(0);
     }
 
     [Fact]
@@ -221,15 +246,17 @@ public class WebhooksIntegrationTests : IClassFixture<IntegrationTestFixture>
             .WithUrl("example.com");
 
         // Act
-        var response = await client.Webhooks.ListAsync(builder);
+        var result = await client.Webhooks.ListAsync(builder);
 
         // Assert
-        response.Should().NotBeNull();
-        response.Items.Should().NotBeNull();
-        response.Pagination.Should().NotBeNull();
-        
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
+        result.Value.Pagination.Should().NotBeNull();
+
         // Verify filtering (if any endpoints exist)
-        foreach (var endpoint in response.Items)
+        foreach (var endpoint in result.Value.Items)
         {
             endpoint.IsActive.Should().BeTrue();
             endpoint.Url.Should().Contain("example.com");
@@ -248,15 +275,17 @@ public class WebhooksIntegrationTests : IClassFixture<IntegrationTestFixture>
             .CreatedBefore(tomorrow);
 
         // Act
-        var response = await client.Webhooks.ListAsync(builder);
+        var result = await client.Webhooks.ListAsync(builder);
 
         // Assert
-        response.Should().NotBeNull();
-        response.Items.Should().NotBeNull();
-        response.Pagination.Should().NotBeNull();
-        
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
+        result.Value.Pagination.Should().NotBeNull();
+
         // Verify date filtering (if any endpoints exist)
-        foreach (var endpoint in response.Items)
+        foreach (var endpoint in result.Value.Items)
         {
             endpoint.CreatedAt.Should().BeOnOrAfter(yesterday);
             endpoint.CreatedAt.Should().BeOnOrBefore(tomorrow);
@@ -275,9 +304,12 @@ public class WebhooksIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var endpoint = await client.Webhooks.CreateEndpointAsync(request);
+        var result = await client.Webhooks.CreateEndpointAsync(request);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var endpoint = result.Value;
         endpoint.Should().NotBeNull();
         endpoint.Id.Should().NotBeNullOrEmpty();
         endpoint.Url.Should().Be(request.Url);
@@ -302,9 +334,12 @@ public class WebhooksIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var updatedEndpoint = await client.Webhooks.UpdateEndpointAsync(createdEndpoint.Id, updateRequest);
+        var result = await client.Webhooks.UpdateEndpointAsync(createdEndpoint.Id, updateRequest);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var updatedEndpoint = result.Value;
         updatedEndpoint.Should().NotBeNull();
         updatedEndpoint.Id.Should().Be(createdEndpoint.Id);
         updatedEndpoint.Url.Should().Be(originalUrl); // Should remain unchanged
@@ -328,12 +363,15 @@ public class WebhooksIntegrationTests : IClassFixture<IntegrationTestFixture>
             };
 
             // Act
-            var endpoint = await client.Webhooks.CreateEndpointAsync(request);
+            var result = await client.Webhooks.CreateEndpointAsync(request);
 
             // Assert
+            result.Should().NotBeNull();
+            result.IsSuccess.Should().BeTrue();
+            var endpoint = result.Value;
             endpoint.Should().NotBeNull();
             endpoint.HttpMethod.Should().Be(method);
-            
+
             // Cleanup
             await client.Webhooks.DeleteEndpointAsync(endpoint.Id);
         }
@@ -359,9 +397,12 @@ public class WebhooksIntegrationTests : IClassFixture<IntegrationTestFixture>
         };
 
         // Act
-        var endpoint = await client.Webhooks.CreateEndpointAsync(request);
+        var result = await client.Webhooks.CreateEndpointAsync(request);
 
         // Assert
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        var endpoint = result.Value;
         endpoint.Should().NotBeNull();
         endpoint.Headers.Should().HaveCount(request.Headers.Count);
         foreach (var header in request.Headers)
@@ -382,6 +423,7 @@ public class WebhooksIntegrationTests : IClassFixture<IntegrationTestFixture>
             HttpMethod = "POST"
         };
 
-        return await client.Webhooks.CreateEndpointAsync(request);
+        var result = await client.Webhooks.CreateEndpointAsync(request);
+        return result.Value;
     }
 }

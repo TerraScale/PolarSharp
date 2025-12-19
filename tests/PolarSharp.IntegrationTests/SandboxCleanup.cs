@@ -63,9 +63,12 @@ public class SandboxCleanup
         try
         {
             var products = new List<Product>();
-            await foreach (var product in _client.Products.ListAllAsync())
+            await foreach (var productResult in _client.Products.ListAllAsync())
             {
-                products.Add(product);
+                if (productResult.IsSuccess)
+                {
+                    products.Add(productResult.Value);
+                }
             }
 
             foreach (var product in products)
@@ -94,9 +97,12 @@ public class SandboxCleanup
         try
         {
             var customers = new List<Customer>();
-            await foreach (var customer in _client.Customers.ListAllAsync())
+            await foreach (var customerResult in _client.Customers.ListAllAsync())
             {
-                customers.Add(customer);
+                if (customerResult.IsSuccess)
+                {
+                    customers.Add(customerResult.Value);
+                }
             }
 
             foreach (var customer in customers)
@@ -125,9 +131,12 @@ public class SandboxCleanup
         try
         {
             var benefits = new List<Benefit>();
-            await foreach (var benefit in _client.Benefits.ListAllAsync())
+            await foreach (var benefitResult in _client.Benefits.ListAllAsync())
             {
-                benefits.Add(benefit);
+                if (benefitResult.IsSuccess)
+                {
+                    benefits.Add(benefitResult.Value);
+                }
             }
 
             foreach (var benefit in benefits)
@@ -156,11 +165,14 @@ public class SandboxCleanup
         try
         {
             var orders = new List<PolarSharp.Models.Orders.Order>();
-            await foreach (var order in _client.Orders.ListAllAsync())
+            await foreach (var orderResult in _client.Orders.ListAllAsync())
             {
-                orders.Add(order);
+                if (orderResult.IsSuccess)
+                {
+                    orders.Add(orderResult.Value);
+                }
             }
-            
+
             _output.WriteLine($"Found {orders.Count} orders (cannot be deleted)");
         }
         catch (Exception ex)
@@ -176,11 +188,14 @@ public class SandboxCleanup
         try
         {
             var subscriptions = new List<PolarSharp.Models.Subscriptions.Subscription>();
-            await foreach (var subscription in _client.Subscriptions.ListAllAsync())
+            await foreach (var subscriptionResult in _client.Subscriptions.ListAllAsync())
             {
-                subscriptions.Add(subscription);
+                if (subscriptionResult.IsSuccess)
+                {
+                    subscriptions.Add(subscriptionResult.Value);
+                }
             }
-            
+
             _output.WriteLine($"Found {subscriptions.Count} subscriptions (cannot be deleted)");
         }
         catch (Exception ex)
@@ -196,11 +211,14 @@ public class SandboxCleanup
         try
         {
             var checkouts = new List<PolarSharp.Models.Checkouts.Checkout>();
-            await foreach (var checkout in _client.Checkouts.ListAllAsync())
+            await foreach (var checkoutResult in _client.Checkouts.ListAllAsync())
             {
-                checkouts.Add(checkout);
+                if (checkoutResult.IsSuccess)
+                {
+                    checkouts.Add(checkoutResult.Value);
+                }
             }
-            
+
             _output.WriteLine($"Found {checkouts.Count} checkouts (cannot be deleted)");
         }
         catch (Exception ex)
@@ -216,11 +234,14 @@ public class SandboxCleanup
         try
         {
             var licenseKeys = new List<PolarSharp.Models.LicenseKeys.LicenseKey>();
-            await foreach (var licenseKey in _client.LicenseKeys.ListAllAsync())
+            await foreach (var licenseKeyResult in _client.LicenseKeys.ListAllAsync())
             {
-                licenseKeys.Add(licenseKey);
+                if (licenseKeyResult.IsSuccess)
+                {
+                    licenseKeys.Add(licenseKeyResult.Value);
+                }
             }
-            
+
             _output.WriteLine($"Found {licenseKeys.Count} license keys (cannot be deleted)");
         }
         catch (Exception ex)
@@ -236,9 +257,12 @@ public class SandboxCleanup
         try
         {
             var discounts = new List<PolarSharp.Models.Discounts.Discount>();
-            await foreach (var discount in _client.Discounts.ListAllAsync())
+            await foreach (var discountResult in _client.Discounts.ListAllAsync())
             {
-                discounts.Add(discount);
+                if (discountResult.IsSuccess)
+                {
+                    discounts.Add(discountResult.Value);
+                }
             }
 
             foreach (var discount in discounts)
@@ -273,9 +297,16 @@ public class SandboxCleanup
             while (hasMore)
             {
                 var response = await _client.Webhooks.ListEndpointsAsync(page: page, limit: 100);
-                webhooks.AddRange(response.Items);
-                hasMore = response.Pagination.Page < response.Pagination.MaxPage;
-                page++;
+                if (response.IsSuccess)
+                {
+                    webhooks.AddRange(response.Value.Items);
+                    hasMore = response.Value.Pagination.Page < response.Value.Pagination.MaxPage;
+                    page++;
+                }
+                else
+                {
+                    hasMore = false;
+                }
             }
 
             foreach (var webhook in webhooks)
@@ -304,11 +335,14 @@ public class SandboxCleanup
         try
         {
             var files = new List<PolarSharp.Models.Files.File>();
-            await foreach (var file in _client.Files.ListAllAsync())
+            await foreach (var fileResult in _client.Files.ListAllAsync())
             {
-                files.Add(file);
+                if (fileResult.IsSuccess)
+                {
+                    files.Add(fileResult.Value);
+                }
             }
-            
+
             _output.WriteLine($"Found {files.Count} files (cannot be deleted)");
         }
         catch (Exception ex)

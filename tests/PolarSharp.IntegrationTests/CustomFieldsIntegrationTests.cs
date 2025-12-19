@@ -1,5 +1,6 @@
 using FluentAssertions;
 using PolarSharp.Models.CustomFields;
+using PolarSharp.Results;
 using Xunit;
 
 namespace PolarSharp.IntegrationTests;
@@ -23,13 +24,15 @@ public class CustomFieldsIntegrationTests : IClassFixture<IntegrationTestFixture
         var client = _fixture.CreateClient();
 
         // Act
-        var response = await client.CustomFields.ListAsync(page: 1, limit: 10);
+        var result = await client.CustomFields.ListAsync(page: 1, limit: 10);
 
         // Assert
-        response.Should().NotBeNull();
-        response.Items.Should().NotBeNull();
-        response.Pagination.Should().NotBeNull();
-        response.Pagination.Page.Should().Be(1);
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
+        result.Value.Pagination.Should().NotBeNull();
+        result.Value.Pagination.Page.Should().Be(1);
     }
 
     [Fact]
@@ -57,24 +60,17 @@ public class CustomFieldsIntegrationTests : IClassFixture<IntegrationTestFixture
 
         // Assert
         createdField.Should().NotBeNull();
-        createdField.Id.Should().NotBeNullOrEmpty();
-        createdField.Name.Should().Be(fieldName);
-        createdField.Description.Should().Be("Integration test text field");
-        createdField.Type.Should().Be(CustomFieldType.Text);
-        createdField.IsRequired.Should().BeTrue();
-        createdField.IsActive.Should().BeTrue();
-        createdField.Metadata.Should().NotBeNull();
-        createdField.Metadata.Should().ContainKey("test");
+        createdField.Value.Id.Should().NotBeNullOrEmpty();
+        createdField.Value.Name.Should().Be(fieldName);
+        createdField.Value.Description.Should().Be("Integration test text field");
+        createdField.Value.Type.Should().Be(CustomFieldType.Text);
+        createdField.Value.IsRequired.Should().BeTrue();
+        createdField.Value.IsActive.Should().BeTrue();
+        createdField.Value.Metadata.Should().NotBeNull();
+        createdField.Value.Metadata.Should().ContainKey("test");
 
         // Cleanup
-        try
-        {
-            await client.CustomFields.DeleteAsync(createdField.Id);
-        }
-        catch
-        {
-            // Ignore cleanup errors
-        }
+        var deleteResult = await client.CustomFields.DeleteAsync(createdField.Value.Id);
     }
 
     [Fact]
@@ -118,24 +114,17 @@ public class CustomFieldsIntegrationTests : IClassFixture<IntegrationTestFixture
 
         // Assert
         createdField.Should().NotBeNull();
-        createdField.Id.Should().NotBeNullOrEmpty();
-        createdField.Name.Should().Be(fieldName);
-        createdField.Type.Should().Be(CustomFieldType.Select);
-        createdField.IsRequired.Should().BeFalse();
-        createdField.Options.Should().HaveCount(3);
-        createdField.Options.Should().Contain(o => o.Value == "option1");
-        createdField.Options.Should().Contain(o => o.Value == "option2");
-        createdField.Options.Should().Contain(o => o.Value == "option3");
+        createdField.Value.Id.Should().NotBeNullOrEmpty();
+        createdField.Value.Name.Should().Be(fieldName);
+        createdField.Value.Type.Should().Be(CustomFieldType.Select);
+        createdField.Value.IsRequired.Should().BeFalse();
+        createdField.Value.Options.Should().HaveCount(3);
+        createdField.Value.Options.Should().Contain(o => o.Value == "option1");
+        createdField.Value.Options.Should().Contain(o => o.Value == "option2");
+        createdField.Value.Options.Should().Contain(o => o.Value == "option3");
 
         // Cleanup
-        try
-        {
-            await client.CustomFields.DeleteAsync(createdField.Id);
-        }
-        catch
-        {
-            // Ignore cleanup errors
-        }
+        var deleteResult = await client.CustomFields.DeleteAsync(createdField.Value.Id);
     }
 
     [Fact]
@@ -154,45 +143,32 @@ public class CustomFieldsIntegrationTests : IClassFixture<IntegrationTestFixture
         var createdField = await client.CustomFields.CreateAsync(createRequest);
 
         // Act
-        var retrievedField = await client.CustomFields.GetAsync(createdField.Id);
+        var retrievedField = await client.CustomFields.GetAsync(createdField.Value.Id);
 
         // Assert
         retrievedField.Should().NotBeNull();
-        retrievedField.Id.Should().Be(createdField.Id);
-        retrievedField.Name.Should().Be(fieldName);
-        retrievedField.Type.Should().Be(CustomFieldType.Boolean);
+        retrievedField.IsSuccess.Should().BeTrue();
+        retrievedField.Value.Id.Should().Be(createdField.Value.Id);
+        retrievedField.Value.Name.Should().Be(fieldName);
+        retrievedField.Value.Type.Should().Be(CustomFieldType.Boolean);
 
         // Cleanup
-        try
-        {
-            await client.CustomFields.DeleteAsync(createdField.Id);
-        }
-        catch
-        {
-            // Ignore cleanup errors
-        }
+        var deleteResult = await client.CustomFields.DeleteAsync(createdField.Value.Id);
     }
 
     [Fact]
-    public async Task CustomFieldsApi_GetCustomField_WithInvalidId_ReturnsNull()
+    public async Task CustomFieldsApi_GetCustomField_WithInvalidId_ReturnsFailure()
     {
         // Arrange
         var client = _fixture.CreateClient();
         var invalidFieldId = "invalid_field_id";
 
-        // Act & Assert
-        try
-        {
-            var result = await client.CustomFields.GetAsync(invalidFieldId);
-            
-            // Assert - With nullable return types, invalid IDs return null
-            result.Should().BeNull();
-        }
-        catch (PolarSharp.Exceptions.PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed"))
-        {
-            // Expected in sandbox environment with limited permissions
-            true.Should().BeTrue();
-        }
+        // Act
+        var result = await client.CustomFields.GetAsync(invalidFieldId);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.IsFailure.Should().BeTrue();
     }
 
     [Fact]
@@ -227,26 +203,20 @@ public class CustomFieldsIntegrationTests : IClassFixture<IntegrationTestFixture
         };
 
         // Act
-        var updatedField = await client.CustomFields.UpdateAsync(createdField.Id, updateRequest);
+        var updatedField = await client.CustomFields.UpdateAsync(createdField.Value.Id, updateRequest);
 
         // Assert
         updatedField.Should().NotBeNull();
-        updatedField.Id.Should().Be(createdField.Id);
-        updatedField.Name.Should().Be($"{fieldName} (Updated)");
-        updatedField.Description.Should().Be("Updated description");
-        updatedField.IsRequired.Should().BeTrue();
-        updatedField.IsActive.Should().BeFalse();
-        updatedField.Metadata.Should().ContainKey("updated");
+        updatedField.IsSuccess.Should().BeTrue();
+        updatedField.Value.Id.Should().Be(createdField.Value.Id);
+        updatedField.Value.Name.Should().Be($"{fieldName} (Updated)");
+        updatedField.Value.Description.Should().Be("Updated description");
+        updatedField.Value.IsRequired.Should().BeTrue();
+        updatedField.Value.IsActive.Should().BeFalse();
+        updatedField.Value.Metadata.Should().ContainKey("updated");
 
         // Cleanup
-        try
-        {
-            await client.CustomFields.DeleteAsync(updatedField.Id);
-        }
-        catch
-        {
-            // Ignore cleanup errors
-        }
+        var deleteResult = await client.CustomFields.DeleteAsync(updatedField.Value.Id);
     }
 
     [Fact]
@@ -265,33 +235,30 @@ public class CustomFieldsIntegrationTests : IClassFixture<IntegrationTestFixture
         var createdField = await client.CustomFields.CreateAsync(createRequest);
 
         // Act
-        await client.CustomFields.DeleteAsync(createdField.Id);
+        var deleteResult = await client.CustomFields.DeleteAsync(createdField.Value.Id);
 
-        // Assert - After deletion, getting the field should return null
-        var afterDelete = await client.CustomFields.GetAsync(createdField.Id);
-        afterDelete.Should().BeNull();
+        // Assert
+        deleteResult.Should().NotBeNull();
+        deleteResult.IsSuccess.Should().BeTrue();
+
+        // After deletion, getting the field should return failure
+        var afterDelete = await client.CustomFields.GetAsync(createdField.Value.Id);
+        afterDelete.IsFailure.Should().BeTrue();
     }
 
     [Fact]
-    public async Task CustomFieldsApi_DeleteCustomField_WithInvalidId_ReturnsNull()
+    public async Task CustomFieldsApi_DeleteCustomField_WithInvalidId_ReturnsFailure()
     {
         // Arrange
         var client = _fixture.CreateClient();
         var invalidFieldId = "invalid_field_id";
 
-        // Act & Assert
-        try
-        {
-            var result = await client.CustomFields.DeleteAsync(invalidFieldId);
-            
-            // Assert - With nullable return types, invalid IDs return null
-            result.Should().BeNull();
-        }
-        catch (PolarSharp.Exceptions.PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed"))
-        {
-            // Expected in sandbox environment with limited permissions
-            true.Should().BeTrue();
-        }
+        // Act
+        var result = await client.CustomFields.DeleteAsync(invalidFieldId);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.IsFailure.Should().BeTrue();
     }
 
     [Fact]
@@ -326,24 +293,18 @@ public class CustomFieldsIntegrationTests : IClassFixture<IntegrationTestFixture
 
             // Act
             var createdField = await client.CustomFields.CreateAsync(createRequest);
-            createdFields.Add(createdField);
+            createdFields.Add(createdField.Value);
 
             // Assert
             createdField.Should().NotBeNull();
-            createdField.Type.Should().Be(fieldType);
+            createdField.IsSuccess.Should().BeTrue();
+            createdField.Value.Type.Should().Be(fieldType);
         }
 
         // Cleanup
         foreach (var field in createdFields)
         {
-            try
-            {
-                await client.CustomFields.DeleteAsync(field.Id);
-            }
-            catch
-            {
-                // Ignore cleanup errors
-            }
+            var deleteResult = await client.CustomFields.DeleteAsync(field.Id);
         }
     }
 
@@ -371,29 +332,23 @@ public class CustomFieldsIntegrationTests : IClassFixture<IntegrationTestFixture
         };
 
         // Act
-        var updatedField = await client.CustomFields.UpdateAsync(createdField.Id, updateRequest);
+        var updatedField = await client.CustomFields.UpdateAsync(createdField.Value.Id, updateRequest);
 
         // Assert
         updatedField.Should().NotBeNull();
-        updatedField.Id.Should().Be(createdField.Id);
-        updatedField.Name.Should().Be(fieldName); // Should remain unchanged
-        updatedField.Description.Should().Be("Updated description only");
-        updatedField.Type.Should().Be(CustomFieldType.Text); // Should remain unchanged
-        updatedField.IsRequired.Should().BeFalse(); // Should remain unchanged
+        updatedField.IsSuccess.Should().BeTrue();
+        updatedField.Value.Id.Should().Be(createdField.Value.Id);
+        updatedField.Value.Name.Should().Be(fieldName); // Should remain unchanged
+        updatedField.Value.Description.Should().Be("Updated description only");
+        updatedField.Value.Type.Should().Be(CustomFieldType.Text); // Should remain unchanged
+        updatedField.Value.IsRequired.Should().BeFalse(); // Should remain unchanged
 
         // Cleanup
-        try
-        {
-            await client.CustomFields.DeleteAsync(updatedField.Id);
-        }
-        catch
-        {
-            // Ignore cleanup errors
-        }
+        var deleteResult = await client.CustomFields.DeleteAsync(updatedField.Value.Id);
     }
 
     [Fact]
-    public async Task CustomFieldsApi_UpdateCustomField_WithInvalidId_ReturnsNull()
+    public async Task CustomFieldsApi_UpdateCustomField_WithInvalidId_ReturnsFailure()
     {
         // Arrange
         var client = _fixture.CreateClient();
@@ -404,19 +359,12 @@ public class CustomFieldsIntegrationTests : IClassFixture<IntegrationTestFixture
             Name = "Updated Name"
         };
 
-        // Act & Assert
-        try
-        {
-            var result = await client.CustomFields.UpdateAsync(invalidFieldId, updateRequest);
-            
-            // Assert - With nullable return types, invalid IDs return null
-            result.Should().BeNull();
-        }
-        catch (PolarSharp.Exceptions.PolarApiException ex) when (ex.Message.Contains("Unauthorized") || ex.Message.Contains("Forbidden") || ex.Message.Contains("Method Not Allowed"))
-        {
-            // Expected in sandbox environment with limited permissions
-            true.Should().BeTrue();
-        }
+        // Act
+        var result = await client.CustomFields.UpdateAsync(invalidFieldId, updateRequest);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.IsFailure.Should().BeTrue();
     }
 
     [Fact]
@@ -427,8 +375,10 @@ public class CustomFieldsIntegrationTests : IClassFixture<IntegrationTestFixture
 
         // Act
         var allFields = new List<CustomField>();
-        await foreach (var field in client.CustomFields.ListAllAsync())
+        await foreach (var fieldResult in client.CustomFields.ListAllAsync())
         {
+            if (fieldResult.IsFailure) break;
+            var field = fieldResult.Value;
             allFields.Add(field);
         }
 
@@ -455,12 +405,14 @@ public class CustomFieldsIntegrationTests : IClassFixture<IntegrationTestFixture
         // Act
         var queryBuilder = client.CustomFields.Query();
 
-        var response = await client.CustomFields.ListAsync(queryBuilder);
+        var result = await client.CustomFields.ListAsync(queryBuilder);
 
         // Assert
-        response.Should().NotBeNull();
-        response.Items.Should().NotBeNull();
-        response.Pagination.Should().NotBeNull();
+        result.Should().NotBeNull();
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.Items.Should().NotBeNull();
+        result.Value.Pagination.Should().NotBeNull();
     }
 
     [Fact]
@@ -470,15 +422,17 @@ public class CustomFieldsIntegrationTests : IClassFixture<IntegrationTestFixture
         var client = _fixture.CreateClient();
 
         // Act
-        var page1 = await client.CustomFields.ListAsync(page: 1, limit: 5);
-        var page2 = await client.CustomFields.ListAsync(page: 2, limit: 5);
+        var result1 = await client.CustomFields.ListAsync(page: 1, limit: 5);
+        var result2 = await client.CustomFields.ListAsync(page: 2, limit: 5);
 
         // Assert
-        page1.Should().NotBeNull();
-        page1.Pagination.Page.Should().Be(1);
-        
-        page2.Should().NotBeNull();
-        page2.Pagination.Page.Should().Be(2);
+        result1.Should().NotBeNull();
+        result1.IsSuccess.Should().BeTrue();
+        result1.Value.Pagination.Page.Should().Be(1);
+
+        result2.Should().NotBeNull();
+        result2.IsSuccess.Should().BeTrue();
+        result2.Value.Pagination.Page.Should().Be(2);
     }
 
     [Fact]
@@ -516,20 +470,14 @@ public class CustomFieldsIntegrationTests : IClassFixture<IntegrationTestFixture
 
         // Assert
         createdField.Should().NotBeNull();
-        createdField.Type.Should().Be(CustomFieldType.MultiSelect);
-        createdField.Options.Should().HaveCount(2);
-        createdField.Options.Should().Contain(o => o.Value == "tag_a");
-        createdField.Options.Should().Contain(o => o.Value == "tag_b");
+        createdField.IsSuccess.Should().BeTrue();
+        createdField.Value.Type.Should().Be(CustomFieldType.MultiSelect);
+        createdField.Value.Options.Should().HaveCount(2);
+        createdField.Value.Options.Should().Contain(o => o.Value == "tag_a");
+        createdField.Value.Options.Should().Contain(o => o.Value == "tag_b");
 
         // Cleanup
-        try
-        {
-            await client.CustomFields.DeleteAsync(createdField.Id);
-        }
-        catch
-        {
-            // Ignore cleanup errors
-        }
+        var deleteResult = await client.CustomFields.DeleteAsync(createdField.Value.Id);
     }
 
     [Fact]
@@ -550,21 +498,15 @@ public class CustomFieldsIntegrationTests : IClassFixture<IntegrationTestFixture
 
         // Assert
         createdField.Should().NotBeNull();
-        createdField.Id.Should().NotBeNullOrEmpty();
-        createdField.Name.Should().Be(fieldName);
-        createdField.Type.Should().Be(CustomFieldType.Text);
-        createdField.Description.Should().BeNull();
-        createdField.IsRequired.Should().BeFalse();
-        createdField.Metadata.Should().BeNull();
+        createdField.IsSuccess.Should().BeTrue();
+        createdField.Value.Id.Should().NotBeNullOrEmpty();
+        createdField.Value.Name.Should().Be(fieldName);
+        createdField.Value.Type.Should().Be(CustomFieldType.Text);
+        createdField.Value.Description.Should().BeNull();
+        createdField.Value.IsRequired.Should().BeFalse();
+        createdField.Value.Metadata.Should().BeNull();
 
         // Cleanup
-        try
-        {
-            await client.CustomFields.DeleteAsync(createdField.Id);
-        }
-        catch
-        {
-            // Ignore cleanup errors
-        }
+        var deleteResult = await client.CustomFields.DeleteAsync(createdField.Value.Id);
     }
 }

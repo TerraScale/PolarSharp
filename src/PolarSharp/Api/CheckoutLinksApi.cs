@@ -7,6 +7,7 @@ using Polly.RateLimit;
 using PolarSharp.Extensions;
 using PolarSharp.Models.Checkouts;
 using PolarSharp.Models.Common;
+using PolarSharp.Results;
 
 namespace PolarSharp.Api;
 
@@ -42,7 +43,7 @@ public class CheckoutLinksApi
     /// <param name="archived">Filter by archived status.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing checkout links.</returns>
-    public async Task<PaginatedResponse<CheckoutLink>> ListAsync(
+    public async Task<PolarResult<PaginatedResponse<CheckoutLink>>> ListAsync(
         int page = 1,
         int limit = 10,
         string? productId = null,
@@ -58,10 +59,10 @@ public class CheckoutLinksApi
 
         if (!string.IsNullOrEmpty(productId))
             queryParams["product_id"] = productId;
-        
+
         if (enabled.HasValue)
             queryParams["enabled"] = enabled.Value.ToString().ToLowerInvariant();
-        
+
         if (archived.HasValue)
             queryParams["archived"] = archived.Value.ToString().ToLowerInvariant();
 
@@ -69,11 +70,7 @@ public class CheckoutLinksApi
             () => _httpClient.GetAsync($"v1/checkout_links?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<CheckoutLink>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<CheckoutLink>>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -90,7 +87,7 @@ public class CheckoutLinksApi
     /// <param name="limit">Number of items per page (default: 10, max: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing filtered checkout links.</returns>
-    public async Task<PaginatedResponse<CheckoutLink>> ListAsync(
+    public async Task<PolarResult<PaginatedResponse<CheckoutLink>>> ListAsync(
         CheckoutLinksQueryBuilder builder,
         int page = 1,
         int limit = 10,
@@ -112,11 +109,7 @@ public class CheckoutLinksApi
             () => _httpClient.GetAsync($"v1/checkout_links?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<CheckoutLink>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<CheckoutLink>>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -125,7 +118,7 @@ public class CheckoutLinksApi
     /// <param name="checkoutLinkId">The checkout link ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The checkout link, or null if not found.</returns>
-    public async Task<CheckoutLink?> GetAsync(
+    public async Task<PolarResult<CheckoutLink?>> GetAsync(
         string checkoutLinkId,
         CancellationToken cancellationToken = default)
     {
@@ -133,7 +126,7 @@ public class CheckoutLinksApi
             () => _httpClient.GetAsync($"v1/checkout_links/{checkoutLinkId}", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<CheckoutLink>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultWithNullableAsync<CheckoutLink>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -142,7 +135,7 @@ public class CheckoutLinksApi
     /// <param name="request">The checkout link creation request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The created checkout link.</returns>
-    public async Task<CheckoutLink> CreateAsync(
+    public async Task<PolarResult<CheckoutLink>> CreateAsync(
         CheckoutLinkCreateRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -150,11 +143,7 @@ public class CheckoutLinksApi
             () => _httpClient.PostAsJsonAsync("v1/checkout_links", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<CheckoutLink>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<CheckoutLink>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -164,7 +153,7 @@ public class CheckoutLinksApi
     /// <param name="request">The checkout link update request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The updated checkout link, or null if not found.</returns>
-    public async Task<CheckoutLink?> UpdateAsync(
+    public async Task<PolarResult<CheckoutLink?>> UpdateAsync(
         string checkoutLinkId,
         CheckoutLinkUpdateRequest request,
         CancellationToken cancellationToken = default)
@@ -173,7 +162,7 @@ public class CheckoutLinksApi
             () => _httpClient.PatchAsJsonAsync($"v1/checkout_links/{checkoutLinkId}", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<CheckoutLink>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultWithNullableAsync<CheckoutLink>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -182,7 +171,7 @@ public class CheckoutLinksApi
     /// <param name="checkoutLinkId">The checkout link ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The deleted checkout link, or null if not found.</returns>
-    public async Task<CheckoutLink?> DeleteAsync(
+    public async Task<PolarResult<CheckoutLink?>> DeleteAsync(
         string checkoutLinkId,
         CancellationToken cancellationToken = default)
     {
@@ -190,7 +179,7 @@ public class CheckoutLinksApi
             () => _httpClient.DeleteAsync($"v1/checkout_links/{checkoutLinkId}", cancellationToken),
             cancellationToken);
 
-        return await response.HandleNotFoundAsNullAsync<CheckoutLink>(_jsonOptions, cancellationToken);
+        return await response.ToPolarResultWithNullableAsync<CheckoutLink>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -201,7 +190,7 @@ public class CheckoutLinksApi
     /// <param name="archived">Filter by archived status.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An async enumerable of all checkout links.</returns>
-    public async IAsyncEnumerable<CheckoutLink> ListAllAsync(
+    public async IAsyncEnumerable<PolarResult<CheckoutLink>> ListAllAsync(
         string? productId = null,
         bool? enabled = null,
         bool? archived = null,
@@ -212,14 +201,20 @@ public class CheckoutLinksApi
 
         while (true)
         {
-            var response = await ListAsync(page, limit, productId, enabled, archived, cancellationToken);
-            
-            foreach (var checkoutLink in response.Items)
+            var result = await ListAsync(page, limit, productId, enabled, archived, cancellationToken);
+
+            if (result.IsFailure)
             {
-                yield return checkoutLink;
+                yield return PolarResult<CheckoutLink>.Failure(result.Error!);
+                yield break;
             }
 
-            if (page >= response.Pagination.MaxPage)
+            foreach (var checkoutLink in result.Value.Items)
+            {
+                yield return PolarResult<CheckoutLink>.Success(checkoutLink);
+            }
+
+            if (page >= result.Value.Pagination.MaxPage)
                 break;
 
             page++;

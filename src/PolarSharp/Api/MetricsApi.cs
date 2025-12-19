@@ -4,10 +4,10 @@ using System.Text.Json;
 using Polly;
 using Polly.Retry;
 using Polly.RateLimit;
-using PolarSharp.Exceptions;
 using PolarSharp.Extensions;
 using PolarSharp.Models.Common;
 using PolarSharp.Models.Metrics;
+using PolarSharp.Results;
 
 namespace PolarSharp.Api;
 
@@ -38,17 +38,13 @@ public class MetricsApi
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A list of metrics.</returns>
-    public async Task<List<Metric>> GetAsync(CancellationToken cancellationToken = default)
+    public async Task<PolarResult<List<Metric>>> GetAsync(CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
             () => _httpClient.GetAsync("v1/metrics", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        return await JsonSerializer.DeserializeAsync<List<Metric>>(stream, _jsonOptions, cancellationToken)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<List<Metric>>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -56,17 +52,13 @@ public class MetricsApi
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A list of metric limits.</returns>
-    public async Task<List<MetricLimit>> GetLimitsAsync(CancellationToken cancellationToken = default)
+    public async Task<PolarResult<List<MetricLimit>>> GetLimitsAsync(CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
             () => _httpClient.GetAsync("v1/metrics/limits", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        return await JsonSerializer.DeserializeAsync<List<MetricLimit>>(stream, _jsonOptions, cancellationToken)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<List<MetricLimit>>(_jsonOptions, cancellationToken);
     }
 
     private async Task<HttpResponseMessage> ExecuteWithPoliciesAsync(
@@ -91,7 +83,7 @@ public class MetricsApi
     /// <param name="limit">Number of items per page (default: 10, max: 100).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated response containing filtered metrics.</returns>
-    public async Task<PaginatedResponse<Metric>> ListAsync(
+    public async Task<PolarResult<PaginatedResponse<Metric>>> ListAsync(
         MetricsQueryBuilder builder,
         int page = 1,
         int limit = 10,
@@ -113,11 +105,7 @@ public class MetricsApi
             () => _httpClient.GetAsync($"v1/metrics?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
-        (await response.HandleErrorsAsync(_jsonOptions, cancellationToken)).EnsureSuccess();
-
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<PaginatedResponse<Metric>>(content, _jsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize response.");
+        return await response.ToPolarResultAsync<PaginatedResponse<Metric>>(_jsonOptions, cancellationToken);
     }
 
     /// <summary>
@@ -126,7 +114,7 @@ public class MetricsApi
     /// <param name="builder">The query builder containing filter parameters.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An async enumerable of all metrics.</returns>
-    public async IAsyncEnumerable<Metric> ListAllAsync(
+    public async IAsyncEnumerable<PolarResult<Metric>> ListAllAsync(
         MetricsQueryBuilder? builder = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
@@ -135,14 +123,20 @@ public class MetricsApi
 
         while (true)
         {
-            var response = await ListAsync(builder ?? new MetricsQueryBuilder(), page, limit, cancellationToken);
-            
-            foreach (var metric in response.Items)
+            var result = await ListAsync(builder ?? new MetricsQueryBuilder(), page, limit, cancellationToken);
+
+            if (result.IsFailure)
             {
-                yield return metric;
+                yield return PolarResult<Metric>.Failure(result.Error!);
+                yield break;
             }
 
-            if (page >= response.Pagination.MaxPage)
+            foreach (var metric in result.Value!.Items)
+            {
+                yield return PolarResult<Metric>.Success(metric);
+            }
+
+            if (page >= result.Value!.Pagination.MaxPage)
                 break;
 
             page++;
@@ -154,7 +148,7 @@ public class MetricsApi
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An async enumerable of all metrics.</returns>
-    public async IAsyncEnumerable<Metric> ListAllAsync(
+    public async IAsyncEnumerable<PolarResult<Metric>> ListAllAsync(
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         await foreach (var metric in ListAllAsync(new MetricsQueryBuilder(), cancellationToken))
