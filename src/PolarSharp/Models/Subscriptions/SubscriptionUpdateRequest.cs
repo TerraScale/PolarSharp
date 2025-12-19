@@ -1,50 +1,96 @@
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
-using PolarSharp.Models.Common;
+using PolarSharp.Models.Products;
 
 namespace PolarSharp.Models.Subscriptions;
 
 /// <summary>
 /// Request to update an existing subscription.
+/// This is a unified request that can be used for different update scenarios.
+/// Only set the properties relevant to your update operation.
 /// </summary>
 public record SubscriptionUpdateRequest
 {
     /// <summary>
-    /// The metadata of the subscription.
+    /// Update subscription to another product.
     /// </summary>
-    [JsonPropertyName("metadata")]
-    public Dictionary<string, object>? Metadata { get; init; }
+    [JsonPropertyName("product_id")]
+    public string? ProductId { get; init; }
 
     /// <summary>
-    /// Whether the subscription is canceled.
+    /// Determine how to handle the proration billing. If not provided, will use the
+    /// default organization setting.
     /// </summary>
-    [JsonPropertyName("canceled")]
-    public bool? Canceled { get; init; }
+    [JsonPropertyName("proration_behavior")]
+    public SubscriptionProrationBehavior? ProrationBehavior { get; init; }
 
     /// <summary>
-    /// The cancellation reason for the subscription.
+    /// The discount ID to apply to the subscription. Set to null to remove an existing discount.
     /// </summary>
-    [JsonPropertyName("cancellation_reason")]
-    [StringLength(500, ErrorMessage = "Cancellation reason cannot exceed 500 characters.")]
-    public string? CancellationReason { get; init; }
+    [JsonPropertyName("discount_id")]
+    public string? DiscountId { get; init; }
 
     /// <summary>
-    /// Whether the subscription is paused.
+    /// Number of trial days to set. Used for trial updates.
     /// </summary>
-    [JsonPropertyName("paused")]
-    public bool? Paused { get; init; }
+    [JsonPropertyName("trial_days")]
+    [Range(0, 365, ErrorMessage = "Trial days must be between 0 and 365.")]
+    public int? TrialDays { get; init; }
 
     /// <summary>
-    /// The pause reason for the subscription.
+    /// The number of seats for seat-based subscriptions.
     /// </summary>
-    [JsonPropertyName("pause_reason")]
-    [StringLength(500, ErrorMessage = "Pause reason cannot exceed 500 characters.")]
-    public string? PauseReason { get; init; }
+    [JsonPropertyName("seats")]
+    [Range(1, int.MaxValue, ErrorMessage = "Seats must be at least 1.")]
+    public int? Seats { get; init; }
 
     /// <summary>
-    /// The product price ID for the subscription.
+    /// The new recurring interval for the subscription.
     /// </summary>
-    [JsonPropertyName("product_price_id")]
-    public string? ProductPriceId { get; init; }
+    [JsonPropertyName("recurring_interval")]
+    public RecurringInterval? RecurringInterval { get; init; }
+
+    /// <summary>
+    /// Whether to cancel the subscription at the end of the current period.
+    /// </summary>
+    [JsonPropertyName("cancel_at_period_end")]
+    public bool? CancelAtPeriodEnd { get; init; }
+
+    /// <summary>
+    /// The customer cancellation reason when canceling.
+    /// </summary>
+    [JsonPropertyName("customer_cancellation_reason")]
+    public CustomerCancellationReason? CustomerCancellationReason { get; init; }
+
+    /// <summary>
+    /// Additional cancellation comment from the customer.
+    /// </summary>
+    [JsonPropertyName("customer_cancellation_comment")]
+    [StringLength(500, ErrorMessage = "Cancellation comment cannot exceed 500 characters.")]
+    public string? CustomerCancellationComment { get; init; }
+
+    /// <summary>
+    /// Whether to revoke the subscription immediately.
+    /// </summary>
+    [JsonPropertyName("revoke")]
+    public bool? Revoke { get; init; }
+}
+
+/// <summary>
+/// Determines how to handle proration billing when updating a subscription.
+/// </summary>
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum SubscriptionProrationBehavior
+{
+    /// <summary>
+    /// Create an invoice immediately for the prorated amount.
+    /// </summary>
+    [JsonPropertyName("invoice")]
+    Invoice,
+
+    /// <summary>
+    /// Prorate the amount and add it to the next invoice.
+    /// </summary>
+    [JsonPropertyName("prorate")]
+    Prorate
 }

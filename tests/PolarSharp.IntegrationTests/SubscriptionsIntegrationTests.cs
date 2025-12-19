@@ -191,19 +191,14 @@ public class SubscriptionsIntegrationTests : IClassFixture<IntegrationTestFixtur
                 var subscriptionId = listResult.Items[0].Id;
                 var updateRequest = new SubscriptionUpdateRequest
                 {
-                    Metadata = new Dictionary<string, object>
-                    {
-                        ["updated"] = true,
-                        ["test_run"] = DateTime.UtcNow.ToString("O")
-                    }
+                    // Remove discount by setting to null
+                    DiscountId = null
                 };
 
                 var updatedSubscription = await client.Subscriptions.UpdateAsync(subscriptionId, updateRequest);
 
                 updatedSubscription.Should().NotBeNull();
                 updatedSubscription.Id.Should().Be(subscriptionId);
-                updatedSubscription.Metadata.Should().NotBeNull();
-                updatedSubscription.Metadata!["updated"].Should().Be(true);
             }
             else
             {
@@ -280,10 +275,8 @@ public class SubscriptionsIntegrationTests : IClassFixture<IntegrationTestFixtur
         var nonExistentId = "sub_00000000000000000000000000";
         var updateRequest = new SubscriptionUpdateRequest
         {
-            Metadata = new Dictionary<string, object>
-            {
-                ["test"] = true
-            }
+            // Try to cancel at period end as a simple update operation
+            CancelAtPeriodEnd = true
         };
 
         // Act & Assert
