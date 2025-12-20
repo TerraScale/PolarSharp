@@ -16,16 +16,16 @@ public record DiscountUpdateRequest
     public string? Name { get; init; }
 
     /// <summary>
-    /// The description of the discount.
+    /// The description of the discount (not supported by API, kept for backwards compatibility).
     /// </summary>
     [StringLength(500, ErrorMessage = "Discount description cannot exceed 500 characters.")]
-    [JsonPropertyName("description")]
+    [JsonIgnore]
     public string? Description { get; init; }
 
     /// <summary>
-    /// Whether the discount should be active.
+    /// Whether the discount should be active (not supported by API, kept for backwards compatibility).
     /// </summary>
-    [JsonPropertyName("active")]
+    [JsonIgnore]
     public bool? Active { get; init; }
 
     /// <summary>

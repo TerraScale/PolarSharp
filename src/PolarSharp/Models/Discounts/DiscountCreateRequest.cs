@@ -17,10 +17,10 @@ public record DiscountCreateRequest
     public string Name { get; init; } = string.Empty;
 
     /// <summary>
-    /// The description of the discount.
+    /// The description of the discount (not supported by API, kept for backwards compatibility).
     /// </summary>
     [StringLength(500, ErrorMessage = "Discount description cannot exceed 500 characters.")]
-    [JsonPropertyName("description")]
+    [JsonIgnore]
     public string? Description { get; init; }
 
     /// <summary>
@@ -38,11 +38,21 @@ public record DiscountCreateRequest
     public long? Amount { get; init; }
 
     /// <summary>
-    /// The percentage of the discount.
+    /// The percentage of the discount (for display purposes, converted to basis_points).
     /// </summary>
     [Range(0.01, 100, ErrorMessage = "Discount percentage must be between 0.01 and 100.")]
-    [JsonPropertyName("percentage")]
+    [JsonIgnore]
     public decimal? Percentage { get; init; }
+
+    /// <summary>
+    /// The basis points for percentage discounts (100 = 1%).
+    /// </summary>
+    [JsonPropertyName("basis_points")]
+    public int? BasisPoints
+    {
+        get => Percentage.HasValue ? (int)(Percentage.Value * 100) : null;
+        init => Percentage = value.HasValue ? value.Value / 100m : null;
+    }
 
     /// <summary>
     /// The currency of the discount (for fixed amount discounts).
@@ -52,9 +62,9 @@ public record DiscountCreateRequest
     public string? Currency { get; init; }
 
     /// <summary>
-    /// Whether the discount should be active.
+    /// Whether the discount should be active (not supported by API, kept for backwards compatibility).
     /// </summary>
-    [JsonPropertyName("active")]
+    [JsonIgnore]
     public bool Active { get; init; } = true;
 
     /// <summary>

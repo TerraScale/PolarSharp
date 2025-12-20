@@ -52,7 +52,7 @@ public class DiscountsApi
         };
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"v1/discounts?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/discounts/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         return await response.ToPolarResultAsync<PaginatedResponse<Discount>>(_jsonOptions, cancellationToken);
@@ -69,7 +69,7 @@ public class DiscountsApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"v1/discounts/{discountId}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/discounts/{discountId}/", cancellationToken),
             cancellationToken);
 
         return await response.ToPolarResultWithNullableAsync<Discount>(_jsonOptions, cancellationToken);
@@ -86,7 +86,7 @@ public class DiscountsApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PostAsJsonAsync("v1/discounts", request, _jsonOptions, cancellationToken),
+            () => _httpClient.PostAsJsonAsync("v1/discounts/", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         return await response.ToPolarResultAsync<Discount>(_jsonOptions, cancellationToken);
@@ -105,7 +105,7 @@ public class DiscountsApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.PatchAsJsonAsync($"v1/discounts/{discountId}", request, _jsonOptions, cancellationToken),
+            () => _httpClient.PatchAsJsonAsync($"v1/discounts/{discountId}/", request, _jsonOptions, cancellationToken),
             cancellationToken);
 
         return await response.ToPolarResultWithNullableAsync<Discount>(_jsonOptions, cancellationToken);
@@ -122,7 +122,7 @@ public class DiscountsApi
         CancellationToken cancellationToken = default)
     {
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.DeleteAsync($"v1/discounts/{discountId}", cancellationToken),
+            () => _httpClient.DeleteAsync($"v1/discounts/{discountId}/", cancellationToken),
             cancellationToken);
 
         return await response.ToPolarResultWithNullableAsync<Discount>(_jsonOptions, cancellationToken);
@@ -201,7 +201,7 @@ public class DiscountsApi
         }
 
         var response = await ExecuteWithPoliciesAsync(
-            () => _httpClient.GetAsync($"v1/discounts?{GetQueryString(queryParams)}", cancellationToken),
+            () => _httpClient.GetAsync($"v1/discounts/?{GetQueryString(queryParams)}", cancellationToken),
             cancellationToken);
 
         return await response.ToPolarResultAsync<PaginatedResponse<Discount>>(_jsonOptions, cancellationToken);

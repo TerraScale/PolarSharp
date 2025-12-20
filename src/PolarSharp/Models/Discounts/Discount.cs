@@ -42,10 +42,16 @@ public record Discount
     public int? Amount { get; init; }
 
     /// <summary>
-    /// The percentage of discount.
+    /// The basis points of discount (100 = 1%).
     /// </summary>
-    [JsonPropertyName("percentage")]
-    public decimal? Percentage { get; init; }
+    [JsonPropertyName("basis_points")]
+    public int? BasisPoints { get; init; }
+
+    /// <summary>
+    /// The percentage of discount (computed from basis_points).
+    /// </summary>
+    [JsonIgnore]
+    public decimal? Percentage => BasisPoints.HasValue ? BasisPoints.Value / 100m : null;
 
     /// <summary>
     /// The currency of discount (for fixed amount discounts).
@@ -136,11 +142,13 @@ public enum DiscountType
     /// <summary>
     /// Fixed amount discount.
     /// </summary>
+    [JsonPropertyName("fixed")]
     FixedAmount,
 
     /// <summary>
     /// Percentage discount.
     /// </summary>
+    [JsonPropertyName("percentage")]
     Percentage
 }
 
@@ -152,16 +160,19 @@ public enum DiscountDuration
     /// <summary>
     /// One-time discount.
     /// </summary>
+    [JsonPropertyName("once")]
     Once,
 
     /// <summary>
     /// Forever discount.
     /// </summary>
+    [JsonPropertyName("forever")]
     Forever,
 
     /// <summary>
     /// Repeating discount.
     /// </summary>
+    [JsonPropertyName("repeating")]
     Repeating
 }
 
