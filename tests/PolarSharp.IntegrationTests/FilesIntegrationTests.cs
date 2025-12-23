@@ -267,12 +267,8 @@ public class FilesIntegrationTests : IClassFixture<IntegrationTestFixture>
             }
             var completeRequest = new FileUploadCompleteRequest
             {
-                Checksum = "test-checksum-12345",
-                Metadata = new Dictionary<string, object>
-                {
-                    ["upload_completed"] = true,
-                    ["completion_time"] = DateTime.UtcNow.ToString("O")
-                }
+                Id = createdFile.Id,
+                Path = createdFile.Path ?? "test-path"
             };
 
             // Act
@@ -288,11 +284,7 @@ public class FilesIntegrationTests : IClassFixture<IntegrationTestFixture>
             var completedFile = result.Value;
             completedFile.Should().NotBeNull();
             completedFile.Id.Should().Be(createdFile.Id);
-            completedFile.Status.Should().Be(FileStatus.Uploaded);
-            completedFile.Checksum.Should().Be(completeRequest.Checksum);
-            completedFile.Metadata.Should().NotBeNull();
-            completedFile.Metadata.Should().ContainKey("upload_completed");
-            completedFile.Metadata["upload_completed"].Should().Be(true);
+            completedFile.IsUploaded.Should().BeTrue();
         }
         catch (OperationCanceledException)
         {
@@ -424,14 +416,11 @@ public class FilesIntegrationTests : IClassFixture<IntegrationTestFixture>
         {
             // Arrange
             var client = _fixture.CreateClient();
-            var expirationDate = DateTime.UtcNow.AddDays(7);
             var request = new FileCreateRequest
             {
                 Name = $"expiring-file-{Guid.NewGuid()}.txt",
                 MimeType = "text/plain",
-                Size = 512,
-                Public = true,
-                ExpiresAt = expirationDate
+                Size = 512
             };
 
             // Act
@@ -448,8 +437,6 @@ public class FilesIntegrationTests : IClassFixture<IntegrationTestFixture>
             file.Should().NotBeNull();
             file.Id.Should().NotBeNullOrEmpty();
             file.Name.Should().Be(request.Name);
-            file.ExpiresAt.Should().BeCloseTo(expirationDate, TimeSpan.FromSeconds(1));
-            file.Public.Should().BeTrue();
         }
         catch (OperationCanceledException)
         {
@@ -464,13 +451,11 @@ public class FilesIntegrationTests : IClassFixture<IntegrationTestFixture>
         {
             // Arrange
             var client = _fixture.CreateClient();
-            var checksum = "sha256:abc123def456789";
             var request = new FileCreateRequest
             {
                 Name = $"checksum-file-{Guid.NewGuid()}.txt",
                 MimeType = "text/plain",
-                Size = 2048,
-                Checksum = checksum
+                Size = 2048
             };
 
             // Act
@@ -486,7 +471,8 @@ public class FilesIntegrationTests : IClassFixture<IntegrationTestFixture>
             var file = result.Value;
             file.Should().NotBeNull();
             file.Id.Should().NotBeNullOrEmpty();
-            file.Checksum.Should().Be(checksum);
+            // Checksum is populated after upload completion
+            _output.WriteLine($"File created: {file.Id}");
         }
         catch (OperationCanceledException)
         {

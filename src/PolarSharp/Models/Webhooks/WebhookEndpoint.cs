@@ -62,10 +62,16 @@ public record WebhookEndpoint
     public DateTime CreatedAt { get; init; }
 
     /// <summary>
-    /// The date and time when the webhook endpoint was last updated.
+    /// The date and time when the webhook endpoint was last modified.
     /// </summary>
-    [JsonPropertyName("updated_at")]
-    public DateTime UpdatedAt { get; init; }
+    [JsonPropertyName("modified_at")]
+    public DateTime ModifiedAt { get; init; }
+
+    /// <summary>
+    /// Alias for ModifiedAt for backward compatibility.
+    /// </summary>
+    [JsonIgnore]
+    public DateTime UpdatedAt => ModifiedAt;
 
     /// <summary>
     /// The organization ID this webhook endpoint belongs to.

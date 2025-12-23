@@ -134,7 +134,7 @@ public class OrdersIntegrationTests : IClassFixture<IntegrationTestFixture>
                 {
                     var order = getResult.Value;
                     order.Id.Should().Be(orderId);
-                    order.Status.Should().BeOneOf(OrderStatus.Pending, OrderStatus.Paid, OrderStatus.Refunded, OrderStatus.PartiallyRefunded, OrderStatus.Canceled, OrderStatus.Failed);
+                    order.Status.Should().BeOneOf(OrderStatus.Pending, OrderStatus.Paid, OrderStatus.Refunded, OrderStatus.PartiallyRefunded, OrderStatus.Disputed);
                     order.Amount.Should().BeGreaterThanOrEqualTo(0);
                     order.Currency.Should().NotBeNullOrEmpty();
                 }
@@ -369,8 +369,8 @@ public class OrdersIntegrationTests : IClassFixture<IntegrationTestFixture>
     [InlineData(OrderStatus.Pending)]
     [InlineData(OrderStatus.Paid)]
     [InlineData(OrderStatus.Refunded)]
-    [InlineData(OrderStatus.Canceled)]
-    [InlineData(OrderStatus.Failed)]
+    [InlineData(OrderStatus.PartiallyRefunded)]
+    [InlineData(OrderStatus.Disputed)]
     public async Task OrdersApi_ListByStatus_WorksCorrectly(OrderStatus status)
     {
         try

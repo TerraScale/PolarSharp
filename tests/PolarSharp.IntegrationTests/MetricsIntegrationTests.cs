@@ -1,13 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using FluentAssertions;
-using PolarSharp.Extensions;
-using PolarSharp.Models.Common;
 using PolarSharp.Models.Metrics;
-using PolarSharp.Results;
-using PolarSharp.Api;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -28,33 +23,29 @@ public class MetricsIntegrationTests : IClassFixture<IntegrationTestFixture>
     }
 
     [Fact]
-    public async Task GetAsync_ReturnsListOfMetrics()
+    public async Task GetAsync_WithRequiredParameters_ReturnsMetricsResponse()
     {
         try
         {
             // Arrange
             var client = _fixture.CreateClient();
+            var startDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-30));
+            var endDate = DateOnly.FromDateTime(DateTime.UtcNow);
 
             // Act
-            var result = await client.Metrics.GetAsync();
+            var result = await client.Metrics.GetAsync(startDate, endDate, TimeInterval.Day);
 
             // Assert
             result.Should().NotBeNull();
             if (result.IsSuccess)
             {
                 result.Value.Should().NotBeNull();
-                result.Value.Should().BeAssignableTo<List<Metric>>();
-
-                // If there are any metrics, validate their structure
-                if (result.Value.Any())
-                {
-                    result.Value.Should().AllSatisfy(metric =>
-                    {
-                        metric.Name.Should().NotBeNullOrEmpty();
-                        metric.Period.Should().NotBeNullOrEmpty();
-                        metric.Timestamp.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromDays(365)); // Within last year
-                    });
-                }
+                result.Value.Periods.Should().NotBeNull();
+                result.Value.Metrics.Should().NotBeNull();
+            }
+            else
+            {
+                _output.WriteLine($"API returned error: {result.Error?.Message}");
             }
         }
         catch (OperationCanceledException)
@@ -64,7 +55,144 @@ public class MetricsIntegrationTests : IClassFixture<IntegrationTestFixture>
     }
 
     [Fact]
-    public async Task GetLimitsAsync_ReturnsListOfMetricLimits()
+    public async Task GetAsync_WithWeekInterval_ReturnsMetricsResponse()
+    {
+        try
+        {
+            // Arrange
+            var client = _fixture.CreateClient();
+            var startDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-90));
+            var endDate = DateOnly.FromDateTime(DateTime.UtcNow);
+
+            // Act
+            var result = await client.Metrics.GetAsync(startDate, endDate, TimeInterval.Week);
+
+            // Assert
+            result.Should().NotBeNull();
+            if (result.IsSuccess)
+            {
+                result.Value.Should().NotBeNull();
+                result.Value.Periods.Should().NotBeNull();
+            }
+            else
+            {
+                _output.WriteLine($"API returned error: {result.Error?.Message}");
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            _output.WriteLine("Skipped: Request timed out");
+        }
+    }
+
+    [Fact]
+    public async Task GetAsync_WithMonthInterval_ReturnsMetricsResponse()
+    {
+        try
+        {
+            // Arrange
+            var client = _fixture.CreateClient();
+            var startDate = DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-1));
+            var endDate = DateOnly.FromDateTime(DateTime.UtcNow);
+
+            // Act
+            var result = await client.Metrics.GetAsync(startDate, endDate, TimeInterval.Month);
+
+            // Assert
+            result.Should().NotBeNull();
+            if (result.IsSuccess)
+            {
+                result.Value.Should().NotBeNull();
+                result.Value.Periods.Should().NotBeNull();
+            }
+            else
+            {
+                _output.WriteLine($"API returned error: {result.Error?.Message}");
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            _output.WriteLine("Skipped: Request timed out");
+        }
+    }
+
+    [Fact]
+    public async Task GetAsync_WithYearInterval_ReturnsMetricsResponse()
+    {
+        try
+        {
+            // Arrange
+            var client = _fixture.CreateClient();
+            var startDate = DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-3));
+            var endDate = DateOnly.FromDateTime(DateTime.UtcNow);
+
+            // Act
+            var result = await client.Metrics.GetAsync(startDate, endDate, TimeInterval.Year);
+
+            // Assert
+            result.Should().NotBeNull();
+            if (result.IsSuccess)
+            {
+                result.Value.Should().NotBeNull();
+                result.Value.Periods.Should().NotBeNull();
+            }
+            else
+            {
+                _output.WriteLine($"API returned error: {result.Error?.Message}");
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            _output.WriteLine("Skipped: Request timed out");
+        }
+    }
+
+    [Fact]
+    public async Task GetAsync_WithProductIdFilter_ReturnsFilteredMetrics()
+    {
+        try
+        {
+            // Arrange
+            var client = _fixture.CreateClient();
+            var startDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-30));
+            var endDate = DateOnly.FromDateTime(DateTime.UtcNow);
+
+            // First get a product to filter by
+            var productsResult = await client.Products.ListAsync();
+            if (!productsResult.IsSuccess || !productsResult.Value.Items.Any())
+            {
+                _output.WriteLine("Skipped: No products available to filter by");
+                return;
+            }
+
+            var productId = productsResult.Value.Items.First().Id;
+
+            // Act
+            var result = await client.Metrics.GetAsync(
+                startDate, 
+                endDate, 
+                TimeInterval.Day,
+                productId: productId);
+
+            // Assert
+            result.Should().NotBeNull();
+            if (result.IsSuccess)
+            {
+                result.Value.Should().NotBeNull();
+            }
+            else
+            {
+                _output.WriteLine($"API returned error: {result.Error?.Message}");
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            _output.WriteLine("Skipped: Request timed out");
+        }
+    }
+
+    [Fact]
+    public async Task GetLimitsAsync_ReturnsMetricsLimits()
     {
         try
         {
@@ -79,27 +207,22 @@ public class MetricsIntegrationTests : IClassFixture<IntegrationTestFixture>
             if (result.IsSuccess)
             {
                 result.Value.Should().NotBeNull();
-                result.Value.Should().BeAssignableTo<List<MetricLimit>>();
-
-                // If there are any limits, validate their structure
-                if (result.Value.Any())
+                result.Value.Limits.Should().NotBeNull();
+                
+                // Validate limits structure if any exist
+                if (result.Value.Limits.Any())
                 {
-                    result.Value.Should().AllSatisfy(limit =>
+                    result.Value.Limits.Should().AllSatisfy(limit =>
                     {
-                        limit.Name.Should().NotBeNullOrEmpty();
-                        limit.MaxValue.Should().BeGreaterThanOrEqualTo(0);
-                        limit.CurrentValue.Should().BeGreaterThanOrEqualTo(0);
-                        limit.PercentageUsed.Should().BeGreaterThanOrEqualTo(0);
-
-                        // Percentage should be calculated correctly
-                        if (limit.MaxValue > 0)
-                        {
-                            var expectedPercentage = (limit.CurrentValue / limit.MaxValue) * 100;
-                            limit.PercentageUsed.Should().BeApproximately(expectedPercentage, 0.01m);
-                        }
+                        limit.Interval.Should().NotBeNull();
+                        limit.MinDays.Should().BeGreaterThanOrEqualTo(0);
                     });
                 }
             }
+            else
+            {
+                _output.WriteLine($"API returned error: {result.Error?.Message}");
+            }
         }
         catch (OperationCanceledException)
         {
@@ -108,25 +231,52 @@ public class MetricsIntegrationTests : IClassFixture<IntegrationTestFixture>
     }
 
     [Fact]
-    public async Task ListAsync_WithDefaultParameters_ReturnsPaginatedResponse()
+    public async Task GetAsync_MetricsResponse_ContainsExpectedMetricDefinitions()
     {
         try
         {
             // Arrange
             var client = _fixture.CreateClient();
+            var startDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-30));
+            var endDate = DateOnly.FromDateTime(DateTime.UtcNow);
 
             // Act
-            var result = await client.Metrics.ListAsync(new MetricsQueryBuilder());
+            var result = await client.Metrics.GetAsync(startDate, endDate, TimeInterval.Day);
 
             // Assert
             result.Should().NotBeNull();
             if (result.IsSuccess)
             {
-                result.Value.Should().NotBeNull();
-                result.Value.Items.Should().NotBeNull();
-                result.Value.Pagination.Page.Should().BeGreaterThanOrEqualTo(1);
-                result.Value.Pagination.TotalCount.Should().BeGreaterThanOrEqualTo(0);
-                result.Value.Pagination.MaxPage.Should().BeGreaterThanOrEqualTo(0);
+                var metrics = result.Value.Metrics;
+                
+                // The API returns various metric definitions
+                // Check that the basic structure is there
+                metrics.Should().NotBeNull();
+                
+                // Revenue metric definition should exist
+                if (metrics.Revenue != null)
+                {
+                    metrics.Revenue.Slug.Should().NotBeNullOrEmpty();
+                    metrics.Revenue.DisplayName.Should().NotBeNullOrEmpty();
+                }
+
+                // Orders metric definition should exist  
+                if (metrics.Orders != null)
+                {
+                    metrics.Orders.Slug.Should().NotBeNullOrEmpty();
+                    metrics.Orders.DisplayName.Should().NotBeNullOrEmpty();
+                }
+
+                // ActiveSubscriptions metric definition should exist
+                if (metrics.ActiveSubscriptions != null)
+                {
+                    metrics.ActiveSubscriptions.Slug.Should().NotBeNullOrEmpty();
+                    metrics.ActiveSubscriptions.DisplayName.Should().NotBeNullOrEmpty();
+                }
+            }
+            else
+            {
+                _output.WriteLine($"API returned error: {result.Error?.Message}");
             }
         }
         catch (OperationCanceledException)
@@ -136,376 +286,37 @@ public class MetricsIntegrationTests : IClassFixture<IntegrationTestFixture>
     }
 
     [Fact]
-    public async Task ListAsync_WithPagination_ReturnsCorrectPage()
+    public async Task GetAsync_Periods_MatchRequestedInterval()
     {
         try
         {
             // Arrange
             var client = _fixture.CreateClient();
-            var page = 1;
-            var limit = 5;
+            var startDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-7));
+            var endDate = DateOnly.FromDateTime(DateTime.UtcNow);
 
             // Act
-            var result = await client.Metrics.ListAsync(new MetricsQueryBuilder(), page: page, limit: limit);
+            var result = await client.Metrics.GetAsync(startDate, endDate, TimeInterval.Day);
 
             // Assert
             result.Should().NotBeNull();
             if (result.IsSuccess)
             {
-                result.Value.Pagination.Page.Should().Be(page);
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            _output.WriteLine("Skipped: Request timed out");
-        }
-    }
-
-    [Fact]
-    public async Task ListAsync_WithQueryBuilder_ReturnsFilteredResults()
-    {
-        try
-        {
-            // Arrange
-            var client = _fixture.CreateClient();
-            var builder = client.Metrics.Query()
-                .WithType("revenue")
-                .StartDate(DateTime.UtcNow.AddDays(-30))
-                .EndDate(DateTime.UtcNow);
-
-            // Act
-            var result = await client.Metrics.ListAsync(builder);
-
-            // Assert
-            result.Should().NotBeNull();
-            if (result.IsSuccess)
-            {
-                result.Value.Items.Should().NotBeNull();
-
-                // Validate date range if any metrics are returned
-                if (result.Value.Items.Any())
+                result.Value.Periods.Should().NotBeNull();
+                
+                // Should have approximately 7-8 periods for a week with day interval
+                if (result.Value.Periods.Any())
                 {
-                    var startDate = DateTime.UtcNow.AddDays(-30);
-                    var endDate = DateTime.UtcNow;
-
-                    result.Value.Items.Should().AllSatisfy(metric =>
-                    {
-                        metric.Timestamp.Should().BeOnOrAfter(startDate);
-                        metric.Timestamp.Should().BeOnOrBefore(endDate);
-                    });
+                    result.Value.Periods.Count.Should().BeInRange(1, 10);
+                    
+                    // Periods should be ordered
+                    var orderedPeriods = result.Value.Periods.OrderBy(p => p.Timestamp).ToList();
+                    result.Value.Periods.Should().BeEquivalentTo(orderedPeriods, options => options.WithStrictOrdering());
                 }
             }
-        }
-        catch (OperationCanceledException)
-        {
-            _output.WriteLine("Skipped: Request timed out");
-        }
-    }
-
-    [Fact]
-    public async Task ListAsync_WithCustomerIdFilter_ReturnsFilteredResults()
-    {
-        try
-        {
-            // Arrange
-            var client = _fixture.CreateClient();
-
-            // First create a customer to filter by
-            var customerRequest = new PolarSharp.Models.Customers.CustomerCreateRequest
+            else
             {
-                Email = "metrics-test@mailinator.com",
-                Name = "Metrics Test Customer"
-            };
-            var customerResult = await client.Customers.CreateAsync(customerRequest);
-
-            if (customerResult.IsSuccess)
-            {
-                try
-                {
-                    var builder = client.Metrics.Query()
-                        .WithCustomerId(customerResult.Value.Id);
-
-                    // Act
-                    var result = await client.Metrics.ListAsync(builder);
-
-                    // Assert
-                    result.Should().NotBeNull();
-                    if (result.IsSuccess)
-                    {
-                        result.Value.Items.Should().NotBeNull();
-                        // Note: This might return empty if no metrics exist for this customer yet
-                    }
-                }
-                finally
-                {
-                    // Cleanup customer
-                    try { await client.Customers.DeleteAsync(customerResult.Value.Id); } catch { }
-                }
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            _output.WriteLine("Skipped: Request timed out");
-        }
-    }
-
-    [Fact]
-    public async Task ListAllAsync_WithDefaultParameters_ReturnsAllMetrics()
-    {
-        try
-        {
-            // Arrange
-            var client = _fixture.CreateClient();
-
-            // Act
-            var metrics = new List<Metric>();
-            await foreach (var result in client.Metrics.ListAllAsync(CancellationToken.None))
-            {
-                if (result.IsSuccess)
-                {
-                    metrics.Add(result.Value);
-                }
-            }
-
-            // Assert
-            metrics.Should().NotBeNull();
-
-            // Should contain all metrics across all pages
-            if (metrics.Any())
-            {
-                metrics.Should().AllSatisfy(metric =>
-                {
-                    metric.Name.Should().NotBeNullOrEmpty();
-                    metric.Period.Should().NotBeNullOrEmpty();
-                    metric.Timestamp.Should().BeBefore(DateTime.UtcNow.AddMinutes(5)); // Allow for some clock skew
-                });
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            _output.WriteLine("Skipped: Request timed out");
-        }
-    }
-
-    [Fact]
-    public async Task ListAllAsync_WithQueryBuilder_ReturnsFilteredMetrics()
-    {
-        try
-        {
-            // Arrange
-            var client = _fixture.CreateClient();
-            var builder = client.Metrics.Query()
-                .StartDate(DateTime.UtcNow.AddDays(-7))
-                .EndDate(DateTime.UtcNow);
-
-            // Act
-            var metrics = new List<Metric>();
-            await foreach (var result in client.Metrics.ListAllAsync(CancellationToken.None))
-            {
-                if (result.IsSuccess)
-                {
-                    metrics.Add(result.Value);
-                }
-            }
-
-            // Assert
-            metrics.Should().NotBeNull();
-
-            if (metrics.Any())
-            {
-                var startDate = DateTime.UtcNow.AddDays(-7);
-                var endDate = DateTime.UtcNow;
-
-                metrics.Should().AllSatisfy(metric =>
-                {
-                    metric.Timestamp.Should().BeOnOrAfter(startDate);
-                    metric.Timestamp.Should().BeOnOrBefore(endDate);
-                });
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            _output.WriteLine("Skipped: Request timed out");
-        }
-    }
-
-    [Fact]
-    public async Task ListAllAsync_WithoutBuilder_ReturnsAllMetrics()
-    {
-        try
-        {
-            // Arrange
-            var client = _fixture.CreateClient();
-
-            // Act
-            var metrics = new List<Metric>();
-            await foreach (var result in client.Metrics.ListAllAsync(CancellationToken.None))
-            {
-                if (result.IsSuccess)
-                {
-                    metrics.Add(result.Value);
-                }
-            }
-
-            // Assert
-            metrics.Should().NotBeNull();
-
-            // Should contain all metrics across all pages
-            if (metrics.Any())
-            {
-                metrics.Should().AllSatisfy(metric =>
-                {
-                    metric.Name.Should().NotBeNullOrEmpty();
-                    metric.Value.Should().BeGreaterThanOrEqualTo(0);
-                    metric.Period.Should().NotBeNullOrEmpty();
-                });
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            _output.WriteLine("Skipped: Request timed out");
-        }
-    }
-
-    [Fact]
-    public async Task QueryBuilder_WithDateRange_FiltersByTimestamp()
-    {
-        try
-        {
-            // Arrange
-            var client = _fixture.CreateClient();
-            var now = DateTime.UtcNow;
-            var yesterday = now.AddDays(-1);
-            var builder = client.Metrics.Query()
-                .StartDate(yesterday)
-                .EndDate(now);
-
-            // Act
-            var result = await client.Metrics.ListAsync(builder);
-
-            // Assert
-            result.Should().NotBeNull();
-            if (result.IsSuccess)
-            {
-                result.Value.Items.Should().AllSatisfy(metric =>
-                {
-                    metric.Timestamp.Should().BeOnOrAfter(yesterday);
-                    metric.Timestamp.Should().BeOnOrBefore(now);
-                });
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            _output.WriteLine("Skipped: Request timed out");
-        }
-    }
-
-    [Fact]
-    public async Task QueryBuilder_WithMultipleFilters_CombinesFiltersCorrectly()
-    {
-        try
-        {
-            // Arrange
-            var client = _fixture.CreateClient();
-            var builder = client.Metrics.Query()
-                .WithType("revenue")
-                .StartDate(DateTime.UtcNow.AddDays(-30))
-                .EndDate(DateTime.UtcNow);
-
-            // Act
-            var result = await client.Metrics.ListAsync(builder);
-
-            // Assert
-            result.Should().NotBeNull();
-            if (result.IsSuccess)
-            {
-                result.Value.Items.Should().NotBeNull();
-
-                if (result.Value.Items.Any())
-                {
-                    var startDate = DateTime.UtcNow.AddDays(-30);
-                    var endDate = DateTime.UtcNow;
-
-                    result.Value.Items.Should().AllSatisfy(metric =>
-                    {
-                        metric.Timestamp.Should().BeOnOrAfter(startDate);
-                        metric.Timestamp.Should().BeOnOrBefore(endDate);
-                    });
-                }
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            _output.WriteLine("Skipped: Request timed out");
-        }
-    }
-
-    [Fact]
-    public async Task Metric_Structure_IsValid()
-    {
-        try
-        {
-            // Arrange
-            var client = _fixture.CreateClient();
-
-            // Act
-            var result = await client.Metrics.GetAsync();
-
-            // Assert
-            result.Should().NotBeNull();
-            if (result.IsSuccess)
-            {
-                result.Value.Should().NotBeNull();
-
-                if (result.Value.Any())
-                {
-                    var firstMetric = result.Value.First();
-                    firstMetric.Should().NotBeNull();
-                    firstMetric.Name.Should().NotBeNullOrEmpty();
-                    firstMetric.Value.Should().BeGreaterThanOrEqualTo(0);
-                    firstMetric.Period.Should().NotBeNullOrEmpty();
-                    firstMetric.Timestamp.Should().BeBefore(DateTime.UtcNow.AddMinutes(5));
-                }
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            _output.WriteLine("Skipped: Request timed out");
-        }
-    }
-
-    [Fact]
-    public async Task MetricLimit_Structure_IsValid()
-    {
-        try
-        {
-            // Arrange
-            var client = _fixture.CreateClient();
-
-            // Act
-            var result = await client.Metrics.GetLimitsAsync();
-
-            // Assert
-            result.Should().NotBeNull();
-            if (result.IsSuccess)
-            {
-                result.Value.Should().NotBeNull();
-
-                if (result.Value.Any())
-                {
-                    var firstLimit = result.Value.First();
-                    firstLimit.Should().NotBeNull();
-                    firstLimit.Name.Should().NotBeNullOrEmpty();
-                    firstLimit.MaxValue.Should().BeGreaterThanOrEqualTo(0);
-                    firstLimit.CurrentValue.Should().BeGreaterThanOrEqualTo(0);
-                    firstLimit.PercentageUsed.Should().BeGreaterThanOrEqualTo(0);
-
-                    // If there's a reset date, it should be in the future
-                    if (firstLimit.ResetsAt.HasValue)
-                    {
-                        firstLimit.ResetsAt.Value.Should().BeAfter(DateTime.UtcNow);
-                    }
-                }
+                _output.WriteLine($"API returned error: {result.Error?.Message}");
             }
         }
         catch (OperationCanceledException)
@@ -522,16 +333,14 @@ public class MetricsIntegrationTests : IClassFixture<IntegrationTestFixture>
             // Arrange
             var client = _fixture.CreateClient();
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            var startDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-7));
+            var endDate = DateOnly.FromDateTime(DateTime.UtcNow);
 
             // Act
-            var result = await client.Metrics.GetAsync(cts.Token);
+            var result = await client.Metrics.GetAsync(startDate, endDate, TimeInterval.Day, cancellationToken: cts.Token);
 
             // Assert
             result.Should().NotBeNull();
-            if (result.IsSuccess)
-            {
-                result.Value.Should().BeAssignableTo<List<Metric>>();
-            }
         }
         catch (OperationCanceledException)
         {
@@ -553,10 +362,6 @@ public class MetricsIntegrationTests : IClassFixture<IntegrationTestFixture>
 
             // Assert
             result.Should().NotBeNull();
-            if (result.IsSuccess)
-            {
-                result.Value.Should().BeAssignableTo<List<MetricLimit>>();
-            }
         }
         catch (OperationCanceledException)
         {
@@ -565,23 +370,37 @@ public class MetricsIntegrationTests : IClassFixture<IntegrationTestFixture>
     }
 
     [Fact]
-    public async Task ListAsync_WithCancellation_WorksCorrectly()
+    public async Task GetAsync_Totals_ContainsAggregatedData()
     {
         try
         {
             // Arrange
             var client = _fixture.CreateClient();
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            var startDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-30));
+            var endDate = DateOnly.FromDateTime(DateTime.UtcNow);
 
             // Act
-            var result = await client.Metrics.ListAsync(new MetricsQueryBuilder(), cancellationToken: cts.Token);
+            var result = await client.Metrics.GetAsync(startDate, endDate, TimeInterval.Day);
 
             // Assert
             result.Should().NotBeNull();
             if (result.IsSuccess)
             {
-                result.Value.Items.Should().NotBeNull();
-                result.Value.Pagination.Should().NotBeNull();
+                result.Value.Totals.Should().NotBeNull();
+                
+                // Totals should have non-negative values
+                result.Value.Totals.Revenue.Should().BeGreaterThanOrEqualTo(0);
+                result.Value.Totals.Orders.Should().BeGreaterThanOrEqualTo(0);
+                result.Value.Totals.AverageOrderValue.Should().BeGreaterThanOrEqualTo(0);
+                result.Value.Totals.ActiveSubscriptions.Should().BeGreaterThanOrEqualTo(0);
+                result.Value.Totals.NewSubscriptions.Should().BeGreaterThanOrEqualTo(0);
+                result.Value.Totals.NewSubscriptionsRevenue.Should().BeGreaterThanOrEqualTo(0);
+                result.Value.Totals.RenewedSubscriptions.Should().BeGreaterThanOrEqualTo(0);
+                result.Value.Totals.RenewedSubscriptionsRevenue.Should().BeGreaterThanOrEqualTo(0);
+            }
+            else
+            {
+                _output.WriteLine($"API returned error: {result.Error?.Message}");
             }
         }
         catch (OperationCanceledException)
@@ -591,35 +410,151 @@ public class MetricsIntegrationTests : IClassFixture<IntegrationTestFixture>
     }
 
     [Fact]
-    public async Task ListAllAsync_WithCancellation_WorksCorrectly()
+    public async Task GetAsync_WithOrganizationIdFilter_ReturnsFilteredMetrics()
     {
         try
         {
             // Arrange
             var client = _fixture.CreateClient();
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            var startDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-30));
+            var endDate = DateOnly.FromDateTime(DateTime.UtcNow);
+
+            // First get an organization to filter by
+            var orgsResult = await client.Organizations.ListAsync();
+            if (!orgsResult.IsSuccess || !orgsResult.Value.Items.Any())
+            {
+                _output.WriteLine("Skipped: No organizations available to filter by");
+                return;
+            }
+
+            var orgId = orgsResult.Value.Items.First().Id;
 
             // Act
-            var metrics = new List<Metric>();
-            await foreach (var result in client.Metrics.ListAllAsync(cancellationToken: cts.Token))
-            {
-                if (result.IsSuccess)
-                {
-                    metrics.Add(result.Value);
-                    if (metrics.Count >= 5) break; // Limit for testing purposes
-                }
-            }
+            var result = await client.Metrics.GetAsync(
+                startDate, 
+                endDate, 
+                TimeInterval.Day,
+                organizationId: orgId);
 
             // Assert
-            metrics.Should().NotBeNull();
-            if (metrics.Any())
+            result.Should().NotBeNull();
+            if (result.IsSuccess)
             {
-                metrics.Should().AllSatisfy(metric =>
-                {
-                    metric.Name.Should().NotBeNullOrEmpty();
-                    metric.Period.Should().NotBeNullOrEmpty();
-                });
+                result.Value.Should().NotBeNull();
             }
+            else
+            {
+                _output.WriteLine($"API returned error: {result.Error?.Message}");
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            _output.WriteLine("Skipped: Request timed out");
+        }
+    }
+
+    [Fact]
+    public async Task GetAsync_WithQueryBuilder_ReturnsMetricsResponse()
+    {
+        try
+        {
+            // Arrange
+            var client = _fixture.CreateClient();
+
+            // Act - Using the query builder with DateTime overloads for convenience
+            var result = await client.Metrics.GetAsync(
+                client.Metrics.Query()
+                    .StartDate(DateTime.UtcNow.AddDays(-30))
+                    .EndDate(DateTime.UtcNow)
+                    .WithInterval(TimeInterval.Day)
+                    .WithTimezone("UTC"));
+
+            // Assert
+            result.Should().NotBeNull();
+            if (result.IsSuccess)
+            {
+                result.Value.Should().NotBeNull();
+                result.Value.Periods.Should().NotBeNull();
+            }
+            else
+            {
+                _output.WriteLine($"API returned error: {result.Error?.Message}");
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            _output.WriteLine("Skipped: Request timed out");
+        }
+    }
+
+    [Fact]
+    public async Task GetAsync_QueryBuilderValidation_RequiresStartDate()
+    {
+        try
+        {
+            // Arrange
+            var client = _fixture.CreateClient();
+
+            // Act - Missing start_date
+            var result = await client.Metrics.GetAsync(
+                client.Metrics.Query()
+                    .EndDate(DateTime.UtcNow)
+                    .WithInterval(TimeInterval.Day));
+
+            // Assert - Should fail validation
+            result.IsSuccess.Should().BeFalse();
+            result.Error.Should().NotBeNull();
+            result.Error!.Message.Should().Contain("start_date");
+        }
+        catch (OperationCanceledException)
+        {
+            _output.WriteLine("Skipped: Request timed out");
+        }
+    }
+
+    [Fact]
+    public async Task GetAsync_QueryBuilderValidation_RequiresEndDate()
+    {
+        try
+        {
+            // Arrange
+            var client = _fixture.CreateClient();
+
+            // Act - Missing end_date
+            var result = await client.Metrics.GetAsync(
+                client.Metrics.Query()
+                    .StartDate(DateTime.UtcNow.AddDays(-30))
+                    .WithInterval(TimeInterval.Day));
+
+            // Assert - Should fail validation
+            result.IsSuccess.Should().BeFalse();
+            result.Error.Should().NotBeNull();
+            result.Error!.Message.Should().Contain("end_date");
+        }
+        catch (OperationCanceledException)
+        {
+            _output.WriteLine("Skipped: Request timed out");
+        }
+    }
+
+    [Fact]
+    public async Task GetAsync_QueryBuilderValidation_RequiresInterval()
+    {
+        try
+        {
+            // Arrange
+            var client = _fixture.CreateClient();
+
+            // Act - Missing interval
+            var result = await client.Metrics.GetAsync(
+                client.Metrics.Query()
+                    .StartDate(DateTime.UtcNow.AddDays(-30))
+                    .EndDate(DateTime.UtcNow));
+
+            // Assert - Should fail validation
+            result.IsSuccess.Should().BeFalse();
+            result.Error.Should().NotBeNull();
+            result.Error!.Message.Should().Contain("interval");
         }
         catch (OperationCanceledException)
         {

@@ -16,18 +16,11 @@ public record LicenseKey
     public string Id { get; init; } = string.Empty;
 
     /// <summary>
-    /// The license key string.
+    /// The organization ID.
     /// </summary>
     [Required]
-    [JsonPropertyName("key")]
-    public string Key { get; init; } = string.Empty;
-
-    /// <summary>
-    /// The status of the license key.
-    /// </summary>
-    [Required]
-    [JsonPropertyName("status")]
-    public LicenseKeyStatus Status { get; init; }
+    [JsonPropertyName("organization_id")]
+    public string OrganizationId { get; init; } = string.Empty;
 
     /// <summary>
     /// The customer ID associated with the license key.
@@ -44,22 +37,60 @@ public record LicenseKey
     public string BenefitId { get; init; } = string.Empty;
 
     /// <summary>
-    /// The order ID associated with the license key.
+    /// The full license key string.
     /// </summary>
-    [JsonPropertyName("order_id")]
-    public string? OrderId { get; init; }
+    [Required]
+    [JsonPropertyName("key")]
+    public string Key { get; init; } = string.Empty;
 
     /// <summary>
-    /// The subscription ID associated with the license key.
+    /// The display version of the license key (partially masked).
     /// </summary>
-    [JsonPropertyName("subscription_id")]
-    public string? SubscriptionId { get; init; }
+    [JsonPropertyName("display_key")]
+    public string? DisplayKey { get; init; }
 
     /// <summary>
-    /// The metadata associated with the license key.
+    /// The status of the license key.
     /// </summary>
-    [JsonPropertyName("metadata")]
-    public Dictionary<string, object>? Metadata { get; init; }
+    [Required]
+    [JsonPropertyName("status")]
+    public LicenseKeyStatus Status { get; init; }
+
+    /// <summary>
+    /// The maximum number of activations allowed.
+    /// </summary>
+    [JsonPropertyName("limit_activations")]
+    public int? LimitActivations { get; init; }
+
+    /// <summary>
+    /// The current number of activations (usage).
+    /// </summary>
+    [JsonPropertyName("usage")]
+    public int Usage { get; init; }
+
+    /// <summary>
+    /// The maximum usage limit.
+    /// </summary>
+    [JsonPropertyName("limit_usage")]
+    public int? LimitUsage { get; init; }
+
+    /// <summary>
+    /// The number of times this license key has been validated.
+    /// </summary>
+    [JsonPropertyName("validations")]
+    public int Validations { get; init; }
+
+    /// <summary>
+    /// The last validation timestamp.
+    /// </summary>
+    [JsonPropertyName("last_validated_at")]
+    public DateTime? LastValidatedAt { get; init; }
+
+    /// <summary>
+    /// The expiration date of the license key.
+    /// </summary>
+    [JsonPropertyName("expires_at")]
+    public DateTime? ExpiresAt { get; init; }
 
     /// <summary>
     /// The creation date of the license key.
@@ -69,47 +100,17 @@ public record LicenseKey
     public DateTime CreatedAt { get; init; }
 
     /// <summary>
-    /// The last update date of the license key.
+    /// The last modification date of the license key.
     /// </summary>
     [Required]
-    [JsonPropertyName("updated_at")]
-    public DateTime UpdatedAt { get; init; }
+    [JsonPropertyName("modified_at")]
+    public DateTime ModifiedAt { get; init; }
 
     /// <summary>
-    /// The expiration date of the license key.
+    /// Alias for ModifiedAt for backward compatibility.
     /// </summary>
-    [JsonPropertyName("expires_at")]
-    public DateTime? ExpiresAt { get; init; }
-
-    /// <summary>
-    /// The activation date of the license key.
-    /// </summary>
-    [JsonPropertyName("activated_at")]
-    public DateTime? ActivatedAt { get; init; }
-
-    /// <summary>
-    /// The last used date of the license key.
-    /// </summary>
-    [JsonPropertyName("last_used_at")]
-    public DateTime? LastUsedAt { get; init; }
-
-    /// <summary>
-    /// The usage limit of the license key.
-    /// </summary>
-    [JsonPropertyName("usage_limit")]
-    public int? UsageLimit { get; init; }
-
-    /// <summary>
-    /// The usage count of the license key.
-    /// </summary>
-    [JsonPropertyName("usage_count")]
-    public int UsageCount { get; init; }
-
-    /// <summary>
-    /// The activation information.
-    /// </summary>
-    [JsonPropertyName("activation")]
-    public LicenseKeyActivation? Activation { get; init; }
+    [JsonIgnore]
+    public DateTime UpdatedAt => ModifiedAt;
 
     /// <summary>
     /// The customer information.
@@ -118,53 +119,47 @@ public record LicenseKey
     public Customers.Customer? Customer { get; init; }
 
     /// <summary>
-    /// The benefit information.
+    /// List of activations for this license key.
     /// </summary>
-    [JsonPropertyName("benefit")]
-    public Benefits.Benefit? Benefit { get; init; }
-
-    /// <summary>
-    /// The order information.
-    /// </summary>
-    [JsonPropertyName("order")]
-    public Orders.Order? Order { get; init; }
-
-    /// <summary>
-    /// The subscription information.
-    /// </summary>
-    [JsonPropertyName("subscription")]
-    public Subscriptions.Subscription? Subscription { get; init; }
+    [JsonPropertyName("activations")]
+    public List<LicenseKeyActivation>? Activations { get; init; }
 }
 
 /// <summary>
 /// Represents the status of a license key.
 /// </summary>
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum LicenseKeyStatus
 {
     /// <summary>
-    /// The license key is active.
+    /// The license key has been granted (active).
     /// </summary>
-    Active,
+    [JsonPropertyName("granted")]
+    Granted,
 
     /// <summary>
-    /// The license key is inactive.
+    /// Alias for Granted - the license key is active.
     /// </summary>
-    Inactive,
-
-    /// <summary>
-    /// The license key is expired.
-    /// </summary>
-    Expired,
+    [JsonPropertyName("active")]
+    Active = Granted,
 
     /// <summary>
     /// The license key is revoked.
     /// </summary>
+    [JsonPropertyName("revoked")]
     Revoked,
 
     /// <summary>
-    /// The license key is used.
+    /// Alias for Revoked - the license key is inactive.
     /// </summary>
-    Used
+    [JsonPropertyName("inactive")]
+    Inactive = Revoked,
+
+    /// <summary>
+    /// The license key is disabled.
+    /// </summary>
+    [JsonPropertyName("disabled")]
+    Disabled
 }
 
 /// <summary>
@@ -180,40 +175,39 @@ public record LicenseKeyActivation
     public string Id { get; init; } = string.Empty;
 
     /// <summary>
-    /// The activation date.
+    /// The license key ID this activation belongs to.
     /// </summary>
     [Required]
-    [JsonPropertyName("activated_at")]
-    public DateTime ActivatedAt { get; init; }
+    [JsonPropertyName("license_key_id")]
+    public string LicenseKeyId { get; init; } = string.Empty;
 
     /// <summary>
-    /// The activation metadata.
+    /// The label for this activation (e.g., device name).
     /// </summary>
-    [JsonPropertyName("metadata")]
-    public Dictionary<string, object>? Metadata { get; init; }
+    [Required]
+    [JsonPropertyName("label")]
+    public string Label { get; init; } = string.Empty;
 
     /// <summary>
-    /// The device information.
+    /// The metadata associated with this activation.
     /// </summary>
-    [JsonPropertyName("device")]
-    public string? Device { get; init; }
+    [JsonPropertyName("meta")]
+    public Dictionary<string, object>? Meta { get; init; }
 
     /// <summary>
-    /// The IP address of the activation.
+    /// The creation date of the activation.
     /// </summary>
-    [JsonPropertyName("ip_address")]
-    public string? IpAddress { get; init; }
+    [Required]
+    [JsonPropertyName("created_at")]
+    public DateTime CreatedAt { get; init; }
 
     /// <summary>
-    /// The user agent of the activation.
+    /// The last modification date of the activation.
     /// </summary>
-    [JsonPropertyName("user_agent")]
-    public string? UserAgent { get; init; }
+    [Required]
+    [JsonPropertyName("modified_at")]
+    public DateTime ModifiedAt { get; init; }
 }
-
-
-
-
 
 /// <summary>
 /// Response for license key validation.
@@ -234,19 +228,23 @@ public record LicenseKeyValidateResponse
     public LicenseKey? LicenseKey { get; init; }
 
     /// <summary>
-    /// The validation error message.
+    /// The activation information if provided.
+    /// </summary>
+    [JsonPropertyName("activation")]
+    public LicenseKeyActivation? Activation { get; init; }
+
+    /// <summary>
+    /// Error message if validation failed (for backward compatibility).
     /// </summary>
     [JsonPropertyName("error")]
     public string? Error { get; init; }
 
     /// <summary>
-    /// The validation error code.
+    /// Error code if validation failed (for backward compatibility).
     /// </summary>
     [JsonPropertyName("error_code")]
     public string? ErrorCode { get; init; }
 }
-
-
 
 /// <summary>
 /// Response for license key activation.
@@ -254,15 +252,9 @@ public record LicenseKeyValidateResponse
 public record LicenseKeyActivateResponse
 {
     /// <summary>
-    /// Whether the license key was activated successfully.
-    /// </summary>
-    [Required]
-    [JsonPropertyName("success")]
-    public bool Success { get; init; }
-
-    /// <summary>
     /// The license key information.
     /// </summary>
+    [JsonPropertyName("license_key")]
     public LicenseKey? LicenseKey { get; init; }
 
     /// <summary>
@@ -272,19 +264,23 @@ public record LicenseKeyActivateResponse
     public LicenseKeyActivation? Activation { get; init; }
 
     /// <summary>
-    /// The activation error message.
+    /// Whether the activation was successful (for backward compatibility).
+    /// </summary>
+    [JsonIgnore]
+    public bool Success => LicenseKey != null && Activation != null;
+
+    /// <summary>
+    /// Error message if activation failed (for backward compatibility).
     /// </summary>
     [JsonPropertyName("error")]
     public string? Error { get; init; }
 
     /// <summary>
-    /// The activation error code.
+    /// Error code if activation failed (for backward compatibility).
     /// </summary>
     [JsonPropertyName("error_code")]
     public string? ErrorCode { get; init; }
 }
-
-
 
 /// <summary>
 /// Response for license key deactivation.
@@ -292,23 +288,14 @@ public record LicenseKeyActivateResponse
 public record LicenseKeyDeactivateResponse
 {
     /// <summary>
-    /// Whether the license key was deactivated successfully.
-    /// </summary>
-    [Required]
-    public bool Success { get; init; }
-
-    /// <summary>
     /// The license key information.
     /// </summary>
+    [JsonPropertyName("license_key")]
     public LicenseKey? LicenseKey { get; init; }
 
     /// <summary>
-    /// The deactivation error message.
+    /// The activation that was deactivated.
     /// </summary>
-    public string? Error { get; init; }
-
-    /// <summary>
-    /// The deactivation error code.
-    /// </summary>
-    public string? ErrorCode { get; init; }
+    [JsonPropertyName("activation")]
+    public LicenseKeyActivation? Activation { get; init; }
 }

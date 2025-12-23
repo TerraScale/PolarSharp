@@ -86,8 +86,14 @@ public record Discount
     /// <summary>
     /// The number of times discount has been used.
     /// </summary>
-    [JsonPropertyName("times_redeemed")]
-    public int TimesRedeemed { get; init; }
+    [JsonPropertyName("redemptions_count")]
+    public int RedemptionsCount { get; init; }
+
+    /// <summary>
+    /// Alias for RedemptionsCount for backward compatibility.
+    /// </summary>
+    [JsonIgnore]
+    public int TimesRedeemed => RedemptionsCount;
 
     /// <summary>
     /// The duration of discount.
@@ -114,10 +120,10 @@ public record Discount
     public DateTime? CreatedAt { get; init; }
 
     /// <summary>
-    /// The last update date of discount.
+    /// The last modification date of discount.
     /// </summary>
-    [JsonPropertyName("updated_at")]
-    public DateTime? UpdatedAt { get; init; }
+    [JsonPropertyName("modified_at")]
+    public DateTime? ModifiedAt { get; init; }
     
     /// <summary>
     /// The organization ID associated with the discount.

@@ -21,28 +21,16 @@ public record Meter
     public string Name { get; init; } = string.Empty;
 
     /// <summary>
-    /// The description of the meter.
+    /// The filter criteria for the meter.
     /// </summary>
-    [JsonPropertyName("description")]
-    public string? Description { get; init; }
+    [JsonPropertyName("filter")]
+    public MeterFilter? Filter { get; init; }
 
     /// <summary>
-    /// The aggregation type of the meter.
+    /// The aggregation configuration for the meter.
     /// </summary>
-    [JsonPropertyName("aggregation_type")]
-    public MeterAggregationType AggregationType { get; init; }
-
-    /// <summary>
-    /// The unit of measurement for the meter.
-    /// </summary>
-    [JsonPropertyName("unit")]
-    public string Unit { get; init; } = string.Empty;
-
-    /// <summary>
-    /// Whether the meter is active.
-    /// </summary>
-    [JsonPropertyName("is_active")]
-    public bool IsActive { get; init; }
+    [JsonPropertyName("aggregation")]
+    public MeterAggregation? Aggregation { get; init; }
 
     /// <summary>
     /// The organization ID that owns the meter.
@@ -63,16 +51,113 @@ public record Meter
     public DateTime ModifiedAt { get; init; }
 
     /// <summary>
+    /// Alias for ModifiedAt for backward compatibility.
+    /// </summary>
+    [JsonIgnore]
+    public DateTime UpdatedAt => ModifiedAt;
+
+    /// <summary>
+    /// The date when the meter was archived, if applicable.
+    /// </summary>
+    [JsonPropertyName("archived_at")]
+    public DateTime? ArchivedAt { get; init; }
+
+    /// <summary>
     /// The metadata associated with the meter.
     /// </summary>
     [JsonPropertyName("metadata")]
     public Dictionary<string, object>? Metadata { get; init; }
+
+    /// <summary>
+    /// The description of the meter (for backward compatibility).
+    /// </summary>
+    [JsonPropertyName("description")]
+    public string? Description { get; init; }
+
+    /// <summary>
+    /// The unit of measurement (for backward compatibility).
+    /// </summary>
+    [JsonPropertyName("unit")]
+    public string? Unit { get; init; }
+
+    /// <summary>
+    /// The aggregation type (for backward compatibility, use Aggregation.Func instead).
+    /// </summary>
+    [JsonIgnore]
+    public MeterAggregationFunc? AggregationType => Aggregation?.Func;
+
+    /// <summary>
+    /// Whether the meter is active (for backward compatibility).
+    /// </summary>
+    [JsonIgnore]
+    public bool IsActive => ArchivedAt == null;
 }
 
 /// <summary>
-/// Represents the aggregation type for a meter.
+/// Represents the filter configuration for a meter.
 /// </summary>
-public enum MeterAggregationType
+public record MeterFilter
+{
+    /// <summary>
+    /// The logical conjunction for combining clauses (and/or).
+    /// </summary>
+    [JsonPropertyName("conjunction")]
+    public string Conjunction { get; init; } = "and";
+
+    /// <summary>
+    /// The filter clauses.
+    /// </summary>
+    [JsonPropertyName("clauses")]
+    public List<MeterFilterClause> Clauses { get; init; } = new();
+}
+
+/// <summary>
+/// Represents a single filter clause for a meter.
+/// </summary>
+public record MeterFilterClause
+{
+    /// <summary>
+    /// The property to filter on.
+    /// </summary>
+    [JsonPropertyName("property")]
+    public string Property { get; init; } = string.Empty;
+
+    /// <summary>
+    /// The operator to use for comparison.
+    /// </summary>
+    [JsonPropertyName("operator")]
+    public string Operator { get; init; } = string.Empty;
+
+    /// <summary>
+    /// The value to compare against.
+    /// </summary>
+    [JsonPropertyName("value")]
+    public object? Value { get; init; }
+}
+
+/// <summary>
+/// Represents the aggregation configuration for a meter.
+/// </summary>
+public record MeterAggregation
+{
+    /// <summary>
+    /// The aggregation function (sum, count, max, min, avg, latest).
+    /// </summary>
+    [JsonPropertyName("func")]
+    public MeterAggregationFunc Func { get; init; }
+
+    /// <summary>
+    /// The property to aggregate on (optional, for sum/max/min/avg).
+    /// </summary>
+    [JsonPropertyName("property")]
+    public string? Property { get; init; }
+}
+
+/// <summary>
+/// Represents the aggregation function for a meter.
+/// </summary>
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum MeterAggregationFunc
 {
     /// <summary>
     /// Sum of all values.
@@ -81,10 +166,10 @@ public enum MeterAggregationType
     Sum,
 
     /// <summary>
-    /// Average of all values.
+    /// Count of events.
     /// </summary>
-    [JsonPropertyName("average")]
-    Average,
+    [JsonPropertyName("count")]
+    Count,
 
     /// <summary>
     /// Maximum value.
@@ -99,10 +184,10 @@ public enum MeterAggregationType
     Min,
 
     /// <summary>
-    /// Count of values.
+    /// Average of all values.
     /// </summary>
-    [JsonPropertyName("count")]
-    Count,
+    [JsonPropertyName("avg")]
+    Avg,
 
     /// <summary>
     /// Latest value.
@@ -174,28 +259,48 @@ public record MeterCreateRequest
     /// The name of the meter.
     /// </summary>
     [Required]
+    [JsonPropertyName("name")]
     public string Name { get; init; } = string.Empty;
 
     /// <summary>
-    /// The description of the meter.
+    /// The description of the meter (for backward compatibility).
     /// </summary>
+    [JsonPropertyName("description")]
     public string? Description { get; init; }
 
     /// <summary>
-    /// The aggregation type of the meter.
+    /// The unit of measurement (for backward compatibility).
     /// </summary>
-    [Required]
-    public MeterAggregationType AggregationType { get; init; }
+    [JsonPropertyName("unit")]
+    public string? Unit { get; init; }
 
     /// <summary>
-    /// The unit of measurement for the meter.
+    /// The filter criteria for the meter.
+    /// </summary>
+    [JsonPropertyName("filter")]
+    public MeterFilter? Filter { get; init; }
+
+    /// <summary>
+    /// The aggregation configuration for the meter.
     /// </summary>
     [Required]
-    public string Unit { get; init; } = string.Empty;
+    [JsonPropertyName("aggregation")]
+    public MeterAggregation Aggregation { get; init; } = new();
+
+    /// <summary>
+    /// The aggregation type (for backward compatibility, use Aggregation.Func instead).
+    /// </summary>
+    [JsonIgnore]
+    public MeterAggregationFunc? AggregationType
+    {
+        get => Aggregation?.Func;
+        init => Aggregation = new MeterAggregation { Func = value ?? MeterAggregationFunc.Sum };
+    }
 
     /// <summary>
     /// The metadata to associate with the meter.
     /// </summary>
+    [JsonPropertyName("metadata")]
     public Dictionary<string, object>? Metadata { get; init; }
 }
 
@@ -207,112 +312,33 @@ public record MeterUpdateRequest
     /// <summary>
     /// The name of the meter.
     /// </summary>
-    [StringLength(255, ErrorMessage = "Meter name cannot exceed 255 characters.")]
+    [JsonPropertyName("name")]
     public string? Name { get; init; }
 
     /// <summary>
-    /// The description of the meter.
+    /// The description of the meter (for backward compatibility).
     /// </summary>
-    [StringLength(1000, ErrorMessage = "Meter description cannot exceed 1000 characters.")]
+    [JsonPropertyName("description")]
     public string? Description { get; init; }
-
-    /// <summary>
-    /// The aggregation type of the meter.
-    /// </summary>
-    public MeterAggregationType? AggregationType { get; init; }
-
-    /// <summary>
-    /// The unit of measurement for the meter.
-    /// </summary>
-    [StringLength(50, ErrorMessage = "Meter unit cannot exceed 50 characters.")]
-    public string? Unit { get; init; }
-
-    /// <summary>
-    /// Whether the meter is active.
-    /// </summary>
-    public bool? IsActive { get; init; }
 
     /// <summary>
     /// The metadata to associate with the meter.
     /// </summary>
-    public Dictionary<string, object>? Metadata { get; init; }
-}
-
-/// <summary>
-/// Request to create a new meter quantity.
-/// </summary>
-public record MeterQuantityCreateRequest
-{
-    /// <summary>
-    /// The meter ID.
-    /// </summary>
-    [Required(ErrorMessage = "Meter ID is required.")]
-    [JsonPropertyName("meter_id")]
-    public string MeterId { get; init; } = string.Empty;
-
-    /// <summary>
-    /// The customer ID.
-    /// </summary>
-    [Required(ErrorMessage = "Customer ID is required.")]
-    [JsonPropertyName("customer_id")]
-    public string CustomerId { get; init; } = string.Empty;
-
-    /// <summary>
-    /// The quantity value.
-    /// </summary>
-    [Required(ErrorMessage = "Quantity is required.")]
-    [Range(0, double.MaxValue, ErrorMessage = "Quantity must be non-negative.")]
-    [JsonPropertyName("quantity")]
-    public decimal Quantity { get; init; }
-
-    /// <summary>
-    /// The period start date.
-    /// </summary>
-    [Required(ErrorMessage = "Period start date is required.")]
-    [JsonPropertyName("period_start")]
-    public DateTime PeriodStart { get; init; }
-
-    /// <summary>
-    /// The period end date.
-    /// </summary>
-    [Required(ErrorMessage = "Period end date is required.")]
-    [JsonPropertyName("period_end")]
-    public DateTime PeriodEnd { get; init; }
-
-    /// <summary>
-    /// The metadata to associate with the meter quantity.
-    /// </summary>
     [JsonPropertyName("metadata")]
     public Dictionary<string, object>? Metadata { get; init; }
 }
 
 /// <summary>
-/// Request to update an existing meter quantity.
+/// Alias for MeterAggregationFunc for backward compatibility.
 /// </summary>
-public record MeterQuantityUpdateRequest
+public static class MeterAggregationType
 {
-    /// <summary>
-    /// The quantity value.
-    /// </summary>
-    [Range(0, double.MaxValue, ErrorMessage = "Quantity must be non-negative.")]
-    [JsonPropertyName("quantity")]
-    public decimal? Quantity { get; init; }
-
-    /// <summary>
-    /// The period start date.
-    /// </summary>
-    [JsonPropertyName("period_start")]
-    public DateTime? PeriodStart { get; init; }
-
-    /// <summary>
-    /// The period end date.
-    /// </summary>
-    [JsonPropertyName("period_end")]
-    public DateTime? PeriodEnd { get; init; }
-
-    /// <summary>
-    /// The metadata to associate with the meter quantity.
-    /// </summary>
-    [JsonPropertyName("metadata")]
-    public Dictionary<string, object>? Metadata { get; init; }
+    public const MeterAggregationFunc Sum = MeterAggregationFunc.Sum;
+    public const MeterAggregationFunc Count = MeterAggregationFunc.Count;
+    public const MeterAggregationFunc Max = MeterAggregationFunc.Max;
+    public const MeterAggregationFunc Min = MeterAggregationFunc.Min;
+    public const MeterAggregationFunc Avg = MeterAggregationFunc.Avg;
+    public const MeterAggregationFunc Latest = MeterAggregationFunc.Latest;
 }
+
+
